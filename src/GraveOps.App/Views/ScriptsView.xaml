@@ -1,0 +1,74 @@
+<UserControl x:Class="GraveOps.App.Views.ScriptsView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="390" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Border Style="{StaticResource Card}" Margin="0,0,12,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <StackPanel>
+                    <TextBlock Text="Script library" FontSize="22" FontWeight="SemiBold" />
+                    <TextBlock Text="Create reusable remote commands without changing the application code." Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,4,0,12" />
+                </StackPanel>
+                <ListBox x:Name="ScriptList" Grid.Row="1" DisplayMemberPath="Name" SelectionChanged="ScriptList_SelectionChanged" />
+                <Button Grid.Row="2" Style="{StaticResource PrimaryButton}" Click="New_Click" Margin="0,12,0,0">New Script</Button>
+            </Grid>
+        </Border>
+        <Border Grid.Column="1" Style="{StaticResource Card}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="180" />
+                </Grid.RowDefinitions>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="230" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Margin="0,0,12,0">
+                        <TextBlock Text="Name" Foreground="{StaticResource Muted}" />
+                        <TextBox x:Name="NameBox" Margin="0,4,0,8" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Risk level" Foreground="{StaticResource Muted}" />
+                        <ComboBox x:Name="RiskCombo" Margin="0,4,0,8">
+                            <ComboBoxItem Content="ReadOnly" />
+                            <ComboBoxItem Content="Normal" />
+                            <ComboBoxItem Content="Dangerous" />
+                        </ComboBox>
+                    </StackPanel>
+                </Grid>
+                <StackPanel Grid.Row="1">
+                    <TextBlock Text="Category" Foreground="{StaticResource Muted}" />
+                    <TextBox x:Name="CategoryBox" Margin="0,4,0,8" />
+                </StackPanel>
+                <StackPanel Grid.Row="2">
+                    <TextBlock Text="Command" Foreground="{StaticResource Muted}" />
+                    <TextBox x:Name="CommandBox" AcceptsReturn="True" AcceptsTab="True" FontFamily="Cascadia Mono, Consolas" VerticalScrollBarVisibility="Auto" Margin="0,4,0,8" FontSize="11.5" />
+                </StackPanel>
+                <Grid Grid.Row="3" Margin="0,5,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="230" />
+                    </Grid.ColumnDefinitions>
+                    <Button Style="{StaticResource PrimaryButton}" Click="Save_Click" Margin="0,0,8,0">Save</Button>
+                    <Button Grid.Column="1" Style="{StaticResource DangerButton}" Click="Delete_Click" Margin="0,0,8,0">Delete</Button>
+                    <Button Grid.Column="2" Style="{StaticResource SecondaryButton}" Click="Run_Click">Run</Button>
+                    <ComboBox x:Name="ServerCombo" Visibility="Collapsed" Grid.Column="4" />
+                </Grid>
+                <TextBox x:Name="OutputBox" Grid.Row="4" IsReadOnly="True" AcceptsReturn="True" FontFamily="Cascadia Mono, Consolas" VerticalScrollBarVisibility="Auto" FontSize="11.5" />
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

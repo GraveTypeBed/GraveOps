@@ -1,0 +1,201 @@
+﻿<UserControl x:Class="GraveOps.App.Views.ControlPlaneIntelligenceView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="Control plane intelligence" Style="{StaticResource PageHeading}" />
+                    <TextBlock Text="Root cause, dependency impact and the safest next control from live GraveOps telemetry." Foreground="{StaticResource GoTextSecondary}" Margin="0,3,0,0" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock x:Name="TargetText" Foreground="{StaticResource GoTextSecondary}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <Button Style="{StaticResource GoCompactSecondaryButton}" Click="OpenHistory_Click" Margin="0,0,8,0">State history</Button>
+                    <Button x:Name="RefreshButton" Style="{StaticResource GoCompactPrimaryButton}" Click="Refresh_Click">Analyze now</Button>
+                </StackPanel>
+            </Grid>
+            <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                <StackPanel>
+                    <Grid Margin="0,0,0,9">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Environment context" Style="{StaticResource SectionHeading}" />
+                            <TextBlock Text="Fleet-wide impact before selected-host root-cause analysis. Issues stay attached to the host and application that own them." Foreground="{StaticResource GoTextSecondary}" FontSize="10" Margin="0,3,0,0" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button x:Name="FleetOpenButton" Style="{StaticResource GoCompactSecondaryButton}" Click="FleetOpen_Click" IsEnabled="False" Margin="0,0,7,0">Open selected</Button>
+                            <Button Style="{StaticResource GoCompactSecondaryButton}" Click="OpenEnvironmentDashboard_Click">Environment dashboard</Button>
+                        </StackPanel>
+                    </Grid>
+                    <UniformGrid Columns="4" Margin="0,0,0,9">
+                        <Border Style="{StaticResource GoInsetPanel}" Margin="0,0,4,0">
+                            <StackPanel>
+                                <TextBlock Text="ENVIRONMENT" Style="{StaticResource Eyebrow}" />
+                                <TextBlock x:Name="FleetOverallText" Text="--" FontSize="18" FontWeight="SemiBold" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource GoInsetPanel}" Margin="4,0">
+                            <StackPanel>
+                                <TextBlock Text="HOSTS" Style="{StaticResource Eyebrow}" />
+                                <TextBlock x:Name="FleetHostsText" Text="--" FontSize="18" FontWeight="SemiBold" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource GoInsetPanel}" Margin="4,0">
+                            <StackPanel>
+                                <TextBlock Text="VERIFIED APPS" Style="{StaticResource Eyebrow}" />
+                                <TextBlock x:Name="FleetAppsText" Text="--" FontSize="18" FontWeight="SemiBold" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource GoInsetPanel}" Margin="4,0,0,0">
+                            <StackPanel>
+                                <TextBlock Text="IMPACTED" Style="{StaticResource Eyebrow}" />
+                                <TextBlock x:Name="FleetImpactText" Text="--" FontSize="18" FontWeight="SemiBold" />
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+                    <TextBlock x:Name="FleetHealthyText" Text="Environment context pending." Foreground="{StaticResource GoTextSecondary}" FontSize="10" Margin="0,2,0,0" />
+                    <DataGrid x:Name="FleetImpactGrid" Visibility="Collapsed" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" SelectionChanged="FleetImpactGrid_SelectionChanged" MouseDoubleClick="FleetImpactGrid_MouseDoubleClick" RowStyle="{StaticResource GoDataGridRow}" CellStyle="{StaticResource GoDataGridCell}" RowHeight="28" MaxHeight="155" Margin="0,7,0,0">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Host" Binding="{Binding Host}" Width="1*" />
+                            <DataGridTextColumn Header="Component" Binding="{Binding Component}" Width="1*" />
+                            <DataGridTextColumn Header="State" Binding="{Binding State}" Width="0.75*" />
+                            <DataGridTextColumn Header="Issue" Binding="{Binding Detail}" Width="2.2*" />
+                            <DataGridTextColumn Header="Impact" Binding="{Binding Impact}" Width="2.2*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                <StackPanel>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Guided remediation" Style="{StaticResource SectionHeading}" />
+                            <TextBlock Text="Upstream-first troubleshooting from environment ownership, lifecycle and live telemetry. GraveOps suggests the next safe control; it does not blindly restart services." Foreground="{StaticResource GoTextSecondary}" FontSize="10" Margin="0,3,0,0" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Button x:Name="RemediationOpenButton" Grid.Column="1" Style="{StaticResource GoCompactSecondaryButton}" Click="RemediationOpen_Click" IsEnabled="False" VerticalAlignment="Center">Open selected</Button>
+                    </Grid>
+                    <TextBlock x:Name="RemediationEmptyText" Text="No remediation required." Foreground="{StaticResource Success}" Margin="0,4,0,0" />
+                    <DataGrid x:Name="RemediationGrid" Visibility="Collapsed" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
+                              SelectionChanged="RemediationGrid_SelectionChanged" MouseDoubleClick="RemediationGrid_MouseDoubleClick"
+                              RowStyle="{StaticResource GoDataGridRow}" CellStyle="{StaticResource GoDataGridCell}" RowHeight="30" MaxHeight="180">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="#" Binding="{Binding Order}" Width="50" />
+                            <DataGridTextColumn Header="Severity" Binding="{Binding Severity}" Width="100" />
+                            <DataGridTextColumn Header="Component" Binding="{Binding Component}" Width="150" />
+                            <DataGridTextColumn Header="Why" Binding="{Binding Why}" Width="2*" />
+                            <DataGridTextColumn Header="Next step" Binding="{Binding NextAction}" Width="2*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+            <StackPanel Margin="0,0,0,8">
+                <TextBlock Text="Selected host analysis" Style="{StaticResource SectionHeading}" />
+                <TextBlock Text="Deep dependency analysis for the active target. Environment context above remains fleet-wide." Foreground="{StaticResource GoTextSecondary}" FontSize="10" Margin="0,3,0,0" />
+            </StackPanel>
+            <UniformGrid Columns="4" Margin="0,0,0,12">
+                <Border Style="{StaticResource FlatCard}" Margin="0,0,5,0">
+                    <StackPanel>
+                        <TextBlock Text="OVERALL" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="OverallText" Text="--" FontSize="23" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource FlatCard}" Margin="5,0">
+                    <StackPanel>
+                        <TextBlock Text="BLOCKERS" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="BlockersText" Text="--" FontSize="23" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource FlatCard}" Margin="5,0">
+                    <StackPanel>
+                        <TextBlock Text="WARNINGS" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="WarningsText" Text="--" FontSize="23" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource FlatCard}" Margin="5,0,0,0">
+                    <StackPanel>
+                        <TextBlock Text="ROOT CAUSE" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="RootCauseText" Text="--" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+            <Grid MinHeight="285" Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.05*" />
+                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="1.55*" />
+                </Grid.ColumnDefinitions>
+                <Border Style="{StaticResource FlatCard}" Padding="0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <StackPanel Margin="12,10,12,8">
+                            <TextBlock Text="Dependency state" Style="{StaticResource SectionHeading}" />
+                            <TextBlock Text="Read upstream to downstream. A fault higher in the control plane can explain several lower-level symptoms." Foreground="{StaticResource GoTextSecondary}" FontSize="10" Margin="0,3,0,0" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <DataGrid x:Name="NodesGrid" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" SelectionChanged="NodesGrid_SelectionChanged" RowStyle="{StaticResource GoDataGridRow}" CellStyle="{StaticResource GoDataGridCell}" RowHeight="30" MaxHeight="430" MinHeight="235">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Component" Binding="{Binding Component}" Width="1.1*" />
+                                <DataGridTextColumn Header="State" Binding="{Binding State}" Width="0.95*" />
+                                <DataGridTextColumn Header="Severity" Binding="{Binding Severity}" Width="0.75*" />
+                                <DataGridTextColumn Header="Summary" Binding="{Binding Summary}" Width="2.2*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Border>
+                <GridSplitter Grid.Column="1" Style="{StaticResource GoSplitter}" />
+                <Border Grid.Column="2" Style="{StaticResource FlatCard}" Padding="0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <StackPanel Margin="12,10,12,8">
+                            <TextBlock Text="Priority findings" Style="{StaticResource SectionHeading}" />
+                            <TextBlock Text="Ranked by impact. Busy queues and active transcodes remain informational unless another fault explains them." Foreground="{StaticResource GoTextSecondary}" FontSize="10" Margin="0,3,0,0" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <DataGrid x:Name="FindingsGrid" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" SelectionChanged="FindingsGrid_SelectionChanged" RowStyle="{StaticResource GoDataGridRow}" CellStyle="{StaticResource GoDataGridCell}" RowHeight="30" MaxHeight="430" MinHeight="235">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Severity" Binding="{Binding Severity}" Width="0.75*" />
+                                <DataGridTextColumn Header="Component" Binding="{Binding Component}" Width="1*" />
+                                <DataGridTextColumn Header="Problem" Binding="{Binding Problem}" Width="2.1*" />
+                                <DataGridTextColumn Header="Impact" Binding="{Binding Impact}" Width="2.3*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Border>
+            </Grid>
+            <Border Style="{StaticResource GoInsetPanel}" Margin="0,0,0,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock x:Name="SelectionTitleText" Text="Select a dependency or finding." FontWeight="SemiBold" />
+                        <TextBlock x:Name="SelectionSummaryText" Text="GraveOps will show why it matters and which control to use next." Foreground="{StaticResource GoTextSecondary}" Margin="0,4,0,0" TextWrapping="Wrap" MaxWidth="980" />
+                    </StackPanel>
+                    <WrapPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                        <Button x:Name="OpenRelatedButton" Style="{StaticResource GoCompactSecondaryButton}" Click="OpenRelated_Click" IsEnabled="False" Margin="0,0,7,0">Open related</Button>
+                        <Button x:Name="DeepInspectButton" Style="{StaticResource GoCompactSecondaryButton}" Click="DeepInspect_Click" IsEnabled="False" Margin="0,0,7,0">Deep inspect</Button>
+                        <Button x:Name="SuggestedActionButton" Style="{StaticResource GoCompactPrimaryButton}" Click="SuggestedAction_Click" IsEnabled="False" Margin="0,0,7,0">Run suggested action</Button>
+                        <Button x:Name="CopyReportButton" Style="{StaticResource GoCompactSecondaryButton}" Click="CopyReport_Click" IsEnabled="False">Copy report</Button>
+                    </WrapPanel>
+                </Grid>
+            </Border>
+            <Border Background="{StaticResource GoSurface}" BorderBrush="{StaticResource GoBorder}" BorderThickness="1" CornerRadius="7" Padding="10">
+                <TextBlock x:Name="StatusText" Text="Ready." Foreground="{StaticResource GoTextSecondary}" TextWrapping="Wrap" />
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

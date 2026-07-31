@@ -1,0 +1,142 @@
+<UserControl x:Class="GraveOps.App.Views.PiHoleView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+            <Grid Margin="0,0,0,14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="Pi-hole DNS control" Style="{StaticResource PageHeading}" />
+                    <TextBlock Text="Live DNS, blocking, Pi hardware and rolling query telemetry." Style="{StaticResource PageSubheading}" Margin="0,4,0,0" />
+                </StackPanel>
+                <Button x:Name="RefreshButton" Grid.Column="1" Style="{StaticResource PrimaryButton}" Click="Refresh_Click" Padding="18,9">Refresh</Button>
+            </Grid>
+            <UniformGrid Columns="4" Margin="0,0,0,14">
+                <Border Style="{StaticResource FlatCard}" Margin="0,0,10,0">
+                    <StackPanel>
+                        <TextBlock Text="DNS SERVICE" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="DnsStateText" Text="--" FontSize="23" FontWeight="SemiBold" Margin="0,7,0,2" />
+                        <TextBlock x:Name="DnsSubtext" Text="Waiting for telemetry" Foreground="{StaticResource Muted}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource FlatCard}" Margin="0,0,10,0">
+                    <StackPanel>
+                        <TextBlock Text="BLOCKING" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="BlockingText" Text="--" FontSize="23" FontWeight="SemiBold" Margin="0,7,0,2" />
+                        <TextBlock Text="Pi-hole filtering state" Foreground="{StaticResource Muted}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource FlatCard}" Margin="0,0,10,0">
+                    <StackPanel>
+                        <TextBlock Text="QUERIES / 24H" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="QueriesText" Text="--" FontSize="23" FontWeight="SemiBold" Margin="0,7,0,2" />
+                        <TextBlock x:Name="QueriesSubtext" Text="API telemetry" Foreground="{StaticResource Muted}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource FlatCard}">
+                    <StackPanel>
+                        <TextBlock Text="BLOCKED" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="BlockedText" Text="--" FontSize="23" FontWeight="SemiBold" Margin="0,7,0,2" />
+                        <TextBlock x:Name="BlockedSubtext" Text="Rolling 24-hour window" Foreground="{StaticResource Muted}" />
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+            <Grid Margin="0,0,0,14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.3*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Style="{StaticResource FlatCard}" Margin="0,0,10,0">
+                    <StackPanel>
+                        <TextBlock Text="Pi-hole appliance" Style="{StaticResource SectionHeading}" />
+                        <UniformGrid Columns="3" Margin="0,16,0,16">
+                            <StackPanel>
+                                <TextBlock Text="CORE" Style="{StaticResource Eyebrow}" />
+                                <TextBlock x:Name="CoreVersionText" Text="--" FontSize="17" FontWeight="SemiBold" Margin="0,4,0,0" />
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="WEB" Style="{StaticResource Eyebrow}" />
+                                <TextBlock x:Name="WebVersionText" Text="--" FontSize="17" FontWeight="SemiBold" Margin="0,4,0,0" />
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="FTL" Style="{StaticResource Eyebrow}" />
+                                <TextBlock x:Name="FtlVersionText" Text="--" FontSize="17" FontWeight="SemiBold" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </UniformGrid>
+                        <Border BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
+                            <UniformGrid Columns="4">
+                                <StackPanel>
+                                    <TextBlock Text="HOST" Style="{StaticResource Eyebrow}" />
+                                    <TextBlock x:Name="HostText" Text="--" Margin="0,4,0,0" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="UPTIME" Style="{StaticResource Eyebrow}" />
+                                    <TextBlock x:Name="UptimeText" Text="--" Margin="0,4,0,0" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="CPU TEMP" Style="{StaticResource Eyebrow}" />
+                                    <TextBlock x:Name="PiTempText" Text="--" Margin="0,4,0,0" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="LOAD" Style="{StaticResource Eyebrow}" />
+                                    <TextBlock x:Name="LoadText" Text="--" Margin="0,4,0,0" />
+                                </StackPanel>
+                            </UniformGrid>
+                        </Border>
+                        <Border BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,0" Padding="0,14,0,0" Margin="0,14,0,0">
+                            <UniformGrid Columns="4">
+                                <StackPanel>
+                                    <TextBlock Text="ACTIVE CLIENTS" Style="{StaticResource Eyebrow}" />
+                                    <TextBlock x:Name="ActiveClientsText" Text="--" FontSize="17" FontWeight="SemiBold" Margin="0,4,0,0" />
+                                    <TextBlock x:Name="TotalClientsText" Text="-- total known" Foreground="{StaticResource Muted}" FontSize="10" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="QUERY RATE" Style="{StaticResource Eyebrow}" />
+                                    <TextBlock x:Name="QueryRateText" Text="--" FontSize="17" FontWeight="SemiBold" Margin="0,4,0,0" />
+                                    <TextBlock Text="Current API frequency" Foreground="{StaticResource Muted}" FontSize="10" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="GRAVITY DOMAINS" Style="{StaticResource Eyebrow}" />
+                                    <TextBlock x:Name="GravityDomainsText" Text="--" FontSize="17" FontWeight="SemiBold" Margin="0,4,0,0" />
+                                    <TextBlock Text="Domains being blocked" Foreground="{StaticResource Muted}" FontSize="10" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="GRAVITY UPDATED" Style="{StaticResource Eyebrow}" />
+                                    <TextBlock x:Name="GravityUpdatedText" Text="--" FontSize="17" FontWeight="SemiBold" Margin="0,4,0,0" />
+                                    <TextBlock Text="Last gravity refresh" Foreground="{StaticResource Muted}" FontSize="10" />
+                                </StackPanel>
+                            </UniformGrid>
+                        </Border>
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Style="{StaticResource FlatCard}">
+                    <StackPanel>
+                        <TextBlock Text="DNS operations" Style="{StaticResource SectionHeading}" />
+                        <TextBlock Text="Controls use the restricted GraveOps helper over saved SSH." Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,4,0,14" />
+                        <Button Style="{StaticResource PrimaryButton}" Click="Enable_Click" Margin="0,0,0,8">Enable blocking</Button>
+                        <Button Style="{StaticResource SecondaryButton}" Click="Disable_Click" Margin="0,0,0,8">Disable for 5 minutes</Button>
+                        <Button Style="{StaticResource SecondaryButton}" Click="RestartDns_Click" Margin="0,0,0,8">Reload DNS</Button>
+                        <Button Style="{StaticResource SecondaryButton}" Click="OpenPiHole_Click">Open Pi-hole</Button>
+                    </StackPanel>
+                </Border>
+            </Grid>
+            <Border Style="{StaticResource FlatCard}">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Diagnostics" Style="{StaticResource SectionHeading}" />
+                            <TextBlock Text="Raw status and optional API output." Foreground="{StaticResource Muted}" />
+                        </StackPanel>
+                        <Button Grid.Column="1" Style="{StaticResource SecondaryButton}" Click="Version_Click">Raw version</Button>
+                    </Grid>
+                    <TextBox x:Name="OutputBox" IsReadOnly="True" AcceptsReturn="True" FontFamily="Cascadia Mono, Consolas" FontSize="11" MinHeight="100" MaxHeight="220" Margin="0,12,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,63 @@
+<Window x:Class="GraveOps.App.Views.QuickBarSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="760"
+        Height="560"
+        MinWidth="680"
+        MinHeight="500"
+        WindowStartupLocation="CenterOwner"
+        Title="Customize Quick Bar"
+        Background="{StaticResource Bg}">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="Customize Quick Bar" Style="{StaticResource PageHeading}"/>
+            <TextBlock Text="Pin the commands you actually use and arrange them in the order you want."
+                       Style="{StaticResource PageSubheading}"
+                       Margin="0,4,0,14"/>
+        </StackPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="1.25*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Style="{StaticResource Card}" Margin="0,0,10,0">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="PINNED" Style="{StaticResource Eyebrow}" Margin="0,0,0,8"/>
+                    <ListBox x:Name="PinnedList" DisplayMemberPath="Title"/>
+                </DockPanel>
+            </Border>
+
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <Button Style="{StaticResource SecondaryButton}" Margin="0,0,0,8" Click="MoveUp_Click">Move up</Button>
+                <Button Style="{StaticResource SecondaryButton}" Margin="0,0,0,8" Click="MoveDown_Click">Move down</Button>
+                <Button Style="{StaticResource DangerButton}" Margin="0,0,0,20" Click="Remove_Click">Unpin</Button>
+                <Button Style="{StaticResource PrimaryButton}" Click="Add_Click">Pin selected</Button>
+            </StackPanel>
+
+            <Border Grid.Column="2" Style="{StaticResource Card}" Margin="10,0,0,0">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="AVAILABLE" Style="{StaticResource Eyebrow}" Margin="0,0,0,8"/>
+                    <TextBox x:Name="SearchBox"
+                             DockPanel.Dock="Top"
+                             Margin="0,0,0,8"
+                             TextChanged="SearchBox_TextChanged"/>
+                    <ListBox x:Name="AvailableList" DisplayMemberPath="Title"/>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <Button Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Click="Reset_Click">Reset defaults</Button>
+            <Button Style="{StaticResource PrimaryButton}" Click="Done_Click">Done</Button>
+        </StackPanel>
+    </Grid>
+</Window>

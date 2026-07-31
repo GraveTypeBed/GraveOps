@@ -1,0 +1,428 @@
+<UserControl x:Class="GraveOps.App.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Environment" Style="{StaticResource SectionHeading}" />
+                    <TextBlock Text="Fleet health, ownership and the few things that need your attention." Foreground="{StaticResource Muted}" FontSize="11" Margin="0,3,0,0" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock x:Name="EnvironmentFreshnessText" Text="Environment snapshot pending" Foreground="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <Button x:Name="EnvironmentRefreshButton" Style="{StaticResource SecondaryButton}" Click="EnvironmentRefresh_Click" Padding="12,6">Refresh environment</Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- At-a-glance fleet metrics -->
+            <UniformGrid Columns="4" Margin="0,0,0,12">
+                <Border Style="{StaticResource GoMetricCard}" Margin="0,0,7,0">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="ENVIRONMENT" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="EnvironmentStateText" Text="CHECKING" FontSize="20" FontWeight="SemiBold" Margin="0,4,0,2" />
+                        <TextBlock x:Name="EnvironmentStateDetailText" Text="Building fleet snapshot" Foreground="{StaticResource Muted}" FontSize="9" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource GoMetricCard}" Margin="0,0,7,0">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="HOSTS" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="EnvironmentHostsText" Text="--" FontSize="20" FontWeight="SemiBold" Margin="0,4,0,2" />
+                        <TextBlock x:Name="EnvironmentHostsDetailText" Text="Reachability pending" Foreground="{StaticResource Muted}" FontSize="9" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource GoMetricCard}" Margin="0,0,7,0">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="VERIFIED APPS" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="EnvironmentAppsText" Text="--" FontSize="20" FontWeight="SemiBold" Margin="0,4,0,2" />
+                        <TextBlock x:Name="EnvironmentAppsDetailText" Text="Capability ownership pending" Foreground="{StaticResource Muted}" FontSize="9" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource GoMetricCard}">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="ATTENTION" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="EnvironmentAttentionText" Text="--" FontSize="20" FontWeight="SemiBold" Margin="0,4,0,2" />
+                        <TextBlock x:Name="EnvironmentAttentionDetailText" Text="Impact propagation pending" Foreground="{StaticResource Muted}" FontSize="9" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <!-- Primary dashboard workspace: map first, compact actionable attention beside it. -->
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2.15*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="1*" MinWidth="330" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Style="{StaticResource Card}" MinHeight="250">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,9">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Environment map" Style="{StaticResource SectionHeading}" />
+                                <TextBlock Text="Hosts and verified applications. Focus a machine or open an app directly from its owner." Foreground="{StaticResource Muted}" FontSize="10" Margin="0,3,0,0" />
+                            </StackPanel>
+                        </Grid>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="270">
+                            <ItemsControl x:Name="EnvironmentTopologyList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{StaticResource Surface2}" BorderBrush="{StaticResource Border}" BorderThickness="1" CornerRadius="9" Padding="11" Margin="0,0,0,8">
+                                            <StackPanel>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <Ellipse Width="7" Height="7" Fill="{Binding StateBrush}" Margin="0,0,8,0" />
+                                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                                        <TextBlock Text="{Binding ActiveText}" Foreground="{StaticResource Accent}" FontSize="9" FontWeight="SemiBold" Margin="7,1,0,0" />
+                                                    </StackPanel>
+                                                    <Button Grid.Column="1" Style="{StaticResource GoCompactSecondaryButton}" Click="EnvironmentHostFocus_Click" Padding="9,4" FontSize="9">Focus</Button>
+                                                </Grid>
+                                                <TextBlock Text="{Binding Summary}" Foreground="{StaticResource Muted}" FontSize="9" Margin="0,5,0,7" TextWrapping="Wrap" />
+                                                <ItemsControl ItemsSource="{Binding Apps}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Button Style="{StaticResource SecondaryButton}" Click="EnvironmentApp_Click" Margin="0,0,6,5" Padding="8,4" ToolTip="{Binding Detail}">
+                                                                <StackPanel Orientation="Horizontal">
+                                                                    <Ellipse Width="6" Height="6" Fill="{Binding StateBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                                                    <TextBlock Text="{Binding Name}" FontSize="9" VerticalAlignment="Center" />
+                                                                </StackPanel>
+                                                            </Button>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Style="{StaticResource Card}" MinHeight="250">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Needs attention" Style="{StaticResource SectionHeading}" />
+                                <TextBlock Text="Only actionable findings. Everything else stays out of the way." Foreground="{StaticResource Muted}" FontSize="10" Margin="0,3,0,0" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Style="{StaticResource GhostButton}" Click="EnvironmentIntelligence_Click" Padding="8,4">View all</Button>
+                        </Grid>
+
+                        <Grid Grid.Row="1">
+                            <TextBlock x:Name="EnvironmentAttentionEmptyText" Text="Nothing needs attention right now." Foreground="{StaticResource Success}" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="18" />
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="240">
+                                <ItemsControl x:Name="EnvironmentAttentionList" Visibility="Collapsed">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Style="{StaticResource GoIncidentCard}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel VerticalAlignment="Center">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Ellipse Width="7" Height="7" Fill="{Binding StateBrush}" Margin="0,0,7,0" VerticalAlignment="Center" />
+                                                            <TextBlock Text="{Binding Component}" FontWeight="SemiBold" />
+                                                            <TextBlock Text=" · " Foreground="{StaticResource Dim}" />
+                                                            <TextBlock Text="{Binding State}" Foreground="{Binding StateBrush}" FontWeight="SemiBold" />
+                                                        </StackPanel>
+                                                        <TextBlock Text="{Binding Host}" Foreground="{StaticResource Muted}" FontSize="9" Margin="14,3,0,0" />
+                                                        <TextBlock Text="{Binding Impact}" Foreground="{StaticResource Muted}" FontSize="9" Margin="14,3,10,0" TextWrapping="Wrap" MaxHeight="32" TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                    <Button Grid.Column="1" Style="{StaticResource GoCompactSecondaryButton}" Click="EnvironmentAttentionCard_Open_Click" VerticalAlignment="Center" Margin="10,0,0,0">Open</Button>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
+                        <TextBlock x:Name="EnvironmentAttentionMoreText" Grid.Row="2" Foreground="{StaticResource Muted}" FontSize="9" HorizontalAlignment="Right" Margin="0,2,0,0" />
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- Selected host: one compact operational strip. -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,6">
+                <StackPanel>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Selected host" Style="{StaticResource SectionHeading}" />
+                            <TextBlock Text="Fast operational state for the active target. Deeper detail lives on the dedicated pages." Foreground="{StaticResource Muted}" FontSize="10" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock x:Name="WorkloadFreshnessText" Text="Waiting for live sample" Foreground="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,9,0" />
+                            <TextBlock x:Name="LiveStatusText" Text="Live telemetry pending" Foreground="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,9,0" />
+                            <Button x:Name="DashboardRefreshButton" Style="{StaticResource GoCompactSecondaryButton}" Click="Refresh_Click">Refresh host</Button>
+                        </StackPanel>
+                    </Grid>
+
+                    <UniformGrid Columns="6" Margin="0,0,0,10">
+                        <Border Style="{StaticResource GoInsetPanel}" Margin="0,0,4,0" MinHeight="78">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="CONNECTION" Style="{StaticResource Eyebrow}" />
+                                <TextBlock x:Name="ConnectionValue" Text="CHECKING" FontSize="18" FontWeight="SemiBold" Margin="0,4,0,1" />
+                                <TextBlock x:Name="ConnectionDetail" Text="Waiting for host" Foreground="{StaticResource Muted}" FontSize="8" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource GoInsetPanel}" Margin="4,0" MinHeight="78">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="ONLINE APPS" Style="{StaticResource Eyebrow}" />
+                                <TextBlock x:Name="LiveHealthyText" Text="--" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource Success}" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource GoInsetPanel}" Margin="4,0" MinHeight="78">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="ATTENTION" Style="{StaticResource Eyebrow}" />
+                                <TextBlock x:Name="LiveAttentionText" Text="--" FontSize="20" FontWeight="SemiBold" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource GoInsetPanel}" Margin="4,0" MinHeight="78">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="QUEUED" Style="{StaticResource Eyebrow}" />
+                                <TextBlock x:Name="LiveQueueText" Text="--" FontSize="20" FontWeight="SemiBold" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource GoInsetPanel}" Margin="4,0" MinHeight="78">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="PLEX" Style="{StaticResource Eyebrow}" />
+                                <TextBlock x:Name="LivePlexSessionsText" Text="--" FontSize="20" FontWeight="SemiBold" Margin="0,4,0,0" />
+                                <TextBlock x:Name="LivePlexBandwidthText" Text="--" Foreground="{StaticResource Muted}" FontSize="8" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource GoInsetPanel}" Margin="4,0,0,0" MinHeight="78">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="DOCKER" Style="{StaticResource Eyebrow}" />
+                                <TextBlock x:Name="DockerValue" Text="CHECKING" FontSize="18" FontWeight="SemiBold" Margin="0,4,0,1" />
+                                <TextBlock x:Name="DockerDetail" Text="Waiting for container state" Foreground="{StaticResource Muted}" FontSize="8" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <WrapPanel VerticalAlignment="Center">
+                            <Button Style="{StaticResource GoCompactSecondaryButton}" Click="MediaHub_Click" Margin="0,0,7,0">Media Hub</Button>
+                            <Button Style="{StaticResource GoCompactSecondaryButton}" Click="Intelligence_Click" Margin="0,0,7,0">Intelligence</Button>
+                            <Button Style="{StaticResource GoCompactSecondaryButton}" Click="Docker_Click" Margin="0,0,7,0">Docker</Button>
+                            <Button Style="{StaticResource GoCompactSecondaryButton}" Click="Storage_Click" Margin="0,0,7,0">Storage</Button>
+                            <Button Style="{StaticResource GoCompactSecondaryButton}" Click="Backups_Click" Margin="0,0,7,0">Backups</Button>
+                            <Button Style="{StaticResource GoCompactSecondaryButton}" Click="Diagnostic_Click">Diagnostics</Button>
+                        </WrapPanel>
+                        <TextBlock x:Name="QuickStatus" Grid.Column="1" Foreground="{StaticResource Muted}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="420" FontSize="9" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Quick modules: high-signal launchers that reuse existing fleet/host telemetry. -->
+            <Grid x:Name="QuickModulesHeader" Margin="0,8,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="Quick modules" Style="{StaticResource SectionHeading}" />
+                    <TextBlock Text="At-a-glance context and one-click entry points. Modules stay compact so the Dashboard remains a dashboard." Foreground="{StaticResource Muted}" FontSize="10" Margin="0,3,0,0" />
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="LIVE CONTEXT" Style="{StaticResource Eyebrow}" VerticalAlignment="Center" />
+            </Grid>
+
+            <WrapPanel x:Name="QuickModulesPanel" Margin="0,0,0,4">
+                <Border Style="{StaticResource GoQuickModuleCard}" Tag="Intelligence">
+                    <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource GoQuickModuleIconBox}"><TextBlock Text="◎" Foreground="{StaticResource Accent}" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                <TextBlock Text="Intelligence" Style="{StaticResource GoQuickModuleTitle}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock Text="Root cause, impact and priorities" Style="{StaticResource GoQuickModuleDetail}" MinHeight="0" Margin="0,5,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                            <TextBlock x:Name="ModuleIntelligenceValue" Text="CHECKING" Style="{StaticResource GoQuickModuleValue}" />
+                            <TextBlock x:Name="ModuleIntelligenceDetail" Text="Environment analysis pending" Style="{StaticResource GoQuickModuleDetail}" />
+                        </StackPanel>
+                        <Button Grid.Row="2" Style="{StaticResource GoCompactSecondaryButton}" Click="Intelligence_Click" HorizontalAlignment="Stretch">Analyze now</Button>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource GoQuickModuleCard}" Tag="Servers">
+                    <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource GoQuickModuleIconBox}"><TextBlock Text="▤" Foreground="{StaticResource Accent}" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                <TextBlock Text="Servers" Style="{StaticResource GoQuickModuleTitle}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock Text="Local and remote host ownership" Style="{StaticResource GoQuickModuleDetail}" MinHeight="0" Margin="0,5,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                            <TextBlock x:Name="ModuleServersValue" Text="--" Style="{StaticResource GoQuickModuleValue}" />
+                            <TextBlock x:Name="ModuleServersDetail" Text="Host snapshot pending" Style="{StaticResource GoQuickModuleDetail}" />
+                        </StackPanel>
+                        <Button Grid.Row="2" Style="{StaticResource GoCompactSecondaryButton}" Click="ServersModule_Click" HorizontalAlignment="Stretch">View servers</Button>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource GoQuickModuleCard}" Tag="Media Hub">
+                    <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource GoQuickModuleIconBox}"><TextBlock Text="▦" Foreground="{StaticResource Accent}" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                <TextBlock Text="Media Hub" Style="{StaticResource GoQuickModuleTitle}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock Text="Fleet-wide media application health" Style="{StaticResource GoQuickModuleDetail}" MinHeight="0" Margin="0,5,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                            <TextBlock x:Name="ModuleMediaValue" Text="--" Style="{StaticResource GoQuickModuleValue}" />
+                            <TextBlock x:Name="ModuleMediaDetail" Text="Application snapshot pending" Style="{StaticResource GoQuickModuleDetail}" />
+                        </StackPanel>
+                        <Button Grid.Row="2" Style="{StaticResource GoCompactSecondaryButton}" Click="MediaHub_Click" HorizontalAlignment="Stretch">Open hub</Button>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource GoQuickModuleCard}" Tag="Lifecycle">
+                    <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource GoQuickModuleIconBox}"><TextBlock Text="⇢" Foreground="{StaticResource Accent}" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                <TextBlock Text="Lifecycle" Style="{StaticResource GoQuickModuleTitle}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock Text="Where active media is in the workflow" Style="{StaticResource GoQuickModuleDetail}" MinHeight="0" Margin="0,5,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                            <Border Style="{StaticResource GoQuickModuleDivider}" />
+                            <TextBlock x:Name="ModuleLifecycleValue" Text="--" Style="{StaticResource GoQuickModuleValue}" Margin="0,0,0,2" />
+                            <TextBlock x:Name="ModuleLifecycleDetail" Text="Lifecycle correlation pending" Style="{StaticResource GoQuickModuleDetail}" />
+                        </StackPanel>
+                        <Button Grid.Row="2" Style="{StaticResource GoCompactSecondaryButton}" Click="LifecycleModule_Click" HorizontalAlignment="Stretch">Open lifecycle</Button>
+                    </Grid>
+                </Border>
+
+                <Border x:Name="ModuleRecyclarrCard" Style="{StaticResource GoQuickModuleCard}" Tag="Recyclarr" Visibility="Collapsed">
+                    <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource GoQuickModuleIconBox}"><TextBlock Text="↻" Foreground="{StaticResource Accent}" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                <TextBlock Text="Recyclarr" Style="{StaticResource GoQuickModuleTitle}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock Text="Quality-policy preview and drift" Style="{StaticResource GoQuickModuleDetail}" MinHeight="0" Margin="0,5,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                            <TextBlock x:Name="ModuleRecyclarrValue" Text="AVAILABLE" Style="{StaticResource GoQuickModuleValue}" />
+                            <TextBlock x:Name="ModuleRecyclarrDetail" Text="Preview-only integration" Style="{StaticResource GoQuickModuleDetail}" />
+                        </StackPanel>
+                        <Button Grid.Row="2" Style="{StaticResource GoCompactSecondaryButton}" Click="RecyclarrModule_Click" HorizontalAlignment="Stretch">Open Recyclarr</Button>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource GoQuickModuleCard}" Tag="Docker">
+                    <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource GoQuickModuleIconBox}"><TextBlock Text="▣" Foreground="{StaticResource Accent}" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                <TextBlock Text="Docker" Style="{StaticResource GoQuickModuleTitle}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock Text="Container runtime on selected host" Style="{StaticResource GoQuickModuleDetail}" MinHeight="0" Margin="0,5,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                            <TextBlock x:Name="ModuleDockerValue" Text="CHECKING" Style="{StaticResource GoQuickModuleValue}" />
+                            <TextBlock x:Name="ModuleDockerDetail" Text="Runtime state pending" Style="{StaticResource GoQuickModuleDetail}" />
+                        </StackPanel>
+                        <Button Grid.Row="2" Style="{StaticResource GoCompactSecondaryButton}" Click="Docker_Click" HorizontalAlignment="Stretch">Open Docker</Button>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource GoQuickModuleCard}" Tag="Storage">
+                    <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource GoQuickModuleIconBox}"><TextBlock Text="▥" Foreground="{StaticResource Accent}" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                <TextBlock Text="Storage" Style="{StaticResource GoQuickModuleTitle}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock Text="Mounts, capacity and drive health" Style="{StaticResource GoQuickModuleDetail}" MinHeight="0" Margin="0,5,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                            <TextBlock x:Name="ModuleStorageValue" Text="--" Style="{StaticResource GoQuickModuleValue}" />
+                            <TextBlock x:Name="ModuleStorageDetail" Text="Storage ownership pending" Style="{StaticResource GoQuickModuleDetail}" />
+                        </StackPanel>
+                        <Button Grid.Row="2" Style="{StaticResource GoCompactSecondaryButton}" Click="Storage_Click" HorizontalAlignment="Stretch">View storage</Button>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource GoQuickModuleCard}" Tag="Backups">
+                    <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource GoQuickModuleIconBox}"><TextBlock Text="◇" Foreground="{StaticResource Accent}" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                <TextBlock Text="Backups" Style="{StaticResource GoQuickModuleTitle}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock Text="Provider-neutral readiness and schedules" Style="{StaticResource GoQuickModuleDetail}" MinHeight="0" Margin="0,5,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                            <TextBlock x:Name="ModuleBackupsValue" Text="ON DEMAND" Style="{StaticResource GoQuickModuleValue}" />
+                            <TextBlock x:Name="ModuleBackupsDetail" Text="Inspect backup providers and protected actions" Style="{StaticResource GoQuickModuleDetail}" />
+                        </StackPanel>
+                        <Button Grid.Row="2" Style="{StaticResource GoCompactSecondaryButton}" Click="Backups_Click" HorizontalAlignment="Stretch">Open backups</Button>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource GoQuickModuleCard}" Tag="Activity">
+                    <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource GoQuickModuleIconBox}"><TextBlock Text="◷" Foreground="{StaticResource Accent}" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                <TextBlock Text="Activity" Style="{StaticResource GoQuickModuleTitle}" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock Text="Recent meaningful control-plane events" Style="{StaticResource GoQuickModuleDetail}" MinHeight="0" Margin="0,5,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                            <TextBlock x:Name="ModuleActivityValue" Text="--" Style="{StaticResource GoQuickModuleValue}" />
+                            <TextBlock x:Name="ModuleActivityDetail" Text="No recent activity loaded" Style="{StaticResource GoQuickModuleDetail}" MaxHeight="34" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <Button Grid.Row="2" Style="{StaticResource GoCompactSecondaryButton}" Click="ActivityModule_Click" HorizontalAlignment="Stretch">View activity</Button>
+                    </Grid>
+                </Border>
+            </WrapPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

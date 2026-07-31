@@ -1,0 +1,161 @@
+<UserControl x:Class="GraveOps.App.Views.IntegrationView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock x:Name="TitleText" Text="Integration" FontSize="22" FontWeight="SemiBold" />
+                    <TextBlock x:Name="SubtitleText" Text="Integration health and operations." Foreground="{StaticResource GoTextSecondary}" Margin="0,3,0,0" />
+                </StackPanel>
+                <TextBlock x:Name="OwnerText" Grid.Column="1" Text="--" Foreground="{StaticResource GoTextSecondary}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                <Button Grid.Column="2" Style="{StaticResource GoCompactPrimaryButton}" Click="Refresh_Click" VerticalAlignment="Center">Refresh</Button>
+            </Grid>
+
+            <UniformGrid Columns="4" Margin="0,0,0,10">
+                <Border Style="{StaticResource FlatCard}" Margin="0,0,4,0" MinHeight="86">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="STATE" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="StateText" Text="Loading" FontSize="20" FontWeight="SemiBold" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource FlatCard}" Margin="4,0" MinHeight="86">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="OWNER" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="OwnerCardText" Text="--" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource FlatCard}" Margin="4,0" MinHeight="86">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="RUNTIME" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="RuntimeText" Text="--" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource FlatCard}" Margin="4,0,0,0" MinHeight="86">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="ENDPOINT" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="EndpointText" Text="--" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <Border Style="{StaticResource FlatCard}" Margin="0,0,0,10">
+                <StackPanel>
+                    <TextBlock Text="Live telemetry" Style="{StaticResource SectionHeading}" />
+                    <TextBlock Text="Host-owned runtime and endpoint telemetry. GraveOps does not copy application API keys for this view." Foreground="{StaticResource GoTextSecondary}" FontSize="10" Margin="0,3,0,10" TextWrapping="Wrap" />
+                    <UniformGrid Columns="6" Margin="0,0,0,10">
+                        <Border Style="{StaticResource GoInsetPanel}" Margin="0,0,4,0" MinHeight="76">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="HTTP" Style="{StaticResource Eyebrow}" />
+                                <TextBlock x:Name="HttpTelemetryText" Text="--" FontWeight="SemiBold" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource GoInsetPanel}" Margin="4,0" MinHeight="76">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="LATENCY" Style="{StaticResource Eyebrow}" />
+                                <TextBlock x:Name="LatencyTelemetryText" Text="--" FontWeight="SemiBold" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource GoInsetPanel}" Margin="4,0" MinHeight="76">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="RUNTIME STATE" Style="{StaticResource Eyebrow}" />
+                                <TextBlock x:Name="RuntimeStateTelemetryText" Text="--" FontWeight="SemiBold" Margin="0,4,0,0" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource GoInsetPanel}" Margin="4,0" MinHeight="76">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="CPU" Style="{StaticResource Eyebrow}" />
+                                <TextBlock x:Name="CpuTelemetryText" Text="--" FontWeight="SemiBold" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource GoInsetPanel}" Margin="4,0" MinHeight="76">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="MEMORY" Style="{StaticResource Eyebrow}" />
+                                <TextBlock x:Name="MemoryTelemetryText" Text="--" FontWeight="SemiBold" Margin="0,4,0,0" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource GoInsetPanel}" Margin="4,0,0,0" MinHeight="76">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="READINESS" Style="{StaticResource Eyebrow}" />
+                                <TextBlock x:Name="ReadinessTelemetryText" Text="--" FontWeight="SemiBold" Margin="0,4,0,0" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="BUILD / IMAGE" Style="{StaticResource Eyebrow}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBlock x:Name="BuildTelemetryText" Grid.Column="1" Text="--" Foreground="{StaticResource GoTextSecondary}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="UPTIME / STATUS" Style="{StaticResource Eyebrow}" VerticalAlignment="Center" Margin="18,0,8,0" />
+                        <TextBlock x:Name="UptimeTelemetryText" Grid.Column="3" Text="--" Foreground="{StaticResource GoTextSecondary}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                    </Grid>
+                    <TextBlock x:Name="RuntimeDetailText" Text="No runtime detail available." Foreground="{StaticResource GoTextSecondary}" FontSize="10" TextWrapping="Wrap" Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource FlatCard}" Margin="0,0,0,10">
+                <StackPanel>
+                    <TextBlock Text="Integration status" Style="{StaticResource SectionHeading}" />
+                    <TextBlock x:Name="DetailText" Text="Loading integration state..." Foreground="{StaticResource GoTextSecondary}" TextWrapping="Wrap" Margin="0,5,0,10" />
+                    <TextBlock Text="DISCOVERY EVIDENCE" Style="{StaticResource Eyebrow}" />
+                    <TextBlock x:Name="EvidenceText" Text="--" Foreground="{StaticResource GoTextSecondary}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource FlatCard}" Margin="0,0,0,10">
+                <StackPanel>
+                    <TextBlock Text="Operations" Style="{StaticResource SectionHeading}" />
+                    <TextBlock x:Name="OperationsHintText" Text="Open the native application or hand off to the owning host." Foreground="{StaticResource GoTextSecondary}" TextWrapping="Wrap" Margin="0,4,0,12" />
+                    <WrapPanel>
+                        <Button x:Name="OpenButton" Style="{StaticResource GoCompactPrimaryButton}" Click="Open_Click" Margin="0,0,8,8">Open application</Button>
+                        <Button Style="{StaticResource GoCompactSecondaryButton}" Click="FocusOwner_Click" Margin="0,0,8,8">Focus owner</Button>
+                        <Button x:Name="TerminalButton" Style="{StaticResource GoCompactSecondaryButton}" Click="Terminal_Click" Margin="0,0,8,8">Host terminal</Button>
+                        <Button x:Name="LogsButton" Style="{StaticResource GoCompactSecondaryButton}" Click="Logs_Click" Margin="0,0,8,8">Host logs</Button>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <Border x:Name="RecyclarrPanel" Style="{StaticResource FlatCard}" Visibility="Collapsed" Margin="0,0,0,10">
+                <StackPanel>
+                    <TextBlock Text="Recyclarr preview" Style="{StaticResource SectionHeading}" />
+                    <TextBlock Text="Preview computes planned Sonarr/Radarr changes without applying them. GraveOps never exposes a Recyclarr sync write from this preview surface." Foreground="{StaticResource GoTextSecondary}" TextWrapping="Wrap" Margin="0,4,0,12" />
+                    <WrapPanel>
+                        <Button x:Name="PreviewSonarrButton" Style="{StaticResource GoCompactPrimaryButton}" Click="PreviewSonarr_Click" Margin="0,0,8,8">Preview all Sonarr</Button>
+                        <Button x:Name="PreviewRadarrButton" Style="{StaticResource GoCompactPrimaryButton}" Click="PreviewRadarr_Click" Margin="0,0,8,8">Preview all Radarr</Button>
+                    </WrapPanel>
+                    <TextBlock Text="DISCOVERED INSTANCES" Style="{StaticResource Eyebrow}" Margin="0,6,0,5" />
+                    <TextBlock x:Name="RecyclarrInstancesEmptyText" Text="Instance discovery pending." Foreground="{StaticResource GoTextSecondary}" FontSize="10" Margin="0,0,0,6" />
+                    <ItemsControl x:Name="RecyclarrInstancesList" Visibility="Collapsed">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource GoCompactSecondaryButton}" Tag="{Binding}" Click="PreviewInstance_Click" Margin="0,0,7,7" Padding="9,5">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Preview " />
+                                        <TextBlock Text="{Binding Display}" FontWeight="SemiBold" />
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBox x:Name="PreviewOutputBox" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" FontFamily="Cascadia Mono, Consolas" FontSize="10.5" Background="{StaticResource GoCanvas}" Foreground="{StaticResource GoText}" BorderBrush="{StaticResource GoBorder}" MinHeight="120" MaxHeight="360" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Background="{StaticResource GoSurface}" BorderBrush="{StaticResource GoBorder}" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,0,0,2">
+                <TextBlock x:Name="StatusText" Text="Loading..." Foreground="{StaticResource GoTextSecondary}" TextWrapping="Wrap" />
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

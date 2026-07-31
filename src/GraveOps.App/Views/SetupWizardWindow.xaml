@@ -1,0 +1,207 @@
+<Window x:Class="GraveOps.App.Views.SetupWizardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="GraveOps Setup Assistant" Width="1060" Height="760"
+        MinWidth="940" MinHeight="680"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource Bg}">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="Setup Assistant" Style="{StaticResource PageHeading}" />
+            <TextBlock Text="Choose how GraveOps should connect. Local Windows uses native access with no SSH or WinRM hop."
+                       Style="{StaticResource PageSubheading}" Margin="0,4,0,16" />
+        </StackPanel>
+
+        <UniformGrid Grid.Row="1" Rows="1" Columns="3" Margin="0,0,0,16">
+            <Button x:Name="LocalWindowsModeButton" Style="{StaticResource PrimaryButton}" Click="LocalWindowsMode_Click" Margin="0,0,8,0" Padding="18,12">
+                <StackPanel>
+                    <TextBlock Text="This Windows PC" FontWeight="SemiBold" />
+                    <TextBlock Text="Native local discovery" FontSize="10" Opacity="0.75" Margin="0,3,0,0" />
+                </StackPanel>
+            </Button>
+            <Button x:Name="RemoteWindowsModeButton" Style="{StaticResource SecondaryButton}" Click="RemoteWindowsMode_Click" Margin="4,0,4,0" Padding="18,12">
+                <StackPanel>
+                    <TextBlock Text="Another Windows PC" FontWeight="SemiBold" />
+                    <TextBlock Text="PowerShell remoting" FontSize="10" Opacity="0.75" Margin="0,3,0,0" />
+                </StackPanel>
+            </Button>
+            <Button x:Name="LinuxModeButton" Style="{StaticResource SecondaryButton}" Click="LinuxMode_Click" Margin="8,0,0,0" Padding="18,12">
+                <StackPanel>
+                    <TextBlock Text="Linux Server" FontWeight="SemiBold" />
+                    <TextBlock Text="Secure SSH connection" FontSize="10" Opacity="0.75" Margin="0,3,0,0" />
+                </StackPanel>
+            </Button>
+        </UniformGrid>
+
+        <Grid Grid.Row="2">
+            <!-- Native local Windows setup -->
+            <Grid x:Name="LocalWindowsPanel">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="0.9*" />
+                    <ColumnDefinition Width="1.25*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Style="{StaticResource FlatCard}" Margin="0,0,12,0">
+                    <StackPanel>
+                        <TextBlock Text="This Windows PC" Style="{StaticResource SectionHeading}" />
+                        <TextBlock Text="GraveOps reads this machine directly through Windows and localhost APIs. No username, password, SSH or WinRM configuration is required."
+                                   Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,6,0,14" />
+                        <Button x:Name="DetectLocalButton" Style="{StaticResource PrimaryButton}" Click="DetectLocal_Click">Detect environment</Button>
+
+                        <TextBlock Text="HOST" Style="{StaticResource Eyebrow}" Margin="0,18,0,4" />
+                        <TextBlock x:Name="LocalHostNameText" Text="Not scanned" FontSize="18" FontWeight="SemiBold" />
+                        <TextBlock x:Name="LocalOsText" Text="--" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,3,0,0" />
+                        <TextBlock x:Name="LocalArchText" Text="--" Foreground="{StaticResource Dim}" FontSize="11" Margin="0,3,0,0" />
+
+                        <TextBlock Text="CAPABILITIES" Style="{StaticResource Eyebrow}" Margin="0,18,0,4" />
+                        <TextBlock x:Name="LocalCapabilityText" Text="Run detection to inspect this PC." Foreground="{StaticResource Muted}" TextWrapping="Wrap" />
+
+                        <TextBlock Text="STORAGE" Style="{StaticResource Eyebrow}" Margin="0,18,0,4" />
+                        <TextBox x:Name="LocalStorageText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="130" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Style="{StaticResource FlatCard}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Detected integrations" Style="{StaticResource SectionHeading}" />
+                            <TextBlock Text="Only real local detections are listed. Choose which modules this host should expose to GraveOps."
+                                       Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,5,0,12" />
+                        </StackPanel>
+                        <TextBlock x:Name="LocalIntegrationEmptyText" Grid.Row="1"
+                                   Text="No supported applications found on this PC. That is okay — save this Windows host, then add the Linux or Windows machine that owns your media stack."
+                                   Foreground="{StaticResource Muted}" TextWrapping="Wrap" VerticalAlignment="Top" Margin="0,8,0,12" />
+                        <ListBox x:Name="LocalIntegrationList" Grid.Row="1" Margin="0,0,0,12" Visibility="Collapsed">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="4,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay}" VerticalAlignment="Top" Margin="0,2,9,0" />
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding Evidence}" Foreground="{StaticResource Muted}" FontSize="10" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Margin="12,0,0,0">
+                                            <TextBlock Text="{Binding CategoryText}" Foreground="{StaticResource Accent}" FontSize="10" HorizontalAlignment="Right" />
+                                            <TextBlock Text="{Binding PortText}" Foreground="{StaticResource Dim}" FontSize="10" HorizontalAlignment="Right" />
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <StackPanel Grid.Row="2">
+                            <TextBlock x:Name="LocalStatusText" Text="Run Detect environment to continue." Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,10" />
+                            <Button x:Name="SaveLocalButton" Style="{StaticResource PrimaryButton}" IsEnabled="False" Click="SaveLocal_Click">Use this Windows PC</Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- Remote Windows setup -->
+            <Border x:Name="RemoteWindowsPanel" Style="{StaticResource FlatCard}" Visibility="Collapsed" MaxWidth="820" HorizontalAlignment="Center" VerticalAlignment="Top">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                        <TextBlock Text="Another Windows PC" Style="{StaticResource SectionHeading}" />
+                        <TextBlock Text="Connect through existing PowerShell remoting. GraveOps never enables WinRM, changes TrustedHosts or grants Administrator rights; the saved Windows account keeps the permissions assigned by Windows policy."
+                                   Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,7,0,16" />
+
+                        <TextBlock Text="Friendly name" Foreground="{StaticResource Muted}" Margin="0,2,0,3" />
+                        <TextBox x:Name="RemoteWindowsNameBox" />
+
+                        <TextBlock Text="Host / IP" Foreground="{StaticResource Muted}" Margin="0,10,0,3" />
+                        <TextBox x:Name="RemoteWindowsHostBox" />
+
+                        <TextBlock Text="Username" Foreground="{StaticResource Muted}" Margin="0,10,0,3" />
+                        <TextBox x:Name="RemoteWindowsUserBox" />
+
+                        <TextBlock Text="Transport" Foreground="{StaticResource Muted}" Margin="0,10,0,3" />
+                        <ComboBox x:Name="RemoteWindowsTransportBox" SelectedIndex="0">
+                            <ComboBoxItem Content="WinRM HTTP (5985)" Tag="5985" />
+                            <ComboBoxItem Content="WinRM HTTPS (5986)" Tag="5986" />
+                        </ComboBox>
+
+                        <TextBlock Text="Windows password" Foreground="{StaticResource Muted}" Margin="0,10,0,3" />
+                        <PasswordBox x:Name="RemoteWindowsPasswordBox" />
+                        <TextBlock Text="The password is stored in Windows Credential Manager only after a successful connection. It is not written to config.json or placed on the PowerShell command line."
+                                   Foreground="{StaticResource Dim}" FontSize="10" TextWrapping="Wrap" Margin="0,4,0,12" />
+
+                        <Button x:Name="RemoteWindowsTestSaveButton" Style="{StaticResource PrimaryButton}" Click="RemoteWindowsTestSave_Click">Test, discover and save</Button>
+                        <TextBox x:Name="RemoteWindowsStatusBox" Margin="0,12,0,0" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="120"
+                                 Text="PowerShell remoting must already be allowed between these Windows machines." />
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Remote Linux setup -->
+            <Grid x:Name="LinuxPanel" Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="330" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Style="{StaticResource FlatCard}" Margin="0,0,12,0">
+                    <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                        <Button x:Name="DiscoverButton" Style="{StaticResource PrimaryButton}" Click="Discover_Click">Discover LAN</Button>
+                        <ListBox x:Name="HostsList" Grid.Row="1" Margin="0,12,0,0" SelectionChanged="Hosts_SelectionChanged">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="4">
+                                        <TextBlock Text="{Binding Address}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding OpenPorts}" Foreground="{StaticResource Muted}" FontSize="10" />
+                                        <TextBlock Text="{Binding Guess}" Foreground="{StaticResource Dim}" FontSize="10" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+                </Border>
+                <Border Grid.Column="1" Style="{StaticResource FlatCard}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="Linux connection profile" Style="{StaticResource SectionHeading}" />
+                            <TextBlock Text="Friendly name" Foreground="{StaticResource Muted}" Margin="0,12,0,3" />
+                            <TextBox x:Name="NameBox" />
+                            <TextBlock Text="Host / IP" Foreground="{StaticResource Muted}" Margin="0,10,0,3" />
+                            <TextBox x:Name="HostBox" />
+                            <TextBlock Text="Username" Foreground="{StaticResource Muted}" Margin="0,10,0,3" />
+                            <TextBox x:Name="UserBox" />
+                            <TextBlock Text="Role" Foreground="{StaticResource Muted}" Margin="0,10,0,3" />
+                            <ComboBox x:Name="RoleBox">
+                                <ComboBoxItem Content="Linux Server" IsSelected="True" />
+                                <ComboBoxItem Content="Media Server" />
+                                <ComboBoxItem Content="Pi-hole" />
+                                <ComboBoxItem Content="NAS" />
+                            </ComboBox>
+                            <TextBlock Text="SSH password" Foreground="{StaticResource Muted}" Margin="0,10,0,3" />
+                            <PasswordBox x:Name="PasswordBox" />
+                            <TextBlock Text="Used only to establish SSH and saved to Windows Credential Manager if the profile succeeds."
+                                       Foreground="{StaticResource Dim}" FontSize="10" TextWrapping="Wrap" Margin="0,4,0,12" />
+                            <Button x:Name="TestSaveButton" Style="{StaticResource PrimaryButton}" Click="TestSave_Click">Test, pin and save</Button>
+                            <TextBox x:Name="StatusBox" Margin="0,12,0,0" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="120" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <Button Style="{StaticResource SecondaryButton}" Click="Close_Click">Close</Button>
+        </StackPanel>
+    </Grid>
+</Window>

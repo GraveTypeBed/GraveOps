@@ -1,0 +1,211 @@
+<UserControl x:Class="GraveOps.App.Views.DownloadClientView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <Style x:Key="DownloadProgress" TargetType="ProgressBar">
+            <Setter Property="Height" Value="6" />
+            <Setter Property="Background" Value="{StaticResource Surface3}" />
+            <Setter Property="Foreground" Value="{StaticResource Accent}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Grid Height="6">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="3" />
+                            <Border x:Name="PART_Indicator" HorizontalAlignment="Left" Background="{TemplateBinding Foreground}" CornerRadius="3" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock x:Name="HeadingText" Text="Download client" Style="{StaticResource PageHeading}" />
+                    <TextBlock x:Name="DescriptionText" Text="Live download analytics and current work." Foreground="{StaticResource GoTextSecondary}" Margin="0,3,0,0" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock x:Name="TargetText" Text="--" Foreground="{StaticResource GoTextSecondary}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <TextBlock x:Name="FreshnessText" Text="CHECKING..." Foreground="{StaticResource GoTextSecondary}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <Button x:Name="RefreshButton" Style="{StaticResource GoCompactPrimaryButton}" Click="Refresh_Click">Refresh</Button>
+                </StackPanel>
+            </Grid>
+
+            <UniformGrid Columns="4" Margin="0,0,0,10">
+                <Border Style="{StaticResource FlatCard}" Margin="0,0,5,0">
+                    <StackPanel>
+                        <TextBlock Text="STATE" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="StateText" Text="--" FontSize="23" FontWeight="SemiBold" />
+                        <TextBlock x:Name="SecurityText" Text="--" Foreground="{StaticResource GoTextSecondary}" FontSize="10.5" Margin="0,3,0,0" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource FlatCard}" Margin="5,0">
+                    <StackPanel>
+                        <TextBlock Text="VERSION" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="VersionText" Text="--" FontSize="21" FontWeight="SemiBold" />
+                        <TextBlock x:Name="ConnectionText" Text="--" Foreground="{StaticResource GoTextSecondary}" FontSize="10.5" Margin="0,3,0,0" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource FlatCard}" Margin="5,0">
+                    <StackPanel>
+                        <TextBlock Text="ACTIVE" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="ActiveText" Text="--" FontSize="23" FontWeight="SemiBold" />
+                        <TextBlock x:Name="ActiveDetailText" Text="--" Foreground="{StaticResource GoTextSecondary}" FontSize="10.5" Margin="0,3,0,0" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource FlatCard}" Margin="5,0,0,0">
+                    <StackPanel>
+                        <TextBlock x:Name="ItemsLabelText" Text="ITEMS" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="ItemsText" Text="--" FontSize="23" FontWeight="SemiBold" />
+                        <TextBlock x:Name="ItemsDetailText" Text="--" Foreground="{StaticResource GoTextSecondary}" FontSize="10.5" Margin="0,3,0,0" />
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <UniformGrid Columns="4" Margin="0,0,0,12">
+                <Border Style="{StaticResource GoInsetPanel}" Margin="0,0,5,0">
+                    <StackPanel>
+                        <TextBlock x:Name="Metric1LabelText" Text="DOWNLOAD" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="Metric1ValueText" Text="--" FontSize="19" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource GoInsetPanel}" Margin="5,0">
+                    <StackPanel>
+                        <TextBlock x:Name="Metric2LabelText" Text="UPLOAD" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="Metric2ValueText" Text="--" FontSize="19" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource GoInsetPanel}" Margin="5,0">
+                    <StackPanel>
+                        <TextBlock x:Name="Metric3LabelText" Text="REMAINING" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="Metric3ValueText" Text="--" FontSize="19" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource GoInsetPanel}" Margin="5,0,0,0">
+                    <StackPanel>
+                        <TextBlock x:Name="Metric4LabelText" Text="TIME" Style="{StaticResource Eyebrow}" />
+                        <TextBlock x:Name="Metric4ValueText" Text="--" FontSize="19" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <Border Style="{StaticResource GoInsetPanel}" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="Operations" Style="{StaticResource SectionHeading}" />
+                    <TextBlock x:Name="OperationsHintText" Text="Read-only analytics are automatic; operational handoffs stay explicit." Foreground="{StaticResource GoTextSecondary}" Margin="0,4,0,10" TextWrapping="Wrap" />
+                    <WrapPanel>
+                        <Button x:Name="OpenButton" Style="{StaticResource GoCompactPrimaryButton}" Click="Open_Click" Margin="0,0,8,8">Open Web UI</Button>
+                        <Button x:Name="DockerButton" Style="{StaticResource GoCompactSecondaryButton}" Click="Docker_Click" Margin="0,0,8,8" Visibility="Collapsed">Docker / container</Button>
+                        <Button Style="{StaticResource GoCompactSecondaryButton}" Click="Logs_Click" Margin="0,0,8,8">Logs</Button>
+                        <Button Style="{StaticResource GoCompactSecondaryButton}" Click="Terminal_Click" Margin="0,0,8,8">SSH terminal</Button>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="10" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Style="{StaticResource FlatCard}" Padding="12">
+                    <StackPanel>
+                        <TextBlock Text="Transfer analytics" Style="{StaticResource SectionHeading}" />
+                        <TextBlock x:Name="TransferAnalyticsText" Text="Waiting for live telemetry..." Foreground="{StaticResource GoTextSecondary}" Margin="0,8,0,0" TextWrapping="Wrap" LineHeight="20" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Style="{StaticResource FlatCard}" Padding="12">
+                    <StackPanel>
+                        <TextBlock Text="Workload analytics" Style="{StaticResource SectionHeading}" />
+                        <TextBlock x:Name="WorkloadAnalyticsText" Text="Waiting for live telemetry..." Foreground="{StaticResource GoTextSecondary}" Margin="0,8,0,0" TextWrapping="Wrap" LineHeight="20" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Border Style="{StaticResource FlatCard}" Padding="12" Margin="0,0,0,12">
+                <StackPanel>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock x:Name="CurrentWorkHeadingText" Text="Current downloads" Style="{StaticResource SectionHeading}" />
+                            <TextBlock x:Name="CurrentWorkHintText" Text="Progress, transfer rate, remaining work and ETA from the live client." Foreground="{StaticResource GoTextSecondary}" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <TextBlock x:Name="QueueCountText" Grid.Column="1" Text="--" Foreground="{StaticResource GoTextSecondary}" VerticalAlignment="Center" />
+                    </Grid>
+                    <DataGrid x:Name="QueueGrid" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" RowStyle="{StaticResource GoDataGridRow}" CellStyle="{StaticResource GoDataGridCell}" RowHeight="30" MaxHeight="380" ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Download" Binding="{Binding Name}" Width="2.5*" />
+                            <DataGridTextColumn Header="Category" Binding="{Binding Category}" Width="0.9*" />
+                            <DataGridTextColumn Header="State" Binding="{Binding State}" Width="0.9*" />
+                            <DataGridTemplateColumn Header="Progress" Width="1.05*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,3">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <TextBlock Text="{Binding Progress}" FontSize="10.5" />
+                                            <ProgressBar Grid.Row="1" Style="{StaticResource DownloadProgress}" Value="{Binding ProgressPercent}" Maximum="100" Margin="0,3,0,0" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Size" Binding="{Binding Size}" Width="0.8*" />
+                            <DataGridTextColumn x:Name="DownloadedColumn" Header="Downloaded" Binding="{Binding Downloaded}" Width="0.85*" />
+                            <DataGridTextColumn Header="Remaining" Binding="{Binding Remaining}" Width="0.85*" />
+                            <DataGridTextColumn Header="Down" Binding="{Binding DownloadSpeed}" Width="0.8*" />
+                            <DataGridTextColumn x:Name="UploadColumn" Header="Up" Binding="{Binding UploadSpeed}" Width="0.8*" />
+                            <DataGridTextColumn Header="ETA" Binding="{Binding Eta}" Width="0.72*" />
+                            <DataGridTextColumn x:Name="RatioColumn" Header="Ratio" Binding="{Binding Ratio}" Width="0.58*" />
+                            <DataGridTextColumn x:Name="PeersColumn" Header="Seeds/Peers" Binding="{Binding Peers}" Width="0.75*" />
+                            <DataGridTextColumn Header="Added" Binding="{Binding Added}" Width="1.05*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <TextBlock x:Name="QueueEmptyText" Text="Live download detail is loading..." Style="{StaticResource GoOrganizedEmptyState}" Visibility="Collapsed" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource FlatCard}" Padding="12" Margin="0,0,0,12">
+                <StackPanel>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock x:Name="HistoryHeadingText" Text="Recent history" Style="{StaticResource SectionHeading}" />
+                            <TextBlock x:Name="HistoryHintText" Text="Recent completed and failed work." Foreground="{StaticResource GoTextSecondary}" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <TextBlock x:Name="HistoryCountText" Grid.Column="1" Text="--" Foreground="{StaticResource GoTextSecondary}" VerticalAlignment="Center" />
+                    </Grid>
+                    <DataGrid x:Name="HistoryGrid" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" RowStyle="{StaticResource GoDataGridRow}" CellStyle="{StaticResource GoDataGridCell}" RowHeight="30" MaxHeight="260" ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Item" Binding="{Binding Name}" Width="2.7*" />
+                            <DataGridTextColumn Header="Category" Binding="{Binding Category}" Width="0.9*" />
+                            <DataGridTextColumn Header="State" Binding="{Binding State}" Width="0.9*" />
+                            <DataGridTextColumn Header="Size" Binding="{Binding Size}" Width="0.8*" />
+                            <DataGridTextColumn Header="Completed" Binding="{Binding Completed}" Width="1.1*" />
+                            <DataGridTextColumn Header="Time" Binding="{Binding Duration}" Width="0.8*" />
+                            <DataGridTextColumn Header="Detail" Binding="{Binding Detail}" Width="2*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <TextBlock x:Name="HistoryEmptyText" Text="No recent history is available." Style="{StaticResource GoOrganizedEmptyState}" Visibility="Collapsed" />
+                </StackPanel>
+            </Border>
+
+            <Border Background="{StaticResource GoSurface}" BorderBrush="{StaticResource GoBorder}" BorderThickness="1" CornerRadius="7" Padding="10">
+                <TextBlock x:Name="StatusText" Text="Live telemetry pending." Foreground="{StaticResource GoTextSecondary}" TextWrapping="Wrap" />
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

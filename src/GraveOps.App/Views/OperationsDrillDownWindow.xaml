@@ -1,0 +1,140 @@
+<Window x:Class="GraveOps.App.Views.OperationsDrillDownWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="GraveOps - Operations Drill-Down" Width="1240" Height="820" MinWidth="900" MinHeight="620" WindowStartupLocation="CenterOwner" Background="{StaticResource GoCanvas}" Foreground="{StaticResource GoText}">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="Operations drill-down" FontSize="23" FontWeight="SemiBold" />
+                <TextBlock Text="Container state, storage identity and item-level queue diagnostics." Foreground="{StaticResource GoTextSecondary}" Margin="0,4,0,0" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock x:Name="TargetText" Foreground="{StaticResource GoTextSecondary}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                <Button x:Name="RefreshButton" Style="{StaticResource GoCompactPrimaryButton}" Click="Refresh_Click">Refresh</Button>
+            </StackPanel>
+        </Grid>
+        <TabControl x:Name="ModeTabs" Grid.Row="1" SelectionChanged="ModeTabs_SelectionChanged">
+            <TabItem Header="Docker">
+                <Grid Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.45*" />
+                        <ColumnDefinition Width="8" />
+                        <ColumnDefinition Width="1*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource FlatCard}" Padding="0">
+                        <DataGrid x:Name="DockerGrid" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" SelectionChanged="DockerGrid_SelectionChanged" RowHeight="30" ScrollViewer.HorizontalScrollBarVisibility="Auto" RowStyle="{StaticResource GoDataGridRow}" CellStyle="{StaticResource GoDataGridCell}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Container" Binding="{Binding Name}" Width="1.4*" />
+                                <DataGridTextColumn Header="State" Binding="{Binding State}" Width="0.8*" />
+                                <DataGridTextColumn Header="Health" Binding="{Binding Health}" Width="0.8*" />
+                                <DataGridTextColumn Header="Restarts" Binding="{Binding Restarts}" Width="0.6*" />
+                                <DataGridTextColumn Header="CPU" Binding="{Binding Cpu}" Width="0.7*" />
+                                <DataGridTextColumn Header="Memory" Binding="{Binding Memory}" Width="1.1*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                    <GridSplitter Grid.Column="1" Style="{StaticResource GoSplitter}" />
+                    <Border Grid.Column="2" Style="{StaticResource FlatCard}" Padding="12">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Selected container" Style="{StaticResource SectionHeading}" />
+                                <TextBlock x:Name="DockerSelectedText" Text="Select a container for inspect, logs and verified controls." Foreground="{StaticResource GoTextSecondary}" Margin="0,4,0,10" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <TextBox x:Name="DockerDetailBox" Grid.Row="1" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono, Consolas" FontSize="11" Background="{StaticResource GoCanvas}" Foreground="{StaticResource GoText}" BorderBrush="{StaticResource GoBorder}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
+                            <WrapPanel Grid.Row="2" Margin="0,10,0,0">
+                                <Button x:Name="DockerStartButton" Style="{StaticResource GoCompactSecondaryButton}" Click="DockerStart_Click" IsEnabled="False" Margin="0,0,7,7">Start</Button>
+                                <Button x:Name="DockerRestartButton" Style="{StaticResource GoCompactSecondaryButton}" Click="DockerRestart_Click" IsEnabled="False" Margin="0,0,7,7">Restart</Button>
+                                <Button x:Name="DockerStopButton" Style="{StaticResource GoCompactDangerButton}" Click="DockerStop_Click" IsEnabled="False" Margin="0,0,7,7">Stop</Button>
+                            </WrapPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Storage">
+                <Grid Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.35*" />
+                        <ColumnDefinition Width="8" />
+                        <ColumnDefinition Width="1*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource FlatCard}" Padding="0">
+                        <DataGrid x:Name="StorageGrid" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" SelectionChanged="StorageGrid_SelectionChanged" RowHeight="30" RowStyle="{StaticResource GoDataGridRow}" CellStyle="{StaticResource GoDataGridCell}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Target" Binding="{Binding Target}" Width="1.5*" />
+                                <DataGridTextColumn Header="Source" Binding="{Binding Source}" Width="1.4*" />
+                                <DataGridTextColumn Header="FS" Binding="{Binding FileSystem}" Width="0.7*" />
+                                <DataGridTextColumn Header="Used" Binding="{Binding UsageText}" Width="0.7*" />
+                                <DataGridTextColumn Header="Free" Binding="{Binding AvailableText}" Width="0.9*" />
+                                <DataGridTextColumn Header="Writable" Binding="{Binding WritableText}" Width="0.7*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                    <GridSplitter Grid.Column="1" Style="{StaticResource GoSplitter}" />
+                    <Border Grid.Column="2" Style="{StaticResource FlatCard}" Padding="12">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Selected storage target" Style="{StaticResource SectionHeading}" />
+                                <TextBlock x:Name="StorageSelectedText" Text="Select a mount for identity, block-device and SMART detail." Foreground="{StaticResource GoTextSecondary}" Margin="0,4,0,10" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <TextBox x:Name="StorageDetailBox" Grid.Row="1" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Cascadia Mono, Consolas" FontSize="11" Background="{StaticResource GoCanvas}" Foreground="{StaticResource GoText}" BorderBrush="{StaticResource GoBorder}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
+                            <WrapPanel Grid.Row="2" Margin="0,10,0,0">
+                                <Button x:Name="StorageVerifyButton" Style="{StaticResource GoCompactPrimaryButton}" Click="StorageVerify_Click" IsEnabled="False" Margin="0,0,7,7">Verify selected</Button>
+                                <Button x:Name="StorageTerminalButton" Style="{StaticResource GoCompactSecondaryButton}" Click="StorageTerminal_Click" IsEnabled="False" Margin="0,0,7,7">Terminal here</Button>
+                            </WrapPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Queues">
+                <Grid Margin="0,12,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Border Style="{StaticResource GoInsetPanel}" Margin="0,0,0,10">
+                        <TextBlock Text="Read-only item detail. Arr and SAB credentials are consumed only on the Linux host; qBittorrent is queried without storing credentials." Foreground="{StaticResource GoTextSecondary}" TextWrapping="Wrap" />
+                    </Border>
+                    <Border Grid.Row="1" Style="{StaticResource FlatCard}" Padding="0">
+                        <DataGrid x:Name="QueueGrid" AutoGenerateColumns="False" IsReadOnly="True" RowHeight="31" ScrollViewer.HorizontalScrollBarVisibility="Auto" RowStyle="{StaticResource GoDataGridRow}" CellStyle="{StaticResource GoDataGridCell}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Service" Binding="{Binding Service}" Width="1*" />
+                                <DataGridTextColumn Header="Type" Binding="{Binding Kind}" Width="0.7*" />
+                                <DataGridTextColumn Header="Item / issue" Binding="{Binding Title}" Width="2.5*" />
+                                <DataGridTextColumn Header="State" Binding="{Binding State}" Width="1*" />
+                                <DataGridTextColumn Header="Progress" Binding="{Binding Progress}" Width="0.8*" />
+                                <DataGridTextColumn Header="Remaining" Binding="{Binding Remaining}" Width="1*" />
+                                <DataGridTextColumn Header="Detail" Binding="{Binding Detail}" Width="2*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
+        <Border Grid.Row="2" Background="{StaticResource GoSurface}" BorderBrush="{StaticResource GoBorder}" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,12,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="StatusText" Text="Ready." Foreground="{StaticResource GoTextSecondary}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                <Button Grid.Column="1" Style="{StaticResource GoCompactSecondaryButton}" Click="Close_Click" Margin="12,0,0,0">Close</Button>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

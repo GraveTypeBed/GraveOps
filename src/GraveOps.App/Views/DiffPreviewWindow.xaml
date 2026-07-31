@@ -1,0 +1,122 @@
+<Window x:Class="GraveOps.App.Views.DiffPreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Width="1050"
+        Height="720"
+        MinWidth="720"
+        MinHeight="480"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        Title="Review Changes"
+        Background="{StaticResource GoCanvas}"
+        Foreground="{StaticResource GoText}">
+
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="42"
+                            ResizeBorderThickness="6"
+                            GlassFrameThickness="0"
+                            CornerRadius="0"
+                            UseAeroCaptionButtons="False"/>
+    </shell:WindowChrome.WindowChrome>
+
+    <Border Background="{StaticResource GoCanvas}"
+            BorderBrush="{StaticResource GoBorder}"
+            BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="42"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Border Background="#0B0D0F"
+                    BorderBrush="{StaticResource GoBorder}"
+                    BorderThickness="0,0,0,1">
+                <Grid Margin="14,0,8,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border Width="24"
+                                Height="24"
+                                CornerRadius="6"
+                                Background="{StaticResource GoAccentTint}"
+                                BorderBrush="#654C60"
+                                BorderThickness="1">
+                            <TextBlock Text="D"
+                                       Foreground="{StaticResource GoAccent}"
+                                       FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="Review Changes"
+                                   Foreground="{StaticResource GoText}"
+                                   FontWeight="SemiBold"
+                                   FontSize="13"
+                                   Margin="9,0,0,0"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <Button Grid.Column="1"
+                            Style="{StaticResource GoIconButton}"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                            ToolTip="Cancel"
+                            Click="Cancel_Click">&#x00D7;</Button>
+                </Grid>
+            </Border>
+
+            <StackPanel Grid.Row="1" Margin="16,14,16,12">
+                <TextBlock Text="Review changes"
+                           Foreground="{StaticResource GoText}"
+                           FontSize="22"
+                           FontWeight="SemiBold"/>
+                <TextBlock x:Name="SummaryText"
+                           Foreground="{StaticResource GoTextSecondary}"
+                           Margin="0,4,0,0"/>
+            </StackPanel>
+
+            <Border Grid.Row="2"
+                    Margin="16,0"
+                    Background="{StaticResource GoCanvas}"
+                    BorderBrush="{StaticResource GoBorder}"
+                    BorderThickness="1"
+                    CornerRadius="6">
+                <TextBox x:Name="DiffBox"
+                         IsReadOnly="True"
+                         AcceptsReturn="True"
+                         FontFamily="Cascadia Mono, Consolas"
+                         FontSize="12"
+                         Background="{StaticResource GoCanvas}"
+                         Foreground="{StaticResource GoText}"
+                         SelectionBrush="#654C60"
+                         BorderThickness="0"
+                         Padding="12"
+                         VerticalScrollBarVisibility="Auto"
+                         HorizontalScrollBarVisibility="Auto"/>
+            </Border>
+
+            <Border Grid.Row="3"
+                    Background="{StaticResource GoSurface}"
+                    BorderBrush="{StaticResource GoBorder}"
+                    BorderThickness="0,1,0,0"
+                    Padding="16,11"
+                    Margin="0,14,0,0">
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right">
+                    <Button Style="{StaticResource GoCompactSecondaryButton}"
+                            MinWidth="90"
+                            Margin="0,0,8,0"
+                            Click="Cancel_Click">Cancel</Button>
+                    <Button Style="{StaticResource GoCompactPrimaryButton}"
+                            MinWidth="126"
+                            Click="Save_Click">Backup + Save</Button>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

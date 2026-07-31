@@ -1,0 +1,213 @@
+<UserControl x:Class="GraveOps.App.Views.StorageView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <Style x:Key="StorageProgress" TargetType="ProgressBar">
+            <Setter Property="Height" Value="7" />
+            <Setter Property="Background" Value="{StaticResource Surface3}" />
+            <Setter Property="Foreground" Value="{StaticResource Accent}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Grid Height="7">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="4" />
+                            <Border x:Name="PART_Indicator" HorizontalAlignment="Left" Background="{TemplateBinding Foreground}" CornerRadius="4" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <DataTemplate x:Key="DriveCardTemplate">
+            <Border Style="{StaticResource FlatCard}" Margin="0,0,10,10" Padding="16">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Name}" FontSize="17" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding MountPoint}" Foreground="{StaticResource Muted}" FontSize="11" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <Border Grid.Column="1" Background="{Binding StatusTint}" BorderBrush="{Binding StatusBrush}" BorderThickness="1" CornerRadius="7" Padding="8,4" VerticalAlignment="Top">
+                            <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" FontSize="10" FontWeight="SemiBold" />
+                        </Border>
+                    </Grid>
+                    <Grid Grid.Row="1" Margin="0,18,0,5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="CAPACITY" Style="{StaticResource Eyebrow}" />
+                        <TextBlock Grid.Column="1" Text="{Binding UsageText}" FontSize="20" FontWeight="SemiBold" />
+                    </Grid>
+                    <ProgressBar Grid.Row="2" Style="{StaticResource StorageProgress}" Value="{Binding UsagePercent}" Maximum="100" Foreground="{Binding UsageBrush}" />
+                    <Grid Grid.Row="3" Margin="0,8,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="USED" Style="{StaticResource Eyebrow}" />
+                            <TextBlock Text="{Binding UsedText}" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="FREE" Style="{StaticResource Eyebrow}" />
+                            <TextBlock Text="{Binding FreeText}" Margin="0,3,0,0" />
+                        </StackPanel>
+                    </Grid>
+                    <Border Grid.Row="4" BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,0" Padding="0,12,0,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="SMART" Style="{StaticResource Eyebrow}" />
+                                <TextBlock Text="{Binding SmartText}" Foreground="{Binding SmartBrush}" FontWeight="SemiBold" Margin="0,4,0,0" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="TEMP" Style="{StaticResource Eyebrow}" />
+                                <TextBlock Text="{Binding TemperatureText}" Margin="0,4,0,0" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="FILESYSTEM" Style="{StaticResource Eyebrow}" />
+                                <TextBlock Text="{Binding FileSystem}" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <Grid Grid.Row="5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="MODEL" Style="{StaticResource Eyebrow}" />
+                            <TextBlock Text="{Binding Model}" TextTrimming="CharacterEllipsis" Margin="0,4,10,0" ToolTip="{Binding Model}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="SERIAL / DEVICE" Style="{StaticResource Eyebrow}" />
+                            <TextBlock Text="{Binding SerialDevice}" TextTrimming="CharacterEllipsis" Margin="0,4,0,0" ToolTip="{Binding SerialDevice}" />
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="Storage &amp; SMART" Style="{StaticResource PageHeading}" />
+                <TextBlock Text="Live capacity, mount identity, temperature and drive health." Style="{StaticResource PageSubheading}" Margin="0,4,0,0" />
+            </StackPanel>
+            <ComboBox x:Name="ServerCombo" Visibility="Collapsed" Grid.Column="1" Width="220" Margin="8,0" SelectionChanged="ServerCombo_SelectionChanged" />
+            <Button x:Name="RefreshButton" Grid.Column="2" Style="{StaticResource PrimaryButton}" Click="Refresh_Click" Padding="18,9">Refresh</Button>
+        </Grid>
+        <UniformGrid Grid.Row="1" Columns="4" Margin="0,0,0,14">
+            <Border Style="{StaticResource FlatCard}" Margin="0,0,10,0" Padding="15">
+                <StackPanel>
+                    <TextBlock Text="STORAGE ROOTS" Style="{StaticResource Eyebrow}" />
+                    <TextBlock x:Name="MountSummary" Text="--" FontSize="23" FontWeight="SemiBold" Margin="0,7,0,2" />
+                    <TextBlock x:Name="MountSubtext" Text="Waiting for telemetry" Foreground="{StaticResource Muted}" FontSize="11" />
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource FlatCard}" Margin="0,0,10,0" Padding="15">
+                <StackPanel>
+                    <TextBlock Text="SMART HEALTH" Style="{StaticResource Eyebrow}" />
+                    <TextBlock x:Name="SmartSummary" Text="--" FontSize="23" FontWeight="SemiBold" Margin="0,7,0,2" />
+                    <TextBlock x:Name="SmartSubtext" Text="Waiting for telemetry" Foreground="{StaticResource Muted}" FontSize="11" />
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource FlatCard}" Margin="0,0,10,0" Padding="15">
+                <StackPanel>
+                    <TextBlock Text="HOTTEST DRIVE" Style="{StaticResource Eyebrow}" />
+                    <TextBlock x:Name="TempSummary" Text="--" FontSize="23" FontWeight="SemiBold" Margin="0,7,0,2" />
+                    <TextBlock x:Name="TempSubtext" Text="Waiting for telemetry" Foreground="{StaticResource Muted}" FontSize="11" />
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource FlatCard}" Padding="15">
+                <StackPanel>
+                    <TextBlock Text="PRIMARY FILESYSTEM" Style="{StaticResource Eyebrow}" />
+                    <TextBlock x:Name="RootSummary" Text="--" FontSize="23" FontWeight="SemiBold" Margin="0,7,0,2" />
+                    <TextBlock x:Name="RootSubtext" Text="Waiting for telemetry" Foreground="{StaticResource Muted}" FontSize="11" />
+                </StackPanel>
+            </Border>
+        </UniformGrid>
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Drive overview" Style="{StaticResource SectionHeading}" />
+                        <TextBlock x:Name="TelemetryStatus" Text="Select a server and refresh." Foreground="{StaticResource Muted}" FontSize="11" Margin="0,3,0,0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button Style="{StaticResource GoCompactSecondaryButton}" Click="StorageDrilldown_Click" Margin="0,0,8,0">Deep inspect</Button>
+                        <Button Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Click="Mounts_Click">Raw storage details</Button>
+                        <Button Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Click="Smart_Click">Raw SMART summary</Button>
+                        <Button Style="{StaticResource DangerButton}" Click="Recover_Click" Visibility="Collapsed">Provider repair</Button>
+                    </StackPanel>
+                </Grid>
+                <ItemsControl x:Name="DriveCards" ItemTemplate="{StaticResource DriveCardTemplate}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="3" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+                <Grid Margin="0,8,0,14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource FlatCard}" Margin="0,0,7,0">
+                        <StackPanel>
+                            <TextBlock Text="Capacity forecast" Style="{StaticResource SectionHeading}" />
+                            <TextBlock Text="Projected from local GraveOps samples. Forecast improves as history accumulates." Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,4,0,10" />
+                            <ItemsControl x:Name="ForecastList" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource FlatCard}" Margin="7,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Dependency map" Style="{StaticResource SectionHeading}" />
+                            <TextBlock Text="Current service path and the infrastructure each layer depends on." Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,4,0,10" />
+                            <ItemsControl x:Name="DependencyList" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+                <Expander x:Name="DiagnosticsExpander" IsExpanded="False" Margin="0,6,0,16">
+                    <Expander.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Diagnostics output" FontWeight="SemiBold" />
+                            <TextBlock Text="  Raw command output for troubleshooting" Foreground="{StaticResource Muted}" />
+                        </StackPanel>
+                    </Expander.Header>
+                    <Border Style="{StaticResource FlatCard}" Margin="0,10,0,0" Padding="12">
+                        <TextBox x:Name="OutputBox" IsReadOnly="True" AcceptsReturn="True" FontFamily="Cascadia Mono, Consolas" FontSize="11" MinHeight="210" MaxHeight="360" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
+                    </Border>
+                </Expander>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

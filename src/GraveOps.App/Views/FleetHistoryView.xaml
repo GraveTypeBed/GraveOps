@@ -1,0 +1,70 @@
+<UserControl x:Class="GraveOps.App.Views.FleetHistoryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <Grid Margin="0,0,0,12">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="History &amp; incidents" Style="{StaticResource PageHeading}" />
+                <TextBlock Text="Meaningful health transitions and GraveOps actions, recorded without adding another polling loop."
+                           Foreground="{StaticResource GoTextSecondary}" Margin="0,3,0,0" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Style="{StaticResource GoCompactSecondaryButton}" Click="Replay_Click" Margin="0,0,8,0">Replay selected</Button>
+                <Button Style="{StaticResource GoCompactSecondaryButton}" Click="CopyReplay_Click">Copy replay</Button>
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="1.25*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="1*"/></Grid.ColumnDefinitions>
+            <Border Style="{StaticResource FlatCard}" Padding="0">
+                <Grid>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                    <StackPanel Margin="14,12,14,8">
+                        <TextBlock Text="Health transitions" Style="{StaticResource SectionHeading}" />
+                        <TextBlock Text="Only changes are stored; identical refresh samples do not create noise." Foreground="{StaticResource GoTextSecondary}" FontSize="10" Margin="0,3,0,0"/>
+                    </StackPanel>
+                    <DataGrid x:Name="HealthGrid" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
+                              RowStyle="{StaticResource GoDataGridRow}" CellStyle="{StaticResource GoDataGridCell}" RowHeight="30"
+                              MouseDoubleClick="HealthGrid_MouseDoubleClick">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Time" Binding="{Binding TimeText}" Width="0.9*"/>
+                            <DataGridTextColumn Header="Host" Binding="{Binding Host}" Width="1.1*"/>
+                            <DataGridTextColumn Header="Component" Binding="{Binding Component}" Width="1.1*"/>
+                            <DataGridTextColumn Header="Transition" Binding="{Binding TransitionText}" Width="1.1*"/>
+                            <DataGridTextColumn Header="Detail" Binding="{Binding Detail}" Width="2.4*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+            <Border Grid.Column="2" Style="{StaticResource FlatCard}" Padding="0">
+                <Grid>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                    <StackPanel Margin="14,12,14,8">
+                        <TextBlock Text="GraveOps activity" Style="{StaticResource SectionHeading}" />
+                        <TextBlock Text="Actions, discoveries and other meaningful control-plane events." Foreground="{StaticResource GoTextSecondary}" FontSize="10" Margin="0,3,0,0"/>
+                    </StackPanel>
+                    <DataGrid x:Name="ActivityGrid" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
+                              RowStyle="{StaticResource GoDataGridRow}" CellStyle="{StaticResource GoDataGridCell}" RowHeight="30">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Time" Binding="{Binding TimeText}" Width="0.9*"/>
+                            <DataGridTextColumn Header="Event" Binding="{Binding Title}" Width="1.3*"/>
+                            <DataGridTextColumn Header="Detail" Binding="{Binding Detail}" Width="2.3*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="2" Style="{StaticResource FlatCard}" Margin="0,12,0,0">
+            <StackPanel>
+                <TextBlock Text="Incident replay" Style="{StaticResource SectionHeading}" />
+                <TextBlock x:Name="ReplayHeadingText" Text="Select a health transition and choose Replay selected."
+                           Foreground="{StaticResource GoTextSecondary}" Margin="0,3,0,8"/>
+                <TextBox x:Name="ReplayText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                         FontFamily="Cascadia Mono, Consolas" MinHeight="115" MaxHeight="230" VerticalScrollBarVisibility="Auto"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

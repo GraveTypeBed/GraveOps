@@ -1,0 +1,31 @@
+<UserControl x:Class="GraveOps.App.Views.UpdateCenterView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="Update inventory" Style="{StaticResource SectionHeading}" />
+                <TextBlock Text="Read-only host and application inventory. GraveOps never installs updates from this page." Foreground="{StaticResource Muted}" FontSize="10" Margin="0,3,0,0" />
+            </StackPanel>
+            <Button x:Name="RefreshButton" Grid.Column="1" Style="{StaticResource PrimaryButton}" Click="Refresh_Click">Check now</Button>
+        </Grid>
+        <UniformGrid Grid.Row="1" Columns="5" Margin="0,0,0,14">
+            <Border Style="{StaticResource FlatCard}" Margin="0,0,8,0"><StackPanel VerticalAlignment="Center"><TextBlock Text="HOST" Style="{StaticResource Eyebrow}" /><TextBlock x:Name="HostText" Text="--" FontSize="17" FontWeight="SemiBold" Margin="0,7,0,0" /><TextBlock x:Name="PlatformText" Foreground="{StaticResource Muted}" FontSize="10" Margin="0,3,0,0" TextWrapping="Wrap" /></StackPanel></Border>
+            <Border Style="{StaticResource FlatCard}" Margin="0,0,8,0"><StackPanel VerticalAlignment="Center"><TextBlock Text="OS UPDATES" Style="{StaticResource Eyebrow}" /><TextBlock x:Name="PackagesText" Text="--" FontSize="22" FontWeight="SemiBold" Margin="0,7,0,0" /><TextBlock x:Name="PackagesSubtext" Text="provider inventory" Foreground="{StaticResource Muted}" FontSize="10" /></StackPanel></Border>
+            <Border Style="{StaticResource FlatCard}" Margin="0,0,8,0"><StackPanel VerticalAlignment="Center"><TextBlock Text="PLEX" Style="{StaticResource Eyebrow}" /><TextBlock x:Name="PlexText" Text="--" FontSize="16" FontWeight="SemiBold" Margin="0,7,0,0" TextWrapping="Wrap" /></StackPanel></Border>
+            <Border Style="{StaticResource FlatCard}" Margin="0,0,8,0"><StackPanel VerticalAlignment="Center"><TextBlock Text="DOCKER" Style="{StaticResource Eyebrow}" /><TextBlock x:Name="DockerText" Text="--" FontSize="15" FontWeight="SemiBold" Margin="0,7,0,0" TextWrapping="Wrap" /></StackPanel></Border>
+            <Border Style="{StaticResource FlatCard}"><StackPanel VerticalAlignment="Center"><TextBlock Text="INTEGRATIONS" Style="{StaticResource Eyebrow}" /><TextBlock x:Name="IntegrationsText" Text="--" FontSize="18" FontWeight="SemiBold" Margin="0,7,0,0" /><TextBlock Text="verified on this host" Foreground="{StaticResource Muted}" FontSize="10" /></StackPanel></Border>
+        </UniformGrid>
+        <Border Grid.Row="2" Style="{StaticResource FlatCard}" Padding="12">
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><TextBlock Text="Inventory details" Style="{StaticResource SectionHeading}" /><Button Grid.Column="1" Style="{StaticResource SecondaryButton}" Click="Terminal_Click">Open terminal</Button></Grid>
+                <TextBox x:Name="OutputBox" Grid.Row="1" IsReadOnly="True" FontFamily="Cascadia Mono, Consolas" FontSize="11" Margin="0,10,0,0" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" MinHeight="260" MaxHeight="520" />
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

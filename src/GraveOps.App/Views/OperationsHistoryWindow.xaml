@@ -1,0 +1,353 @@
+<Window x:Class="GraveOps.App.Views.OperationsHistoryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="GraveOps - Jobs, Alerts &amp; State History"
+        Width="1280"
+        Height="820"
+        MinWidth="980"
+        MinHeight="620"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource GoCanvas}"
+        Foreground="{StaticResource GoText}">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel>
+                <TextBlock Text="Jobs, alerts &amp; state history"
+                           FontSize="23"
+                           FontWeight="SemiBold"/>
+                <TextBlock Text="Persistent operations history, actionable alerts and saved host-state comparisons."
+                           Foreground="{StaticResource GoTextSecondary}"
+                           Margin="0,4,0,0"/>
+            </StackPanel>
+
+            <TextBlock x:Name="TargetText"
+                       Grid.Column="1"
+                       Foreground="{StaticResource GoTextSecondary}"
+                       VerticalAlignment="Center"/>
+        </Grid>
+
+        <TabControl x:Name="ModeTabs"
+                    Grid.Row="1"
+                    SelectionChanged="ModeTabs_SelectionChanged">
+
+            <TabItem Header="Jobs">
+                <Grid Margin="0,12,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="240"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="Show"
+                                   Foreground="{StaticResource GoTextSecondary}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"/>
+
+                        <ComboBox x:Name="JobsFilterCombo"
+                                  Grid.Column="1"
+                                  SelectionChanged="JobsFilter_SelectionChanged">
+                            <ComboBoxItem Content="All jobs"/>
+                            <ComboBoxItem Content="Running"/>
+                            <ComboBoxItem Content="Failed / cancelled"/>
+                            <ComboBoxItem Content="Completed"/>
+                        </ComboBox>
+
+                        <TextBlock x:Name="JobsSummaryText"
+                                   Grid.Column="2"
+                                   Foreground="{StaticResource GoTextSecondary}"
+                                   VerticalAlignment="Center"
+                                   Margin="12,0,0,0"/>
+
+                        <Button Grid.Column="3"
+                                Style="{StaticResource GoCompactSecondaryButton}"
+                                Click="ClearCompletedJobs_Click">Clear completed</Button>
+                    </Grid>
+
+                    <Border Grid.Row="1"
+                            Style="{StaticResource FlatCard}"
+                            Padding="0">
+                        <DataGrid x:Name="JobsGrid"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  SelectionMode="Single"
+                                  SelectionChanged="JobsGrid_SelectionChanged"
+                                  RowStyle="{StaticResource GoDataGridRow}"
+                                  CellStyle="{StaticResource GoDataGridCell}"
+                                  RowHeight="32">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Started" Binding="{Binding StartedText}" Width="1.05*"/>
+                                <DataGridTextColumn Header="Job" Binding="{Binding Title}" Width="1.65*"/>
+                                <DataGridTextColumn Header="State" Binding="{Binding StateText}" Width="0.8*"/>
+                                <DataGridTextColumn Header="Progress" Binding="{Binding ProgressText}" Width="0.65*"/>
+                                <DataGridTextColumn Header="Duration" Binding="{Binding DurationText}" Width="0.75*"/>
+                                <DataGridTextColumn Header="Detail" Binding="{Binding Detail}" Width="2.5*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+
+                    <Grid Grid.Row="2"
+                          Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock x:Name="JobSelectionText"
+                                   Text="Select a job for contextual actions."
+                                   Foreground="{StaticResource GoTextSecondary}"
+                                   VerticalAlignment="Center"
+                                   TextWrapping="Wrap"/>
+
+                        <StackPanel Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <Button x:Name="OpenJobButton"
+                                    Style="{StaticResource GoCompactSecondaryButton}"
+                                    Click="OpenJobRelated_Click"
+                                    IsEnabled="False"
+                                    Margin="0,0,7,0">Open related</Button>
+                            <Button x:Name="RetryJobButton"
+                                    Style="{StaticResource GoCompactPrimaryButton}"
+                                    Click="RetryJob_Click"
+                                    IsEnabled="False"
+                                    Margin="0,0,7,0">Retry</Button>
+                            <Button x:Name="CancelJobButton"
+                                    Style="{StaticResource GoCompactDangerButton}"
+                                    Click="CancelJob_Click"
+                                    IsEnabled="False">Cancel</Button>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Alerts">
+                <Grid Margin="0,12,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="240"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="Show"
+                                   Foreground="{StaticResource GoTextSecondary}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"/>
+
+                        <ComboBox x:Name="AlertsFilterCombo"
+                                  Grid.Column="1"
+                                  SelectionChanged="AlertsFilter_SelectionChanged">
+                            <ComboBoxItem Content="All alerts"/>
+                            <ComboBoxItem Content="Unacknowledged"/>
+                            <ComboBoxItem Content="Warnings + errors"/>
+                            <ComboBoxItem Content="Errors only"/>
+                        </ComboBox>
+
+                        <TextBlock x:Name="AlertsSummaryText"
+                                   Grid.Column="2"
+                                   Foreground="{StaticResource GoTextSecondary}"
+                                   VerticalAlignment="Center"
+                                   Margin="12,0,0,0"/>
+
+                        <Button Grid.Column="3"
+                                Style="{StaticResource GoCompactSecondaryButton}"
+                                Click="AcknowledgeAll_Click"
+                                Margin="0,0,7,0">Acknowledge all</Button>
+
+                        <Button Grid.Column="4"
+                                Style="{StaticResource GoCompactSecondaryButton}"
+                                Click="ClearAcknowledged_Click">Clear acknowledged</Button>
+                    </Grid>
+
+                    <Border Grid.Row="1"
+                            Style="{StaticResource FlatCard}"
+                            Padding="0">
+                        <DataGrid x:Name="AlertsGrid"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  SelectionMode="Single"
+                                  SelectionChanged="AlertsGrid_SelectionChanged"
+                                  RowStyle="{StaticResource GoDataGridRow}"
+                                  CellStyle="{StaticResource GoDataGridCell}"
+                                  RowHeight="32">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Time" Binding="{Binding DateText}" Width="1.05*"/>
+                                <DataGridTextColumn Header="Severity" Binding="{Binding Severity}" Width="0.75*"/>
+                                <DataGridTextColumn Header="State" Binding="{Binding ReadText}" Width="0.6*"/>
+                                <DataGridTextColumn Header="Ack" Binding="{Binding AckText}" Width="0.5*"/>
+                                <DataGridTextColumn Header="Alert" Binding="{Binding Title}" Width="1.55*"/>
+                                <DataGridTextColumn Header="Detail" Binding="{Binding Message}" Width="3.2*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+
+                    <Grid Grid.Row="2"
+                          Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock x:Name="AlertSelectionText"
+                                   Text="Select an alert to acknowledge or open its related control."
+                                   Foreground="{StaticResource GoTextSecondary}"
+                                   VerticalAlignment="Center"
+                                   TextWrapping="Wrap"/>
+
+                        <StackPanel Grid.Column="1"
+                                    Orientation="Horizontal">
+                            <Button x:Name="OpenAlertButton"
+                                    Style="{StaticResource GoCompactSecondaryButton}"
+                                    Click="OpenAlertRelated_Click"
+                                    IsEnabled="False"
+                                    Margin="0,0,7,0">Open related</Button>
+                            <Button x:Name="AcknowledgeAlertButton"
+                                    Style="{StaticResource GoCompactPrimaryButton}"
+                                    Click="AcknowledgeSelected_Click"
+                                    IsEnabled="False">Acknowledge</Button>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="State history">
+                <Grid Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.15*"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="1*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Style="{StaticResource FlatCard}"
+                            Padding="0">
+                        <DataGrid x:Name="StateGrid"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  SelectionMode="Single"
+                                  SelectionChanged="StateGrid_SelectionChanged"
+                                  RowStyle="{StaticResource GoDataGridRow}"
+                                  CellStyle="{StaticResource GoDataGridCell}"
+                                  RowHeight="32">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Captured" Binding="{Binding TimeText}" Width="1.15*"/>
+                                <DataGridTextColumn Header="Server" Binding="{Binding ServerName}" Width="1*"/>
+                                <DataGridTextColumn Header="Label" Binding="{Binding Label}" Width="1.25*"/>
+                                <DataGridTextColumn Header="Summary" Binding="{Binding Summary}" Width="2.1*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+
+                    <GridSplitter Grid.Column="1"
+                                  Style="{StaticResource GoSplitter}"/>
+
+                    <Border Grid.Column="2"
+                            Style="{StaticResource FlatCard}"
+                            Padding="12">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel>
+                                <TextBlock Text="Saved state"
+                                           Style="{StaticResource SectionHeading}"/>
+                                <TextBlock x:Name="StateSelectionText"
+                                           Text="Capture the current target or select a saved snapshot."
+                                           Foreground="{StaticResource GoTextSecondary}"
+                                           Margin="0,4,0,10"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+
+                            <TextBox x:Name="StateDetailBox"
+                                     Grid.Row="1"
+                                     IsReadOnly="True"
+                                     AcceptsReturn="True"
+                                     TextWrapping="NoWrap"
+                                     FontFamily="Cascadia Mono, Consolas"
+                                     FontSize="11"
+                                     Background="{StaticResource GoCanvas}"
+                                     Foreground="{StaticResource GoText}"
+                                     BorderBrush="{StaticResource GoBorder}"
+                                     VerticalScrollBarVisibility="Auto"
+                                     HorizontalScrollBarVisibility="Auto"/>
+
+                            <WrapPanel Grid.Row="2"
+                                       Margin="0,10,0,0">
+                                <Button x:Name="CaptureStateButton"
+                                        Style="{StaticResource GoCompactPrimaryButton}"
+                                        Click="CaptureState_Click"
+                                        Margin="0,0,7,7">Capture current</Button>
+
+                                <Button x:Name="CompareStateButton"
+                                        Style="{StaticResource GoCompactSecondaryButton}"
+                                        Click="CompareState_Click"
+                                        IsEnabled="False"
+                                        Margin="0,0,7,7">Compare to current</Button>
+
+                                <Button x:Name="DeleteStateButton"
+                                        Style="{StaticResource GoCompactDangerButton}"
+                                        Click="DeleteState_Click"
+                                        IsEnabled="False"
+                                        Margin="0,0,7,7">Delete snapshot</Button>
+                            </WrapPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <Border Grid.Row="2"
+                Background="{StaticResource GoSurface}"
+                BorderBrush="{StaticResource GoBorder}"
+                BorderThickness="1"
+                CornerRadius="7"
+                Padding="10"
+                Margin="0,12,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock x:Name="StatusText"
+                           Text="Ready."
+                           Foreground="{StaticResource GoTextSecondary}"
+                           VerticalAlignment="Center"
+                           TextWrapping="Wrap"/>
+
+                <Button Grid.Column="1"
+                        Style="{StaticResource GoCompactSecondaryButton}"
+                        Click="Close_Click"
+                        Margin="12,0,0,0">Close</Button>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

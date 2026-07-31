@@ -1,0 +1,30 @@
+# .NET build output
+**/bin/
+**/obj/
+publish/
+dist/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+
+# Local GraveOps output and backups
+test-results/
+control-plane-backups/
+*.bak
+*.tmp
+*.log
+
+# Local configuration and credentials
+appsettings.Development.json
+secrets.json
+*.pfx
+*.p12
+*.key
+*.pem
+
+# OS files
+Thumbs.db
+.DS_Store

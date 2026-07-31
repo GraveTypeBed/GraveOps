@@ -1,0 +1,101 @@
+<UserControl x:Class="GraveOps.App.Views.ServersView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="330" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Border Style="{StaticResource Card}" Margin="0,0,12,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <StackPanel>
+                    <TextBlock Text="Saved hosts" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Text="Local hosts need no credentials. Remote secrets are stored separately in Windows Credential Manager." Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,5,0,12" />
+                </StackPanel>
+                <ListBox x:Name="ServerList" Grid.Row="1" SelectionChanged="ServerList_SelectionChanged" DisplayMemberPath="Name" />
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,12,0,0">
+                    <Button Style="{StaticResource PrimaryButton}" Click="New_Click" Margin="0,0,8,0">Add Server</Button>
+                    <Button Style="{StaticResource DangerButton}" Click="Delete_Click" Margin="0,0,8,0">Delete</Button>
+                    <Button Style="{StaticResource SecondaryButton}" Click="Discover_Click">Discover LAN</Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+        <Border Grid.Column="1" Style="{StaticResource Card}" MaxWidth="1120" HorizontalAlignment="Left">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel MaxWidth="760" HorizontalAlignment="Left">
+                    <TextBlock Text="Host profile" FontSize="22" FontWeight="SemiBold" />
+                    <TextBlock Text="Local Windows uses native access. Remote Windows uses existing PowerShell remoting. Remote Linux uses SSH. Secrets stay in Windows Credential Manager rather than config.json." Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,5,0,18" />
+                    <TextBlock Text="Friendly name" Foreground="{StaticResource Muted}" />
+                    <TextBox x:Name="NameBox" Margin="0,4,0,12" Width="500" HorizontalAlignment="Left" />
+                    <TextBlock Text="Connection type" Foreground="{StaticResource Muted}" />
+                    <ComboBox x:Name="ConnectionCombo" Width="500" HorizontalAlignment="Left" Margin="0,4,0,12" SelectionChanged="ConnectionCombo_SelectionChanged">
+                        <ComboBoxItem Content="This Windows PC" Tag="LocalWindows" />
+                        <ComboBoxItem Content="Remote Windows (PowerShell)" Tag="RemoteWindows" />
+                        <ComboBoxItem Content="Remote Linux (SSH)" Tag="RemoteLinux" />
+                    </ComboBox>
+                    <TextBlock Text="Host / IP" Foreground="{StaticResource Muted}" />
+                    <TextBox x:Name="HostBox" Margin="0,4,0,12" Width="500" HorizontalAlignment="Left" />
+                    <Grid Width="500" HorizontalAlignment="Left">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="130" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,8,0">
+                            <TextBlock Text="Username" Foreground="{StaticResource Muted}" />
+                            <TextBox x:Name="UserBox" Margin="0,4,0,12" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock x:Name="PortLabelText" Text="Port" Foreground="{StaticResource Muted}" />
+                            <TextBox x:Name="PortBox" Text="22" Margin="0,4,0,12" />
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="Role" Foreground="{StaticResource Muted}" />
+                    <ComboBox x:Name="RoleCombo" Width="500" HorizontalAlignment="Left" Margin="0,4,0,12">
+                        <ComboBoxItem Content="Linux" />
+                        <ComboBoxItem Content="Windows" />
+                        <ComboBoxItem Content="Media Server" />
+                        <ComboBoxItem Content="Pi-hole" />
+                        <ComboBoxItem Content="NAS" />
+                    </ComboBox>
+                    <StackPanel x:Name="SshDetailsPanel">
+                    <TextBlock Text="Authentication" Foreground="{StaticResource Muted}" />
+                    <ComboBox x:Name="AuthCombo" Width="500" HorizontalAlignment="Left" Margin="0,4,0,12" SelectionChanged="AuthCombo_SelectionChanged">
+                        <ComboBoxItem Content="Password" />
+                        <ComboBoxItem Content="Private Key" />
+                    </ComboBox>
+                    <StackPanel x:Name="PasswordPanel">
+                        <TextBlock x:Name="PasswordLabelText" Text="Password" Foreground="{StaticResource Muted}" />
+                        <PasswordBox x:Name="PasswordBox" Width="500" HorizontalAlignment="Left" Margin="0,4,0,4" />
+                        <TextBlock Text="Leave blank when editing to keep the existing saved credential." Foreground="{StaticResource Muted}" FontSize="11" Margin="0,0,0,12" />
+                    </StackPanel>
+                    <StackPanel x:Name="KeyPanel" Visibility="Collapsed">
+                        <TextBlock Text="Private key path" Foreground="{StaticResource Muted}" />
+                        <Grid Width="500" HorizontalAlignment="Left" Margin="0,4,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="90" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="KeyPathBox" />
+                            <Button Grid.Column="1" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Click="BrowseKey_Click">Browse</Button>
+                        </Grid>
+                        <TextBlock Text="Key passphrase (optional)" Foreground="{StaticResource Muted}" />
+                        <PasswordBox x:Name="KeyPassBox" Width="500" HorizontalAlignment="Left" Margin="0,4,0,12" />
+                    </StackPanel>
+                    <TextBlock Text="Pinned host-key SHA-256 fingerprint" Foreground="{StaticResource Muted}" />
+                    <TextBox x:Name="FingerprintBox" Width="500" HorizontalAlignment="Left" Margin="0,4,0,4" IsReadOnly="True" />
+                    <TextBlock Text="The first successful Test Connection can pin this fingerprint. Future mismatches are rejected." Foreground="{StaticResource Muted}" FontSize="11" TextWrapping="Wrap" Width="500" HorizontalAlignment="Left" Margin="0,0,0,18" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource PrimaryButton}" Click="Save_Click" Margin="0,0,8,0">Save Profile</Button>
+                        <Button Style="{StaticResource SecondaryButton}" Click="Test_Click" Margin="0,0,8,0">Test Connection</Button>
+                        <Button Style="{StaticResource SecondaryButton}" Click="DetectIntegrations_Click">Detect Integrations</Button>
+                    </StackPanel>
+                    <TextBlock x:Name="StatusText" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,14,0,0" Width="650" HorizontalAlignment="Left" />
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

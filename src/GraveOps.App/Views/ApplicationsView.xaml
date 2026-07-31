@@ -1,0 +1,392 @@
+<UserControl x:Class="GraveOps.App.Views.ApplicationsView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <Style x:Key="GraveOpsPopupMenu" TargetType="ContextMenu">
+            <Setter Property="Background" Value="#18181B" />
+            <Setter Property="Foreground" Value="#F3F1F3" />
+            <Setter Property="BorderBrush" Value="#34343A" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="7" Padding="{TemplateBinding Padding}">
+                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="GraveOpsPopupMenuItem" TargetType="MenuItem">
+            <Setter Property="Foreground" Value="#F3F1F3" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,1" />
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="ItemBorder" Background="{TemplateBinding Background}" CornerRadius="5" Padding="8,5">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="18" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="CheckMark" Grid.Column="0" Text="✓" Foreground="{StaticResource Accent}" FontWeight="Bold" Visibility="Collapsed" VerticalAlignment="Center" />
+                                <ContentPresenter Grid.Column="1" ContentSource="Header" RecognizesAccessKey="True" VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="#29292E" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="#777178" />
+                                <Setter TargetName="ItemBorder" Property="Opacity" Value="0.7" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="GraveOpsPopupSeparator" TargetType="Separator">
+            <Setter Property="Margin" Value="7,4" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Separator">
+                        <Border Height="1" Background="#34343A" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <DataTemplate x:Key="AppCardTemplate">
+            <Border Style="{StaticResource Card}" Width="320" MinHeight="184" Margin="0,0,12,12">
+                <Border.ContextMenu>
+                    <ContextMenu Style="{StaticResource GraveOpsPopupMenu}">
+                        <MenuItem Style="{StaticResource GraveOpsPopupMenuItem}" Header="Open application" Tag="{Binding}" Click="AppOpenMenu_Click" />
+                        <MenuItem Style="{StaticResource GraveOpsPopupMenuItem}" Header="Open terminal" Tag="{Binding}" Click="AppTerminalMenu_Click" />
+                        <MenuItem Style="{StaticResource GraveOpsPopupMenuItem}" Header="Open logs" Tag="{Binding}" Click="AppLogsMenu_Click" />
+                        <MenuItem Style="{StaticResource GraveOpsPopupMenuItem}" Header="Copy application URL" Tag="{Binding}" Click="AppCopyUrlMenu_Click" />
+                        <MenuItem Style="{StaticResource GraveOpsPopupMenuItem}" Header="Refresh telemetry" Tag="{Binding}" Click="AppRefreshMenu_Click" />
+                        <Separator Style="{StaticResource GraveOpsPopupSeparator}" />
+                        <MenuItem Style="{StaticResource GraveOpsPopupMenuItem}" Header="Move card first" Tag="{Binding}" Click="AppMoveFirstMenu_Click" />
+                        <MenuItem Style="{StaticResource GraveOpsPopupMenuItem}" Header="Move card up" Tag="{Binding}" Click="AppMoveUpMenu_Click" />
+                        <MenuItem Style="{StaticResource GraveOpsPopupMenuItem}" Header="Move card down" Tag="{Binding}" Click="AppMoveDownMenu_Click" />
+                        <MenuItem Style="{StaticResource GraveOpsPopupMenuItem}" Header="Move card last" Tag="{Binding}" Click="AppMoveLastMenu_Click" />
+                        <MenuItem Style="{StaticResource GraveOpsPopupMenuItem}" Header="Hide card" Tag="{Binding}" Click="AppHideMenu_Click" />
+                        <Separator Style="{StaticResource GraveOpsPopupSeparator}" />
+                        <MenuItem Style="{StaticResource GraveOpsPopupMenuItem}" Header="Restart if supported" Tag="{Binding}" Click="AppRestartMenu_Click" />
+                    </ContextMenu>
+                </Border.ContextMenu>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Category}" Foreground="{StaticResource Muted}" FontSize="11" />
+                        </StackPanel>
+                        <Border Grid.Column="1" CornerRadius="10" Padding="8,3" Background="{StaticResource Surface3}">
+                            <TextBlock Text="{Binding State}" FontSize="10" FontWeight="SemiBold">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource Muted}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding State}" Value="Healthy">
+                                                <Setter Property="Foreground" Value="{StaticResource Success}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding State}" Value="Degraded">
+                                                <Setter Property="Foreground" Value="{StaticResource Warn}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding State}" Value="Busy">
+                                                <Setter Property="Foreground" Value="{StaticResource Accent}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding State}" Value="Stale">
+                                                <Setter Property="Foreground" Value="{StaticResource Warn}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding State}" Value="Offline">
+                                                <Setter Property="Foreground" Value="{StaticResource Danger}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Border>
+                    </Grid>
+                    <Grid Grid.Row="1" Margin="0,14,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="RESPONSE" Style="{StaticResource Eyebrow}" />
+                            <TextBlock Text="{Binding LatencyText}" FontSize="17" FontWeight="SemiBold" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="ENDPOINT" Style="{StaticResource Eyebrow}" />
+                            <TextBlock Text="{Binding HttpText}" FontSize="17" FontWeight="SemiBold" />
+                        </StackPanel>
+                    </Grid>
+                    <StackPanel Grid.Row="2" Margin="0,14,0,0">
+                        <TextBlock Text="{Binding VersionText}" Foreground="{StaticResource Muted}" />
+                        <TextBlock Text="{Binding QueueText}" Foreground="{StaticResource Muted}" />
+                        <TextBlock Text="{Binding IssuesText}" Foreground="{StaticResource Muted}" />
+                        <TextBlock Text="{Binding AttentionText}" Foreground="{StaticResource Dim}" TextWrapping="Wrap" MaxHeight="34" ToolTip="{Binding Detail}" />
+                    </StackPanel>
+                    <Button Grid.Row="3" Style="{StaticResource SecondaryButton}" Tag="{Binding}" Click="CardOpen_Click" Margin="0,12,0,0">Open</Button>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="Media operations" Style="{StaticResource PageHeading}" />
+                <TextBlock Text="Live application health, Plex, Arr and download operations from one control surface." Style="{StaticResource PageSubheading}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBlock x:Name="SampleAgeText" VerticalAlignment="Center" Foreground="{StaticResource Muted}" Margin="0,0,12,0" />
+                <Button Style="{StaticResource SecondaryButton}" Click="ShowAllCards_Click" Margin="0,0,8,0">Show all cards</Button>
+                <Button Style="{StaticResource PrimaryButton}" Click="Refresh_Click">Refresh telemetry</Button>
+            </StackPanel>
+        </Grid>
+        <TabControl Grid.Row="1" x:Name="ModeTabs" SelectionChanged="ModeTabs_SelectionChanged">
+            <TabItem Header="Fleet Overview">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,14,0,0">
+                        <UniformGrid Columns="4" Margin="0,0,0,14">
+                            <Border Style="{StaticResource Card}" Margin="0,0,8,0">
+                                <StackPanel>
+                                    <TextBlock Text="HEALTHY" Style="{StaticResource Eyebrow}" />
+                                    <TextBlock x:Name="HealthyCountText" Text="--" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource Success}" />
+                                    <TextBlock Text="Applications operating normally" Foreground="{StaticResource Muted}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Margin="4,0">
+                                <StackPanel>
+                                    <TextBlock Text="DEGRADED / BUSY" Style="{StaticResource Eyebrow}" />
+                                    <TextBlock x:Name="DegradedCountText" Text="--" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource Warn}" />
+                                    <TextBlock Text="Reachable but needs attention" Foreground="{StaticResource Muted}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Margin="4,0">
+                                <StackPanel>
+                                    <TextBlock Text="OFFLINE" Style="{StaticResource Eyebrow}" />
+                                    <TextBlock x:Name="OfflineCountText" Text="--" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource Danger}" />
+                                    <TextBlock Text="No application response" Foreground="{StaticResource Muted}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Margin="8,0,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="TARGET" Style="{StaticResource Eyebrow}" />
+                                    <TextBlock x:Name="TargetText" Text="--" FontSize="20" FontWeight="SemiBold" />
+                                    <TextBlock Text="Uses global server context" Foreground="{StaticResource Muted}" />
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+                        <TextBlock Text="Application health" Style="{StaticResource SectionHeading}" Margin="0,0,0,10" />
+                        <ItemsControl x:Name="OpsCards" ItemTemplate="{StaticResource AppCardTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Header="Plex Center" Visibility="Collapsed">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,14,0,0">
+                        <UniformGrid Columns="4">
+                            <Border Style="{StaticResource Card}" Margin="0,0,8,0">
+                                <StackPanel>
+                                    <TextBlock Text="SERVICE" Style="{StaticResource Eyebrow}" />
+                                    <TextBlock x:Name="PlexServiceText" Text="--" FontSize="24" FontWeight="SemiBold" />
+                                    <TextBlock Text="systemd service state" Foreground="{StaticResource Muted}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Margin="4,0">
+                                <StackPanel>
+                                    <TextBlock Text="PLEX VERSION" Style="{StaticResource Eyebrow}" />
+                                    <TextBlock x:Name="PlexVersionText" Text="--" FontSize="20" FontWeight="SemiBold" />
+                                    <TextBlock Text="From local Plex identity" Foreground="{StaticResource Muted}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Margin="4,0">
+                                <StackPanel>
+                                    <TextBlock Text="ENDPOINT" Style="{StaticResource Eyebrow}" />
+                                    <TextBlock x:Name="PlexEndpointText" Text="--" FontSize="24" FontWeight="SemiBold" />
+                                    <TextBlock x:Name="PlexLatencyText" Text="--" Foreground="{StaticResource Muted}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Margin="8,0,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="DEPENDENCY" Style="{StaticResource Eyebrow}" />
+                                    <TextBlock x:Name="PlexDumbText" Text="--" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                    <TextBlock Text="Host/runtime dependency" Foreground="{StaticResource Muted}" />
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+                        <Border Style="{StaticResource Card}" Margin="0,14,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Plex operations" Style="{StaticResource SectionHeading}" />
+                                <TextBlock Text="Routine Plex management without leaving GraveOps. Restart uses the health-aware action runner and does not report success until the service and port 32400 are back." Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,4,0,14" />
+                                <WrapPanel>
+                                    <Button Style="{StaticResource PrimaryButton}" Click="OpenPlex_Click" Margin="0,0,8,8">Open Plex</Button>
+                                    <Button Style="{StaticResource SecondaryButton}" Click="RestartPlex_Click" Margin="0,0,8,8">Restart Plex</Button>
+                                    <Button Style="{StaticResource SecondaryButton}" Click="PlexLogs_Click" Margin="0,0,8,8">Plex logs</Button>
+                                    <Button Style="{StaticResource SecondaryButton}" Click="Terminal_Click" Margin="0,0,8,8">SSH terminal</Button>
+                                    <Button Style="{StaticResource SecondaryButton}" Click="PlexSessions_Click" Margin="0,0,8,8">Session analytics</Button>
+                                </WrapPanel>
+                                <TextBlock Text="Session analytics uses a Plex token stored only in Windows Credential Manager. The token is sent directly to Plex in an HTTP header and never copied into normal GraveOps config or SSH commands." Foreground="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,8,0,0" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Header="Arr Command Center" Visibility="Collapsed">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,14,0,0">
+                        <TextBlock Text="Arr fleet" Style="{StaticResource SectionHeading}" />
+                        <TextBlock Text="Live reachability, versions, health issues and queue counts. API keys are consumed only on the Linux host and are never returned to Windows." Foreground="{StaticResource Muted}" Margin="0,4,0,12" />
+                        <Button Style="{StaticResource GoCompactSecondaryButton}" Click="QueueDrilldown_Click" Margin="0,0,0,12" HorizontalAlignment="Left">Queue drill-down</Button>
+                        <ItemsControl x:Name="ArrCards" ItemTemplate="{StaticResource AppCardTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Header="Download Center" Visibility="Collapsed">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,14,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Style="{StaticResource Card}" Margin="0,0,7,0">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="SABnzbd" FontSize="20" FontWeight="SemiBold" />
+                                        <TextBlock Grid.Column="1" x:Name="SabStateText" Text="--" Foreground="{StaticResource Success}" />
+                                    </Grid>
+                                    <UniformGrid Columns="3" Margin="0,18,0,16">
+                                        <StackPanel>
+                                            <TextBlock Text="SPEED" Style="{StaticResource Eyebrow}" />
+                                            <TextBlock x:Name="SabSpeedText" Text="--" FontSize="22" FontWeight="SemiBold" />
+                                        </StackPanel>
+                                        <StackPanel>
+                                            <TextBlock Text="QUEUE" Style="{StaticResource Eyebrow}" />
+                                            <TextBlock x:Name="SabQueueText" Text="--" FontSize="22" FontWeight="SemiBold" />
+                                        </StackPanel>
+                                        <StackPanel>
+                                            <TextBlock Text="REMAINING" Style="{StaticResource Eyebrow}" />
+                                            <TextBlock x:Name="SabRemainingText" Text="--" FontSize="22" FontWeight="SemiBold" />
+                                        </StackPanel>
+                                    </UniformGrid>
+                                    <TextBlock x:Name="SabDetailText" Foreground="{StaticResource Muted}" TextWrapping="Wrap" />
+                                    <Button Style="{StaticResource SecondaryButton}" Click="OpenSab_Click" Margin="0,14,0,0">Open SABnzbd</Button>
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="1" Style="{StaticResource Card}" Margin="7,0,0,0">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="qBittorrent" FontSize="20" FontWeight="SemiBold" />
+                                        <TextBlock Grid.Column="1" x:Name="QbitStateText" Text="--" Foreground="{StaticResource Success}" />
+                                    </Grid>
+                                    <UniformGrid Columns="2" Margin="0,18,0,16">
+                                        <StackPanel>
+                                            <TextBlock Text="DOWNLOAD" Style="{StaticResource Eyebrow}" />
+                                            <TextBlock x:Name="QbitDownText" Text="--" FontSize="22" FontWeight="SemiBold" />
+                                        </StackPanel>
+                                        <StackPanel>
+                                            <TextBlock Text="UPLOAD" Style="{StaticResource Eyebrow}" />
+                                            <TextBlock x:Name="QbitUpText" Text="--" FontSize="22" FontWeight="SemiBold" />
+                                        </StackPanel>
+                                    </UniformGrid>
+                                    <TextBlock x:Name="QbitDetailText" Foreground="{StaticResource Muted}" TextWrapping="Wrap" />
+                                    <Button Style="{StaticResource SecondaryButton}" Click="OpenQbit_Click" Margin="0,14,0,0">Open qBittorrent</Button>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                        <TextBlock Text="Application cards" Style="{StaticResource SectionHeading}" Margin="0,18,0,10" />
+                        <ItemsControl x:Name="DownloadCards" ItemTemplate="{StaticResource AppCardTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Header="Launcher Settings">
+                <Grid Margin="0,14,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="380" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource Card}" Margin="0,0,12,0">
+                        <DataGrid x:Name="AppsGrid" SelectionMode="Single" SelectionChanged="AppsGrid_SelectionChanged">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Application" Binding="{Binding Name}" Width="2*" />
+                                <DataGridTextColumn Header="Category" Binding="{Binding Category}" Width="*" />
+                                <DataGridTextColumn Header="URL" Binding="{Binding Url}" Width="3*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="Edit launcher" FontSize="20" FontWeight="SemiBold" />
+                            <TextBlock Text="Name" Foreground="{StaticResource Muted}" Margin="0,14,0,0" />
+                            <TextBox x:Name="NameBox" Margin="0,4,0,8" />
+                            <TextBlock Text="URL" Foreground="{StaticResource Muted}" />
+                            <TextBox x:Name="UrlBox" Margin="0,4,0,8" />
+                            <TextBlock Text="Category" Foreground="{StaticResource Muted}" />
+                            <TextBox x:Name="CategoryBox" Margin="0,4,0,8" />
+                            <TextBlock Text="Server profile (used for {host})" Foreground="{StaticResource Muted}" />
+                            <ComboBox x:Name="ServerBox" Margin="0,4,0,8" />
+                            <CheckBox x:Name="EmbeddedCheck" Content="Open inside GraveOps" Foreground="{StaticResource Text}" Margin="0,8,0,14" IsChecked="True" />
+                            <Button Style="{StaticResource PrimaryButton}" Click="Save_Click" Margin="0,0,0,8">Save</Button>
+                            <Button Style="{StaticResource SecondaryButton}" Click="Add_Click" Margin="0,0,0,8">Add application</Button>
+                            <Button Style="{StaticResource SecondaryButton}" Click="Open_Click" Margin="0,0,0,8">Open selected</Button>
+                            <Button Style="{StaticResource DangerButton}" Click="Delete_Click">Delete selected</Button>
+                            <TextBlock x:Name="StatusText" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,12,0,0" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>
