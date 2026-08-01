@@ -99,6 +99,9 @@ public static class LinuxOpsAnalyzer
             ["Radarr"] = new[] { 7878, 7879 },
             ["Lidarr"] = new[] { 8686 },
             ["Prowlarr"] = new[] { 9696 },
+            ["Readarr"] = new[] { 8787 },
+            ["Whisparr"] = new[] { 6969 },
+            ["Mylar3"] = new[] { 8090 },
             ["Bazarr"] = new[] { 6767 },
             ["Seerr"] = new[] { 5055 },
             ["SABnzbd"] = new[] { 8080 },
@@ -148,12 +151,20 @@ public static class LinuxOpsAnalyzer
         }
 
         return rows
-            .GroupBy(row => row.Name, StringComparer.OrdinalIgnoreCase)
+            .GroupBy(
+                row => $"{row.Name}|{row.Evidence}",
+                StringComparer.OrdinalIgnoreCase)
             .Select(group => group
                 .OrderBy(row => row.Severity)
-                .ThenByDescending(row => row.Kind.Equals("systemd", StringComparison.OrdinalIgnoreCase))
+                .ThenByDescending(row =>
+                    !string.IsNullOrWhiteSpace(row.Endpoint))
+                .ThenByDescending(row =>
+                    row.Kind.Equals(
+                        "systemd",
+                        StringComparison.OrdinalIgnoreCase))
                 .First())
             .OrderBy(row => row.Name)
+            .ThenBy(row => row.Evidence)
             .ToArray();
     }
 

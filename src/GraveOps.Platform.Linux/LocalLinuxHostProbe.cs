@@ -15,7 +15,22 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
         "smbd.service",
         "nmbd.service",
         "NetworkManager.service",
-        "mullvad-daemon.service"
+        "mullvad-daemon.service",
+        "sonarr.service",
+        "radarr.service",
+        "lidarr.service",
+        "prowlarr.service",
+        "readarr.service",
+        "whisparr.service",
+        "bazarr.service",
+        "mylar.service",
+        "mylar3.service",
+        "recyclarr.service",
+        "cleanuparr.service",
+        "maintainerr.service",
+        "profilarr.service",
+        "unpackerr.service",
+        "autobrr.service"
     };
 
     private static readonly (string Name, string[] Tokens)[] IntegrationCatalog =
@@ -29,11 +44,15 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
         ("Radarr", new[] { "radarr" }),
         ("Lidarr", new[] { "lidarr" }),
         ("Prowlarr", new[] { "prowlarr" }),
+        ("Readarr", new[] { "readarr" }),
+        ("Whisparr", new[] { "whisparr" }),
+        ("Mylar3", new[] { "mylar3", "mylar" }),
         ("Bazarr", new[] { "bazarr" }),
         ("Seerr", new[] { "seerr", "overseerr", "jellyseerr" }),
         ("SABnzbd", new[] { "sabnzbd" }),
         ("qBittorrent", new[] { "qbittorrent" }),
         ("Recyclarr", new[] { "recyclarr" }),
+        ("Configarr", new[] { "configarr" }),
         ("Profilarr", new[] { "profilarr" }),
         ("autobrr", new[] { "autobrr" }),
         ("Unpackerr", new[] { "unpackerr" }),
@@ -412,7 +431,41 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
     {
         var rows = new List<ServiceSnapshot>();
 
-        foreach (var unit in KnownServiceUnits)
+        var discoveredOutput = await RunTextAsync(
+            "systemctl",
+            new[]
+            {
+                "list-unit-files",
+                "--type=service",
+                "--no-legend",
+                "--no-pager"
+            },
+            cancellationToken,
+            warnings,
+            "service discovery",
+            allowNonZeroExit: true,
+            warnOnNonZeroExit: false);
+
+        var discoveredUnits = discoveredOutput
+            .Split(
+                '\n',
+                StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => line.Split(
+                (char[]?)null,
+                StringSplitOptions.RemoveEmptyEntries)
+                .FirstOrDefault())
+            .Where(unit =>
+                !string.IsNullOrWhiteSpace(unit) &&
+                IntegrationCatalog.Any(entry =>
+                    entry.Tokens.Any(token =>
+                        unit!.Contains(
+                            token,
+                            StringComparison.OrdinalIgnoreCase))))
+            .Cast<string>();
+
+        foreach (var unit in KnownServiceUnits
+                     .Concat(discoveredUnits)
+                     .Distinct(StringComparer.OrdinalIgnoreCase))
         {
             var output = await RunTextAsync(
                 "systemctl",

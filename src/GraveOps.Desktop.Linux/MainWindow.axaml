@@ -323,6 +323,25 @@
                         Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
                   </Grid>
                 </Button>
+                <Button
+                    x:Name="ArrWorkspacesNav"
+                    Classes="nav"
+                    Click="NavigationButton_OnClick">
+                  <Grid ColumnDefinitions="24,*">
+                    <Path
+                        Width="16"
+                        Height="16"
+                        Data="M2,3 L14,3 L14,7 L2,7 Z M2,9 L14,9 L14,13 L2,13 Z"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.2" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="Arr Workspaces"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                  </Grid>
+                </Button>
+
 
                 <Button
                     x:Name="DumbNav"
@@ -382,6 +401,16 @@
                   <Button x:Name="ProwlarrNav" Classes="nav sub" IsVisible="False" Click="NavigationButton_OnClick">
                     <Grid ColumnDefinitions="24,*"><TextBlock Text="•" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Text="Prowlarr" VerticalAlignment="Center" /></Grid>
                   </Button>
+                  <Button x:Name="ReadarrNav" Classes="nav sub" IsVisible="False" Click="NavigationButton_OnClick">
+                    <Grid ColumnDefinitions="24,*"><TextBlock Text="•" /><TextBlock Grid.Column="1" Text="Readarr" /></Grid>
+                  </Button>
+                  <Button x:Name="WhisparrNav" Classes="nav sub" IsVisible="False" Click="NavigationButton_OnClick">
+                    <Grid ColumnDefinitions="24,*"><TextBlock Text="•" /><TextBlock Grid.Column="1" Text="Whisparr" /></Grid>
+                  </Button>
+                  <Button x:Name="Mylar3Nav" Classes="nav sub" IsVisible="False" Click="NavigationButton_OnClick">
+                    <Grid ColumnDefinitions="24,*"><TextBlock Text="•" /><TextBlock Grid.Column="1" Text="Mylar3" /></Grid>
+                  </Button>
+
                   <Button x:Name="SabnzbdNav" Classes="nav sub" IsVisible="False" Click="NavigationButton_OnClick">
                     <Grid ColumnDefinitions="24,*"><TextBlock Text="•" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Text="SABnzbd" VerticalAlignment="Center" /></Grid>
                   </Button>
@@ -408,6 +437,10 @@
                   <Button x:Name="RecyclarrNav" Classes="nav sub" IsVisible="False" Click="NavigationButton_OnClick">
                     <Grid ColumnDefinitions="24,*"><TextBlock Text="•" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Text="Recyclarr" VerticalAlignment="Center" /></Grid>
                   </Button>
+                  <Button x:Name="BazarrNav" Classes="nav sub" IsVisible="False" Click="NavigationButton_OnClick">
+                    <Grid ColumnDefinitions="24,*"><TextBlock Text="•" /><TextBlock Grid.Column="1" Text="Bazarr" /></Grid>
+                  </Button>
+
                   <Button x:Name="ZurgNav" Classes="nav sub" IsVisible="False" Click="NavigationButton_OnClick">
                     <Grid ColumnDefinitions="24,*"><TextBlock Text="•" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Text="Zurg" VerticalAlignment="Center" /></Grid>
                   </Button>
@@ -1274,6 +1307,165 @@
                     </StackPanel>
                   </Border>
                 </Grid>
+              </StackPanel>
+            </ScrollViewer>
+
+
+            <!-- Configurable Arr Workspaces -->
+            <ScrollViewer x:Name="ArrWorkspacePage" IsVisible="False">
+              <StackPanel Spacing="18">
+                <Grid ColumnDefinitions="0.82*,1.18*" ColumnSpacing="14">
+                  <Border Classes="card">
+                    <StackPanel Spacing="12">
+                      <Grid ColumnDefinitions="*,230">
+                        <StackPanel>
+                          <TextBlock Text="Detected Arr ecosystem instances" Classes="sectionTitle" />
+                          <TextBlock
+                              Text="Each deployment keeps its own name, role, privacy choice and enabled modules."
+                              Classes="pageSubtitle"
+                              Margin="0,4,0,0"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                        <TextBox
+                            Grid.Column="1"
+                            x:Name="ArrWorkspaceFilterText"
+                            Classes="filter"
+                            PlaceholderText="Filter workspaces"
+                            TextChanged="ArrWorkspaceFilterText_OnTextChanged" />
+                      </Grid>
+
+                      <TextBlock x:Name="ArrWorkspaceSummaryText" Text="Waiting for capture" Classes="muted" />
+
+                      <ListBox
+                          x:Name="ArrWorkspaceList"
+                          Classes="dataList"
+                          MinHeight="650"
+                          SelectionChanged="ArrWorkspaceList_OnSelectionChanged">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <StackPanel Spacing="4">
+                              <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel>
+                                  <TextBlock Text="{ReflectionBinding DisplayName}" FontWeight="SemiBold" />
+                                  <TextBlock Text="{ReflectionBinding ProductName}" Classes="dim" FontSize="10" />
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="{ReflectionBinding SeverityLabel}" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" />
+                              </Grid>
+                              <TextBlock Text="{ReflectionBinding Role}" Classes="muted" TextWrapping="Wrap" />
+                              <TextBlock Text="{ReflectionBinding Evidence}" Classes="dim" FontSize="10" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+                    </StackPanel>
+                  </Border>
+
+                  <StackPanel Grid.Column="1" Spacing="14">
+                    <Border Classes="card">
+                      <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto">
+                          <StackPanel>
+                            <TextBlock x:Name="ArrWorkspaceProductText" Text="Select an Arr workspace" FontSize="24" FontWeight="SemiBold" />
+                            <TextBlock x:Name="ArrWorkspaceFamilyText" Text="--" Classes="muted" Margin="0,4,0,0" />
+                          </StackPanel>
+                          <Border x:Name="ArrWorkspaceStateBorder" Grid.Column="1" Classes="badge">
+                            <TextBlock x:Name="ArrWorkspaceStateText" Text="WAITING" Classes="eyebrow" />
+                          </Border>
+                        </Grid>
+
+                        <TextBlock x:Name="ArrWorkspaceDescriptionText" Text="Select a detected integration." Classes="pageSubtitle" TextWrapping="Wrap" />
+
+                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                          <Border Classes="inset">
+                            <StackPanel Spacing="4">
+                              <TextBlock Text="DETECTION" Classes="eyebrow" />
+                              <TextBlock x:Name="ArrWorkspaceDetectionText" Text="--" TextWrapping="Wrap" />
+                            </StackPanel>
+                          </Border>
+                          <Border Grid.Column="1" Classes="inset">
+                            <StackPanel Spacing="4">
+                              <TextBlock Text="ENDPOINT" Classes="eyebrow" />
+                              <TextBlock x:Name="ArrWorkspaceEndpointText" Text="--" TextWrapping="Wrap" />
+                            </StackPanel>
+                          </Border>
+                          <Border Grid.Row="1" Classes="inset">
+                            <StackPanel Spacing="4">
+                              <TextBlock Text="RUNTIME" Classes="eyebrow" />
+                              <TextBlock x:Name="ArrWorkspaceRuntimeText" Text="--" TextWrapping="Wrap" />
+                            </StackPanel>
+                          </Border>
+                          <Border Grid.Row="1" Grid.Column="1" Classes="inset">
+                            <StackPanel Spacing="4">
+                              <TextBlock Text="MODULES" Classes="eyebrow" />
+                              <TextBlock x:Name="ArrWorkspaceModuleCountText" Text="--" />
+                            </StackPanel>
+                          </Border>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="8">
+                          <Button x:Name="OpenArrWorkspaceButton" Content="Open web interface" IsEnabled="False" Click="OpenArrWorkspaceButton_OnClick" />
+                          <Button Grid.Column="1" x:Name="ArrWorkspaceMediaHubButton" Content="Media Hub evidence" IsEnabled="False" Click="ArrWorkspaceMediaHubButton_OnClick" />
+                          <Button Grid.Column="2" Content="View Intelligence" Click="ArrWorkspaceIntelligenceButton_OnClick" />
+                          <TextBlock Grid.Column="3" x:Name="ArrWorkspaceActionStatusText" Text="Select a workspace." Classes="dim" VerticalAlignment="Center" TextWrapping="Wrap" />
+                        </Grid>
+                      </StackPanel>
+                    </Border>
+
+                    <Border Classes="card">
+                      <StackPanel Spacing="12">
+                        <TextBlock Text="Instance profile" Classes="sectionTitle" />
+                        <TextBlock
+                            Text="These settings control GraveOps presentation only; they do not rewrite the application."
+                            Classes="pageSubtitle"
+                            TextWrapping="Wrap" />
+
+                        <Grid ColumnDefinitions="120,*" RowSpacing="8" ColumnSpacing="10">
+                          <TextBlock Text="Display name" VerticalAlignment="Center" />
+                          <TextBox Grid.Column="1" x:Name="ArrFriendlyNameTextBox" PlaceholderText="Use detected name" />
+                          <TextBlock Grid.Row="1" Text="Role" VerticalAlignment="Center" />
+                          <TextBox Grid.Row="1" Grid.Column="1" x:Name="ArrRoleTextBox" PlaceholderText="Describe this instance's purpose" />
+                          <TextBlock Grid.Row="2" Text="Privacy" VerticalAlignment="Center" />
+                          <CheckBox Grid.Row="2" Grid.Column="1" x:Name="ArrPrivacyModeCheckBox" Content="Mask the custom instance name in this workspace" />
+                        </Grid>
+
+                        <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
+                          <Button x:Name="SaveArrWorkspaceButton" Content="Save profile" Classes="primary" IsEnabled="False" Click="SaveArrWorkspaceButton_OnClick" />
+                          <Button Grid.Column="1" x:Name="ResetArrWorkspaceButton" Content="Restore defaults" IsEnabled="False" Click="ResetArrWorkspaceButton_OnClick" />
+                          <TextBlock Grid.Column="2" x:Name="ArrWorkspaceProfileStatusText" Text="No instance selected." Classes="dim" VerticalAlignment="Center" TextWrapping="Wrap" />
+                        </Grid>
+                      </StackPanel>
+                    </Border>
+
+                    <Border Classes="card">
+                      <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+                          <StackPanel>
+                            <TextBlock Text="Integration-specific modules" Classes="sectionTitle" />
+                            <TextBlock Text="Enable only the modules useful for this particular instance." Classes="pageSubtitle" Margin="0,4,0,0" />
+                          </StackPanel>
+                          <Button Grid.Column="1" Content="Enable all" Margin="0,0,8,0" Click="EnableAllArrModulesButton_OnClick" />
+                          <Button Grid.Column="2" Content="Disable all" Click="DisableAllArrModulesButton_OnClick" />
+                        </Grid>
+
+                        <ScrollViewer MaxHeight="360" VerticalScrollBarVisibility="Auto">
+                          <StackPanel x:Name="ArrWorkspaceModulesPanel" Spacing="8" />
+                        </ScrollViewer>
+
+                        <TextBlock x:Name="ArrWorkspaceConfigPathText" Text="--" Classes="dim" FontFamily="DejaVu Sans Mono, monospace" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+                  </StackPanel>
+                </Grid>
+
+                <Border Classes="card">
+                  <StackPanel Spacing="8">
+                    <TextBlock Text="Credential-safe boundary" Classes="sectionTitle" />
+                    <TextBlock
+                        Text="V4.0 establishes configurable per-instance workspaces using verified host and container evidence. Live queue and library API reads follow in the credential-safe connector pass; this update does not read, display or store an application API key."
+                        Classes="muted"
+                        TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
               </StackPanel>
             </ScrollViewer>
 

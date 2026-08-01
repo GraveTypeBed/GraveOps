@@ -24,6 +24,7 @@ public partial class MainWindow : Window
     private readonly LinuxHostActionService _actions = new();
     private readonly LinuxHistoryStore _history = new();
     private readonly LinuxFindingPolicyStore _findingPolicies = new();
+    private readonly ArrWorkspaceProfileStore _arrWorkspaceProfiles = new();
     private readonly LinuxOperatorSettingsStore _operatorSettingsStore = new();
     private readonly string _repositoryPath =
         LinuxOperatorTools.FindRepositoryRoot();
@@ -39,6 +40,9 @@ public partial class MainWindow : Window
             ["Radarr"] = new[] { 7878, 7879 },
             ["Lidarr"] = new[] { 8686 },
             ["Prowlarr"] = new[] { 9696 },
+            ["Readarr"] = new[] { 8787 },
+            ["Whisparr"] = new[] { 6969 },
+            ["Mylar3"] = new[] { 8090 },
             ["SABnzbd"] = new[] { 8080 },
             ["qBittorrent"] = new[] { 8081 },
             ["Decypharr"] = new[] { 8282 },
@@ -61,6 +65,10 @@ public partial class MainWindow : Window
                 ["RadarrNav"] = "Radarr",
                 ["LidarrNav"] = "Lidarr",
                 ["ProwlarrNav"] = "Prowlarr",
+                ["ReadarrNav"] = "Readarr",
+                ["WhisparrNav"] = "Whisparr",
+                ["Mylar3Nav"] = "Mylar3",
+                ["BazarrNav"] = "Bazarr",
                 ["SabnzbdNav"] = "SABnzbd",
                 ["QBittorrentNav"] = "qBittorrent",
                 ["DecypharrNav"] = "Decypharr",
@@ -77,18 +85,23 @@ public partial class MainWindow : Window
             ["HistoryNav"] = new("HistoryPage", "History", "Persisted transitions, guarded actions and operator decisions"),
             ["ServersNav"] = new("ServersPage", "Servers", "Selected-host identity, runtime and provider capability"),
             ["MediaHubNav"] = new("MediaHubPage", "Media Hub", "Verified media and acquisition integrations"),
+            ["ArrWorkspacesNav"] = new("ArrWorkspacePage", "Arr Workspaces", "Configurable per-instance workspaces across the Arr ecosystem"),
             ["DumbNav"] = new("MediaHubPage", "DUMB", "Stack orchestration and verified local interface"),
             ["PlexNav"] = new("MediaHubPage", "Plex", "Library availability, playback endpoint and related findings"),
             ["TautulliNav"] = new("MediaHubPage", "Tautulli", "Playback analytics and related findings"),
             ["KometaNav"] = new("MediaHubPage", "Kometa", "Library metadata automation and related findings"),
-            ["SonarrNav"] = new("MediaHubPage", "Sonarr", "Television acquisition, import and related findings"),
-            ["RadarrNav"] = new("MediaHubPage", "Radarr", "Movie acquisition, import and related findings"),
-            ["LidarrNav"] = new("MediaHubPage", "Lidarr", "Music acquisition, import and related findings"),
-            ["ProwlarrNav"] = new("MediaHubPage", "Prowlarr", "Indexer discovery and upstream acquisition health"),
+            ["SonarrNav"] = new("ArrWorkspacePage", "Sonarr", "Configurable television acquisition workspace"),
+            ["RadarrNav"] = new("ArrWorkspacePage", "Radarr", "Configurable movie acquisition workspace"),
+            ["LidarrNav"] = new("ArrWorkspacePage", "Lidarr", "Configurable music acquisition workspace"),
+            ["ProwlarrNav"] = new("ArrWorkspacePage", "Prowlarr", "Configurable indexer and application-sync workspace"),
+            ["ReadarrNav"] = new("ArrWorkspacePage", "Readarr", "Configurable book and audiobook workspace"),
+            ["WhisparrNav"] = new("ArrWorkspacePage", "Whisparr", "Version-aware configurable acquisition workspace"),
+            ["Mylar3Nav"] = new("ArrWorkspacePage", "Mylar3", "Configurable comic acquisition workspace"),
+            ["BazarrNav"] = new("ArrWorkspacePage", "Bazarr", "Configurable subtitle coverage workspace"),
             ["SabnzbdNav"] = new("MediaHubPage", "SABnzbd", "Usenet download availability and related findings"),
             ["QBittorrentNav"] = new("MediaHubPage", "qBittorrent", "Torrent download availability and related findings"),
             ["DecypharrNav"] = new("MediaHubPage", "Decypharr", "Debrid processing and related findings"),
-            ["RecyclarrNav"] = new("MediaHubPage", "Recyclarr", "Quality-policy synchronization and related findings"),
+            ["RecyclarrNav"] = new("ArrWorkspacePage", "Recyclarr", "Configurable synchronization and drift workspace"),
             ["ZurgNav"] = new("MediaHubPage", "Zurg", "Debrid mount availability and related findings"),
             ["ServicesNav"] = new("ServicesPage", "Services & Actions", "Native systemd inventory and guarded actions"),
             ["DockerNav"] = new("DockerPage", "Docker", "Containers, images, state, ports and guarded actions"),
@@ -107,6 +120,8 @@ public partial class MainWindow : Window
     private IReadOnlyList<OpsLifecycleStage> _lifecycle = Array.Empty<OpsLifecycleStage>();
     private IReadOnlyList<OpsIntegration> _integrations = Array.Empty<OpsIntegration>();
     private IReadOnlyList<OpsLogGroup> _logs = Array.Empty<OpsLogGroup>();
+    private IReadOnlyList<ArrWorkspaceView> _arrWorkspaceRows =
+        Array.Empty<ArrWorkspaceView>();
     private OpsPolicyEvaluation? _policyEvaluation;
     private IReadOnlyList<CommandPaletteItem> _commandPaletteItems =
         Array.Empty<CommandPaletteItem>();
@@ -223,7 +238,22 @@ public partial class MainWindow : Window
                 navigationName,
                 out var integrationName))
         {
-            SelectIntegrationByName(integrationName);
+            if (target.PageName.Equals(
+                    "ArrWorkspacePage",
+                    StringComparison.Ordinal))
+            {
+                SelectArrWorkspaceByName(integrationName);
+            }
+            else
+            {
+                SelectIntegrationByName(integrationName);
+            }
+        }
+        else if (target.PageName.Equals(
+                     "ArrWorkspacePage",
+                     StringComparison.Ordinal))
+        {
+            PopulateArrWorkspaces();
         }
 
         CloseCommandPalette();
@@ -274,6 +304,10 @@ public partial class MainWindow : Window
         SetButton("RadarrNav", "Radarr");
         SetButton("LidarrNav", "Lidarr");
         SetButton("ProwlarrNav", "Prowlarr");
+        SetButton("ReadarrNav", "Readarr");
+        SetButton("WhisparrNav", "Whisparr");
+        SetButton("Mylar3Nav", "Mylar3");
+        SetButton("BazarrNav", "Bazarr");
         SetButton("SabnzbdNav", "SABnzbd");
         SetButton("QBittorrentNav", "qBittorrent");
         SetButton("DecypharrNav", "Decypharr");
@@ -289,11 +323,20 @@ public partial class MainWindow : Window
             Detected("Radarr") ||
             Detected("Lidarr") ||
             Detected("Prowlarr") ||
+            Detected("Readarr") ||
+            Detected("Whisparr") ||
+            Detected("Mylar3") ||
             Detected("SABnzbd") ||
             Detected("qBittorrent");
         var processingVisible =
             Detected("Decypharr") ||
             Detected("Recyclarr") ||
+            Detected("Bazarr") ||
+            Detected("Configarr") ||
+            Detected("Profilarr") ||
+            Detected("Cleanuparr") ||
+            Detected("Maintainerr") ||
+            Detected("Unpackerr") ||
             Detected("Zurg");
 
         Get<Button>("LibraryGroupButton").IsVisible =
@@ -1005,6 +1048,7 @@ public partial class MainWindow : Window
         PopulateServerPage();
         UpdateIntegrationNavigation();
         ApplyMediaFilter();
+        PopulateArrWorkspaces();
         ApplyServicesFilter();
         ApplyDockerFilter();
         ApplyStorageFilter();
@@ -1191,6 +1235,450 @@ public partial class MainWindow : Window
         Get<ListBox>("BackupUnitsList").ItemsSource = backup.Units;
         Get<ListBox>("BackupArtifactsList").ItemsSource = backup.Artifacts;
     }
+
+    private void ArrWorkspaceFilterText_OnTextChanged(
+        object? sender,
+        TextChangedEventArgs e) =>
+        PopulateArrWorkspaces();
+
+    private void PopulateArrWorkspaces()
+    {
+        var list = Get<ListBox>("ArrWorkspaceList");
+        var selectedKey =
+            (list.SelectedItem as ArrWorkspaceView)?
+                .InstanceKey;
+        var filter =
+            Get<TextBox>("ArrWorkspaceFilterText")
+                .Text?
+                .Trim();
+
+        _arrWorkspaceRows =
+            ArrWorkspaceRegistry.BuildViews(
+                _integrations,
+                _arrWorkspaceProfiles);
+
+        var rows = _arrWorkspaceRows
+            .Where(item =>
+                Matches(
+                    filter,
+                    item.DisplayName,
+                    item.ProductName,
+                    item.Family,
+                    item.Role,
+                    item.State,
+                    item.Detection,
+                    item.Evidence,
+                    item.Endpoint))
+            .ToArray();
+
+        list.ItemsSource = rows;
+        list.SelectedItem = rows.FirstOrDefault(item =>
+            item.InstanceKey.Equals(
+                selectedKey,
+                StringComparison.OrdinalIgnoreCase));
+
+        if (list.SelectedItem is null &&
+            rows.Length > 0)
+        {
+            list.SelectedIndex = 0;
+        }
+
+        var customized = _arrWorkspaceRows.Count(item =>
+            _arrWorkspaceProfiles.IsCustomized(
+                item.InstanceKey));
+
+        Get<TextBlock>("ArrWorkspaceSummaryText").Text =
+            $"{rows.Length} shown · " +
+            $"{_arrWorkspaceRows.Count} compatible detected · " +
+            $"{customized} customized";
+
+        Get<TextBlock>("ArrWorkspaceConfigPathText").Text =
+            $"Profiles · {_arrWorkspaceProfiles.FilePath}";
+
+        PopulateSelectedArrWorkspace();
+    }
+
+    private void SelectArrWorkspaceByName(
+        string productName)
+    {
+        var filter =
+            Get<TextBox>("ArrWorkspaceFilterText");
+
+        if (!string.IsNullOrWhiteSpace(filter.Text))
+            filter.Text = string.Empty;
+
+        PopulateArrWorkspaces();
+
+        var selected = _arrWorkspaceRows
+            .FirstOrDefault(item =>
+                item.ProductName.Equals(
+                    productName,
+                    StringComparison.OrdinalIgnoreCase) ||
+                item.Integration.Name.Equals(
+                    productName,
+                    StringComparison.OrdinalIgnoreCase));
+
+        if (selected is null)
+            return;
+
+        Get<ListBox>("ArrWorkspaceList").SelectedItem =
+            selected;
+        PopulateSelectedArrWorkspace();
+    }
+
+    private void ArrWorkspaceList_OnSelectionChanged(
+        object? sender,
+        SelectionChangedEventArgs e) =>
+        PopulateSelectedArrWorkspace();
+
+    private ArrWorkspaceView? SelectedArrWorkspace() =>
+        Get<ListBox>("ArrWorkspaceList")
+            .SelectedItem as ArrWorkspaceView;
+
+    private void PopulateSelectedArrWorkspace()
+    {
+        var selected = SelectedArrWorkspace();
+        var panel =
+            Get<StackPanel>("ArrWorkspaceModulesPanel");
+
+        var stateBorder =
+            Get<Border>("ArrWorkspaceStateBorder");
+        var stateText =
+            Get<TextBlock>("ArrWorkspaceStateText");
+        var save =
+            Get<Button>("SaveArrWorkspaceButton");
+        var reset =
+            Get<Button>("ResetArrWorkspaceButton");
+        var open =
+            Get<Button>("OpenArrWorkspaceButton");
+        var media =
+            Get<Button>("ArrWorkspaceMediaHubButton");
+
+        panel.Children.Clear();
+
+        if (selected is null)
+        {
+            Get<TextBlock>("ArrWorkspaceProductText").Text =
+                "Select an Arr workspace";
+            Get<TextBlock>("ArrWorkspaceFamilyText").Text =
+                "--";
+            Get<TextBlock>("ArrWorkspaceDescriptionText").Text =
+                "Select a detected integration.";
+            stateText.Text = "WAITING";
+            stateText.Foreground =
+                OpsPalette.Foreground(OpsSeverity.Info);
+            stateBorder.Background =
+                OpsPalette.Background(OpsSeverity.Info);
+            Get<TextBlock>("ArrWorkspaceDetectionText").Text =
+                "--";
+            Get<TextBlock>("ArrWorkspaceEndpointText").Text =
+                "--";
+            Get<TextBlock>("ArrWorkspaceRuntimeText").Text =
+                "--";
+            Get<TextBlock>("ArrWorkspaceModuleCountText").Text =
+                "--";
+            Get<TextBox>("ArrFriendlyNameTextBox").Text =
+                string.Empty;
+            Get<TextBox>("ArrRoleTextBox").Text =
+                string.Empty;
+            Get<CheckBox>("ArrPrivacyModeCheckBox")
+                .IsChecked = false;
+            save.IsEnabled = false;
+            reset.IsEnabled = false;
+            open.IsEnabled = false;
+            media.IsEnabled = false;
+            Get<TextBlock>("ArrWorkspaceProfileStatusText")
+                .Text = "No instance selected.";
+            Get<TextBlock>("ArrWorkspaceActionStatusText")
+                .Text = "Select a workspace.";
+            return;
+        }
+
+        var url =
+            ResolveIntegrationUrl(
+                selected.Integration);
+        var enabled =
+            selected.Profile.EnabledModules.ToHashSet(
+                StringComparer.OrdinalIgnoreCase);
+
+        Get<TextBlock>("ArrWorkspaceProductText").Text =
+            selected.DisplayName;
+        Get<TextBlock>("ArrWorkspaceFamilyText").Text =
+            $"{selected.ProductName} · {selected.Family}";
+        Get<TextBlock>("ArrWorkspaceDescriptionText").Text =
+            selected.Summary;
+
+        stateText.Text = selected.SeverityLabel;
+        stateText.Foreground =
+            OpsPalette.Foreground(
+                selected.Integration.Severity);
+        stateBorder.Background =
+            OpsPalette.Background(
+                selected.Integration.Severity);
+
+        Get<TextBlock>("ArrWorkspaceDetectionText").Text =
+            $"{selected.Detection} · {selected.Evidence}";
+        Get<TextBlock>("ArrWorkspaceEndpointText").Text =
+            url ??
+            (string.IsNullOrWhiteSpace(selected.Endpoint)
+                ? "No verified web endpoint"
+                : selected.Endpoint);
+        Get<TextBlock>("ArrWorkspaceRuntimeText").Text =
+            selected.State;
+        Get<TextBlock>("ArrWorkspaceModuleCountText").Text =
+            $"{selected.EnabledModuleCount} enabled · " +
+            $"{selected.AvailableModuleCount} available";
+
+        Get<TextBox>("ArrFriendlyNameTextBox").Text =
+            selected.Profile.FriendlyName;
+        Get<TextBox>("ArrRoleTextBox").Text =
+            selected.Role;
+        Get<CheckBox>("ArrPrivacyModeCheckBox")
+            .IsChecked =
+            selected.Profile.PrivacyMode;
+
+        foreach (var module in selected.Definition.Modules)
+        {
+            var checkbox = new CheckBox
+            {
+                Tag = module.Id,
+                IsChecked = enabled.Contains(module.Id)
+            };
+
+            checkbox.Content = new StackPanel
+            {
+                Margin = new Thickness(6, 0, 0, 0),
+                Spacing = 3,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = module.Title,
+                        FontWeight = FontWeight.SemiBold
+                    },
+                    new TextBlock
+                    {
+                        Text = module.Description,
+                        TextWrapping = TextWrapping.Wrap,
+                        Classes = { "muted" },
+                        FontSize = 10
+                    }
+                }
+            };
+
+            panel.Children.Add(checkbox);
+        }
+
+        save.IsEnabled = true;
+        reset.IsEnabled =
+            _arrWorkspaceProfiles.IsCustomized(
+                selected.InstanceKey);
+        open.IsEnabled = url is not null;
+        media.IsEnabled = true;
+
+        Get<TextBlock>("ArrWorkspaceProfileStatusText")
+            .Text =
+            reset.IsEnabled
+                ? "Custom profile active."
+                : "Default integration profile.";
+        Get<TextBlock>("ArrWorkspaceActionStatusText")
+            .Text =
+            url is null
+                ? "No verified local web interface is available."
+                : "Ready to open the local interface.";
+    }
+
+    private IEnumerable<string> SelectedArrModuleIds() =>
+        Get<StackPanel>("ArrWorkspaceModulesPanel")
+            .Children
+            .OfType<CheckBox>()
+            .Where(item => item.IsChecked == true)
+            .Select(item => item.Tag as string)
+            .Where(value =>
+                !string.IsNullOrWhiteSpace(value))
+            .Cast<string>();
+
+    private void SaveArrWorkspaceButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        var selected = SelectedArrWorkspace();
+        if (selected is null)
+            return;
+
+        try
+        {
+            _arrWorkspaceProfiles.Save(
+                selected.InstanceKey,
+                selected.Definition,
+                Get<TextBox>("ArrFriendlyNameTextBox")
+                    .Text ?? string.Empty,
+                Get<TextBox>("ArrRoleTextBox")
+                    .Text ?? string.Empty,
+                Get<CheckBox>("ArrPrivacyModeCheckBox")
+                    .IsChecked == true,
+                SelectedArrModuleIds());
+
+            _history.RecordPolicy(
+                selected.ProductName,
+                "WORKSPACE PROFILE SAVED",
+                selected.InstanceKey);
+
+            ReselectArrWorkspace(
+                selected.InstanceKey);
+
+            Get<TextBlock>("ArrWorkspaceProfileStatusText")
+                .Text = "Workspace profile saved.";
+        }
+        catch (Exception exception)
+        {
+            Get<TextBlock>("ArrWorkspaceProfileStatusText")
+                .Text =
+                $"Could not save profile: {exception.Message}";
+        }
+    }
+
+    private void ResetArrWorkspaceButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        var selected = SelectedArrWorkspace();
+        if (selected is null)
+            return;
+
+        try
+        {
+            _arrWorkspaceProfiles.Reset(
+                selected.InstanceKey);
+
+            _history.RecordPolicy(
+                selected.ProductName,
+                "WORKSPACE DEFAULTS RESTORED",
+                selected.InstanceKey);
+
+            ReselectArrWorkspace(
+                selected.InstanceKey);
+
+            Get<TextBlock>("ArrWorkspaceProfileStatusText")
+                .Text =
+                "Default workspace profile restored.";
+        }
+        catch (Exception exception)
+        {
+            Get<TextBlock>("ArrWorkspaceProfileStatusText")
+                .Text =
+                $"Could not restore defaults: {exception.Message}";
+        }
+    }
+
+    private void ReselectArrWorkspace(string instanceKey)
+    {
+        PopulateArrWorkspaces();
+
+        Get<ListBox>("ArrWorkspaceList").SelectedItem =
+            _arrWorkspaceRows.FirstOrDefault(item =>
+                item.InstanceKey.Equals(
+                    instanceKey,
+                    StringComparison.OrdinalIgnoreCase));
+
+        PopulateSelectedArrWorkspace();
+        PopulateHistory();
+    }
+
+    private void EnableAllArrModulesButton_OnClick(
+        object? sender,
+        RoutedEventArgs e) =>
+        SetAllArrModules(true);
+
+    private void DisableAllArrModulesButton_OnClick(
+        object? sender,
+        RoutedEventArgs e) =>
+        SetAllArrModules(false);
+
+    private void SetAllArrModules(bool enabled)
+    {
+        foreach (var checkbox in
+                 Get<StackPanel>(
+                         "ArrWorkspaceModulesPanel")
+                     .Children
+                     .OfType<CheckBox>())
+        {
+            checkbox.IsChecked = enabled;
+        }
+
+        Get<TextBlock>("ArrWorkspaceProfileStatusText")
+            .Text =
+            enabled
+                ? "All modules selected. Save to persist."
+                : "All modules cleared. Save to persist.";
+    }
+
+    private async void OpenArrWorkspaceButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        var selected = SelectedArrWorkspace();
+        if (selected is null)
+            return;
+
+        var url =
+            ResolveIntegrationUrl(
+                selected.Integration);
+
+        if (url is null)
+            return;
+
+        try
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "xdg-open",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.StartInfo.ArgumentList.Add(url);
+            process.Start();
+
+            Get<TextBlock>("ArrWorkspaceActionStatusText")
+                .Text = $"Opened {url}";
+            await Task.CompletedTask;
+        }
+        catch (Exception exception)
+        {
+            Get<TextBlock>("ArrWorkspaceActionStatusText")
+                .Text =
+                $"Could not open interface: {exception.Message}";
+        }
+    }
+
+    private void ArrWorkspaceMediaHubButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        var selected = SelectedArrWorkspace();
+        if (selected is null)
+            return;
+
+        Navigate("MediaHubNav");
+
+        Get<ListBox>("IntegrationsList").SelectedItem =
+            _integrations.FirstOrDefault(item =>
+                ArrWorkspaceRegistry.InstanceKey(item)
+                    .Equals(
+                        selected.InstanceKey,
+                        StringComparison.OrdinalIgnoreCase));
+
+        PopulateIntegrationWorkspace();
+    }
+
+    private void ArrWorkspaceIntelligenceButton_OnClick(
+        object? sender,
+        RoutedEventArgs e) =>
+        Navigate("IntelligenceNav");
 
     private void MediaFilterText_OnTextChanged(object? sender, TextChangedEventArgs e) => ApplyMediaFilter();
     private void ServicesFilterText_OnTextChanged(object? sender, TextChangedEventArgs e) => ApplyServicesFilter();
@@ -1873,7 +2361,10 @@ public partial class MainWindow : Window
 
         if (name.Equals("Sonarr", StringComparison.OrdinalIgnoreCase) ||
             name.Equals("Radarr", StringComparison.OrdinalIgnoreCase) ||
-            name.Equals("Lidarr", StringComparison.OrdinalIgnoreCase))
+            name.Equals("Lidarr", StringComparison.OrdinalIgnoreCase) ||
+            name.Equals("Readarr", StringComparison.OrdinalIgnoreCase) ||
+            name.Equals("Whisparr", StringComparison.OrdinalIgnoreCase) ||
+            name.Equals("Mylar3", StringComparison.OrdinalIgnoreCase))
         {
             return "Acquisition and import";
         }
