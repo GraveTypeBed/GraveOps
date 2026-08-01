@@ -551,5 +551,100 @@
       <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
     </Style>
+
+    <!-- V4.5.0 Windows DownloadClientView translation. -->
+    <Style Selector="Border.downloadMetric">
+      <Setter Property="MinHeight" Value="98" />
+      <Setter Property="Padding" Value="16" />
+    </Style>
+
+    <Style Selector="Border.downloadInsetMetric">
+      <Setter Property="MinHeight" Value="70" />
+      <Setter Property="Padding" Value="14" />
+    </Style>
+
+    <Style Selector="Border.downloadOperations">
+      <Setter Property="Padding" Value="15" />
+      <Setter Property="CornerRadius" Value="10" />
+    </Style>
+
+    <Style Selector="Button.downloadAction">
+      <Setter Property="MinWidth" Value="132" />
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="12,7" />
+    </Style>
+
+    <Style Selector="Border.downloadAnalytics">
+      <Setter Property="Padding" Value="14" />
+      <Setter Property="MinHeight" Value="118" />
+    </Style>
+
+    <Style Selector="Border.downloadTablePanel">
+      <Setter Property="Padding" Value="14" />
+      <Setter Property="CornerRadius" Value="10" />
+    </Style>
+
+    <Style Selector="Border.downloadTableHeader">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="Padding" Value="10,7" />
+    </Style>
+
+    <Style Selector="Border.downloadEmpty">
+      <Setter Property="Background" Value="#111A16" />
+      <Setter Property="BorderBrush" Value="#244D35" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="16" />
+      <Setter Property="MinHeight" Value="78" />
+    </Style>
+
+    <Style Selector="Border.downloadStatus">
+      <Setter Property="Background" Value="#14171A" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="Padding" Value="10,8" />
+    </Style>
+
+    <Style Selector="ListBox.downloadTable">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="{DynamicResource ConsoleBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="ListBox.downloadTable ListBoxItem">
+      <Setter Property="Padding" Value="10,7" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+
+    <Style Selector="ListBox.downloadTable ListBoxItem:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+    </Style>
+
+    <Style Selector="ListBox.downloadTable ListBoxItem:selected">
+      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="BorderThickness" Value="2,0,0,1" />
+    </Style>
+
+    <Style Selector="ListBox.downloadTable ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
+
+    <Style Selector="ProgressBar.downloadProgress">
+      <Setter Property="Height" Value="6" />
+      <Setter Property="MinHeight" Value="6" />
+      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
   </Application.Styles>
 </Application>

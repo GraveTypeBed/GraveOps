@@ -99,8 +99,8 @@ public partial class MainWindow : Window
             ["WhisparrNav"] = new("ArrWorkspacePage", "Whisparr", "Version-aware configurable acquisition workspace"),
             ["Mylar3Nav"] = new("ArrWorkspacePage", "Mylar3", "Configurable comic acquisition workspace"),
             ["BazarrNav"] = new("ArrWorkspacePage", "Bazarr", "Configurable subtitle coverage workspace"),
-            ["SabnzbdNav"] = new("ApplicationWorkspacePage", "SABnzbd", "Usenet download availability and related findings"),
-            ["QBittorrentNav"] = new("ApplicationWorkspacePage", "qBittorrent", "Torrent download availability and related findings"),
+            ["SabnzbdNav"] = new("DownloadClientWorkspacePage", "SABnzbd", "Usenet queue analytics, progress, history and explicit operations"),
+            ["QBittorrentNav"] = new("DownloadClientWorkspacePage", "qBittorrent", "Torrent transfer analytics, progress, seeding and explicit operations"),
             ["DecypharrNav"] = new("ApplicationWorkspacePage", "Decypharr", "Debrid processing and related findings"),
             ["RecyclarrNav"] = new("ArrWorkspacePage", "Recyclarr", "Configurable synchronization and drift workspace"),
             ["ZurgNav"] = new("ApplicationWorkspacePage", "Zurg", "Debrid mount availability and related findings"),
@@ -139,6 +139,7 @@ public partial class MainWindow : Window
         _operatorSettings = _operatorSettingsStore.Load();
         ApplyOperatorSettingsToUi();
         InitializeControlPlaneFoundation();
+        InitializeDownloadClientWorkspace();
 
         _arrLiveTimer = new DispatcherTimer
         {
@@ -279,6 +280,12 @@ public partial class MainWindow : Window
                     StringComparison.Ordinal))
             {
                 ActivateArrProduct(integrationName);
+            }
+            else if (target.PageName.Equals(
+                         "DownloadClientWorkspacePage",
+                         StringComparison.Ordinal))
+            {
+                ActivateDownloadClient(integrationName);
             }
             else if (target.PageName.Equals(
                          "ApplicationWorkspacePage",
@@ -1126,6 +1133,7 @@ public partial class MainWindow : Window
         UpdateIntegrationNavigation();
         ApplyMediaFilter();
         PopulateDirectIntegrationWorkspace();
+        PopulateDownloadClientWorkspace();
         PopulateArrApplicationPage();
         ApplyServicesFilter();
         ApplyDockerFilter();

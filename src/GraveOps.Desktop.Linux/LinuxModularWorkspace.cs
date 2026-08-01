@@ -78,7 +78,7 @@ public sealed record ModularApplicationDescriptor(
 
 public sealed class ModularLayoutContract
 {
-    public string Version { get; set; } = "4.4.1";
+    public string Version { get; set; } = "4.5.0";
     public bool ViewportFirst { get; set; } = true;
     public bool PageLevelScrollDisabled { get; set; } = false;
     public bool DirectAppsUseDedicatedWorkspace { get; set; } = true;
@@ -93,6 +93,10 @@ public sealed class ModularLayoutContract
     public bool SharedArrPageComposition { get; set; } = true;
     public bool DenseArrQueueTables { get; set; } = true;
     public bool SubtleGlobalListSelection { get; set; } = true;
+    public bool WindowsDownloadClientWorkspace { get; set; } = true;
+    public bool NativeDownloadClientTelemetry { get; set; } = true;
+    public bool ProtectedLocalClientProbes { get; set; } = true;
+    public bool DenseDownloadClientTables { get; set; } = true;
     public int PrimaryReferenceWidth { get; set; } = 1920;
     public int PrimaryReferenceHeight { get; set; } = 1040;
     public int SidebarWidth { get; set; } = 260;
