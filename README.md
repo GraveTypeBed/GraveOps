@@ -1,3 +1,6 @@
+<p align="center">
+  <img src="assets/branding/graveops-hexagonal-g-emblem.png" alt="GraveOps logo" width="420">
+</p>
 # GraveOps
 
 GraveOps is a Windows desktop control center for managing and observing self-hosted media infrastructure.
