@@ -167,7 +167,7 @@
       <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="Padding" Value="8" />
-      <Setter Property="FontFamily" Value="DejaVu Sans Mono, monospace" />
+      <Setter Property="FontFamily" Value="Inter, DejaVu Sans, sans-serif" />
       <Setter Property="FontSize" Value="12" />
     </Style>
 
@@ -179,6 +179,51 @@
     </Style>
 
     <Style Selector="ListBox.dataList ListBoxItem:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+    </Style>
+
+    <Style Selector="ListBox.dataList ListBoxItem:selected">
+      <Setter Property="Background" Value="{DynamicResource AccentTintBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+
+    <Style Selector="ListBox.dataList.passive ListBoxItem">
+      <Setter Property="Focusable" Value="False" />
+    </Style>
+
+    <Style Selector="ListBox.dataList.passive ListBoxItem:pointerover">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.dataList.passive ListBoxItem:selected">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+
+    <Style Selector="Button.nav.sub">
+      <Setter Property="Height" Value="34" />
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Margin" Value="12,0,0,1" />
+      <Setter Property="Padding" Value="10,0" />
+      <Setter Property="FontSize" Value="11" />
+    </Style>
+
+    <Style Selector="Button.navGroup">
+      <Setter Property="Height" Value="30" />
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="Margin" Value="4,3,0,0" />
+      <Setter Property="Padding" Value="8,0" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="FontSize" Value="10" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource DimBrush}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style Selector="Button.navGroup:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
       <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
     </Style>
 

@@ -323,6 +323,95 @@
                   </Grid>
                 </Button>
 
+                <Button
+                    x:Name="DumbNav"
+                    Classes="nav sub"
+                    IsVisible="False"
+                    Click="NavigationButton_OnClick">
+                  <Grid ColumnDefinitions="24,*">
+                    <TextBlock Text="◆" FontSize="9" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="DUMB stack" VerticalAlignment="Center" />
+                  </Grid>
+                </Button>
+
+                <Button
+                    x:Name="LibraryGroupButton"
+                    Classes="navGroup"
+                    IsVisible="False"
+                    Click="LibraryGroupButton_OnClick">
+                  <Grid ColumnDefinitions="18,*">
+                    <TextBlock x:Name="LibraryGroupGlyph" Text="▾" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="LIBRARY" VerticalAlignment="Center" />
+                  </Grid>
+                </Button>
+
+                <StackPanel x:Name="LibraryNavGroup" IsVisible="False">
+                  <Button x:Name="PlexNav" Classes="nav sub" IsVisible="False" Click="NavigationButton_OnClick">
+                    <Grid ColumnDefinitions="24,*"><TextBlock Text="▶" FontSize="9" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Text="Plex" VerticalAlignment="Center" /></Grid>
+                  </Button>
+                  <Button x:Name="TautulliNav" Classes="nav sub" IsVisible="False" Click="NavigationButton_OnClick">
+                    <Grid ColumnDefinitions="24,*"><TextBlock Text="▥" FontSize="10" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Text="Tautulli" VerticalAlignment="Center" /></Grid>
+                  </Button>
+                  <Button x:Name="KometaNav" Classes="nav sub" IsVisible="False" Click="NavigationButton_OnClick">
+                    <Grid ColumnDefinitions="24,*"><TextBlock Text="◇" FontSize="10" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Text="Kometa" VerticalAlignment="Center" /></Grid>
+                  </Button>
+                </StackPanel>
+
+                <Button
+                    x:Name="AcquisitionGroupButton"
+                    Classes="navGroup"
+                    IsVisible="False"
+                    Click="AcquisitionGroupButton_OnClick">
+                  <Grid ColumnDefinitions="18,*">
+                    <TextBlock x:Name="AcquisitionGroupGlyph" Text="▾" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="ACQUISITION" VerticalAlignment="Center" />
+                  </Grid>
+                </Button>
+
+                <StackPanel x:Name="AcquisitionNavGroup" IsVisible="False">
+                  <Button x:Name="SonarrNav" Classes="nav sub" IsVisible="False" Click="NavigationButton_OnClick">
+                    <Grid ColumnDefinitions="24,*"><TextBlock Text="•" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Text="Sonarr" VerticalAlignment="Center" /></Grid>
+                  </Button>
+                  <Button x:Name="RadarrNav" Classes="nav sub" IsVisible="False" Click="NavigationButton_OnClick">
+                    <Grid ColumnDefinitions="24,*"><TextBlock Text="•" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Text="Radarr" VerticalAlignment="Center" /></Grid>
+                  </Button>
+                  <Button x:Name="LidarrNav" Classes="nav sub" IsVisible="False" Click="NavigationButton_OnClick">
+                    <Grid ColumnDefinitions="24,*"><TextBlock Text="•" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Text="Lidarr" VerticalAlignment="Center" /></Grid>
+                  </Button>
+                  <Button x:Name="ProwlarrNav" Classes="nav sub" IsVisible="False" Click="NavigationButton_OnClick">
+                    <Grid ColumnDefinitions="24,*"><TextBlock Text="•" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Text="Prowlarr" VerticalAlignment="Center" /></Grid>
+                  </Button>
+                  <Button x:Name="SabnzbdNav" Classes="nav sub" IsVisible="False" Click="NavigationButton_OnClick">
+                    <Grid ColumnDefinitions="24,*"><TextBlock Text="•" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Text="SABnzbd" VerticalAlignment="Center" /></Grid>
+                  </Button>
+                  <Button x:Name="QBittorrentNav" Classes="nav sub" IsVisible="False" Click="NavigationButton_OnClick">
+                    <Grid ColumnDefinitions="24,*"><TextBlock Text="•" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Text="qBittorrent" VerticalAlignment="Center" /></Grid>
+                  </Button>
+                </StackPanel>
+
+                <Button
+                    x:Name="ProcessingGroupButton"
+                    Classes="navGroup"
+                    IsVisible="False"
+                    Click="ProcessingGroupButton_OnClick">
+                  <Grid ColumnDefinitions="18,*">
+                    <TextBlock x:Name="ProcessingGroupGlyph" Text="▾" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="PROCESSING" VerticalAlignment="Center" />
+                  </Grid>
+                </Button>
+
+                <StackPanel x:Name="ProcessingNavGroup" IsVisible="False">
+                  <Button x:Name="DecypharrNav" Classes="nav sub" IsVisible="False" Click="NavigationButton_OnClick">
+                    <Grid ColumnDefinitions="24,*"><TextBlock Text="•" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Text="Decypharr" VerticalAlignment="Center" /></Grid>
+                  </Button>
+                  <Button x:Name="RecyclarrNav" Classes="nav sub" IsVisible="False" Click="NavigationButton_OnClick">
+                    <Grid ColumnDefinitions="24,*"><TextBlock Text="•" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Text="Recyclarr" VerticalAlignment="Center" /></Grid>
+                  </Button>
+                  <Button x:Name="ZurgNav" Classes="nav sub" IsVisible="False" Click="NavigationButton_OnClick">
+                    <Grid ColumnDefinitions="24,*"><TextBlock Text="•" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Text="Zurg" VerticalAlignment="Center" /></Grid>
+                  </Button>
+                </StackPanel>
+
                 <TextBlock
                     Text="SYSTEM"
                     Classes="eyebrow"
@@ -433,7 +522,7 @@
                   Classes="eyebrow"
                   Foreground="{DynamicResource AccentBrush}" />
               <TextBlock
-                  Text="Parity shell · native provider"
+                  Text="Native client · shared control plane"
                   Classes="dim"
                   FontSize="10"
                   Margin="0,4,0,0" />
@@ -676,35 +765,20 @@
                       <ListBox
                           x:Name="DashboardAttentionList"
                           Classes="dataList"
-                          MinHeight="230"
-                          MaxHeight="330"
+                          MinHeight="180"
+                          MaxHeight="290"
                           SelectionChanged="DashboardAttentionList_OnSelectionChanged">
                         <ListBox.ItemTemplate>
                           <DataTemplate x:CompileBindings="False">
-                            <Grid ColumnDefinitions="85,145,1.1*,0.9*" ColumnSpacing="10">
-                              <TextBlock
-                                  Text="{ReflectionBinding Severity}"
-                                  FontWeight="SemiBold"
-                                  Foreground="{DynamicResource AccentBrush}" />
-
-                              <TextBlock
-                                  Grid.Column="1"
-                                  Text="{ReflectionBinding Component}"
-                                  FontWeight="SemiBold"
-                                  TextTrimming="CharacterEllipsis"
-                                  ToolTip.Tip="{ReflectionBinding Component}" />
-
-                              <TextBlock
-                                  Grid.Column="2"
-                                  Text="{ReflectionBinding Problem}"
-                                  TextWrapping="Wrap" />
-
-                              <TextBlock
-                                  Grid.Column="3"
-                                  Text="{ReflectionBinding Evidence}"
-                                  Classes="muted"
-                                  TextWrapping="Wrap" />
-                            </Grid>
+                            <StackPanel Spacing="5">
+                              <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="10">
+                                <TextBlock Text="{ReflectionBinding Severity}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
+                                <TextBlock Grid.Column="1" Text="{ReflectionBinding Component}" FontWeight="SemiBold" />
+                                <TextBlock Grid.Column="2" Text="{ReflectionBinding Resource}" Classes="dim" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Resource}" />
+                              </Grid>
+                              <TextBlock Text="{ReflectionBinding Problem}" TextWrapping="Wrap" />
+                              <TextBlock Text="{ReflectionBinding Evidence}" Classes="muted" TextWrapping="Wrap" />
+                            </StackPanel>
                           </DataTemplate>
                         </ListBox.ItemTemplate>
                       </ListBox>
@@ -1028,6 +1102,13 @@
                               FontWeight="SemiBold"
                               Margin="0,6,0,0"
                               TextWrapping="Wrap" />
+
+                          <TextBlock
+                              x:Name="IntegrationRuntimeText"
+                              Text="--"
+                              Classes="muted"
+                              Margin="0,4,0,0"
+                              TextWrapping="Wrap" />
                         </StackPanel>
 
                         <Border
@@ -1161,20 +1242,31 @@
                       <TextBlock Grid.Column="4" x:Name="ServiceActionStatusText" Text="Select a service." Classes="dim" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                       <CheckBox Grid.Column="5" x:Name="SafeModeCheckBox" Content="Safe Mode" IsChecked="True" VerticalAlignment="Center" Click="SafeModeCheckBox_OnClick" />
                     </Grid>
-                    <ListBox x:Name="ServicesList" Classes="dataList" MinHeight="430" SelectionChanged="ServicesList_OnSelectionChanged">
-                      <ListBox.ItemTemplate>
-                        <DataTemplate x:CompileBindings="False">
-                          <Grid ColumnDefinitions="230,100,110,120,*,90" ColumnSpacing="12">
-                            <TextBlock Text="{ReflectionBinding Unit}" FontFamily="DejaVu Sans Mono, monospace" />
-                            <TextBlock Grid.Column="1" Text="{ReflectionBinding ActiveState}" />
-                            <TextBlock Grid.Column="2" Text="{ReflectionBinding SubState}" Classes="muted" />
-                            <TextBlock Grid.Column="3" Text="{ReflectionBinding UnitFileState}" Classes="muted" />
-                            <TextBlock Grid.Column="4" Text="{ReflectionBinding Description}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Description}" />
-                            <TextBlock Grid.Column="5" Text="status" Classes="dim" />
-                          </Grid>
-                        </DataTemplate>
-                      </ListBox.ItemTemplate>
-                    </ListBox>
+                    <Grid ColumnDefinitions="1.15*,0.85*" ColumnSpacing="12">
+                      <ListBox x:Name="ServicesList" Classes="dataList" MinHeight="430" SelectionChanged="ServicesList_OnSelectionChanged">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <Grid ColumnDefinitions="220,95,105,115,*" ColumnSpacing="12">
+                              <TextBlock Text="{ReflectionBinding Unit}" FontFamily="DejaVu Sans Mono, monospace" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Unit}" />
+                              <TextBlock Grid.Column="1" Text="{ReflectionBinding ActiveState}" FontWeight="SemiBold" />
+                              <TextBlock Grid.Column="2" Text="{ReflectionBinding SubState}" Classes="muted" />
+                              <TextBlock Grid.Column="3" Text="{ReflectionBinding UnitFileState}" Classes="muted" />
+                              <TextBlock Grid.Column="4" Text="{ReflectionBinding Description}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Description}" />
+                            </Grid>
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+                      <Border Grid.Column="1" Classes="inset">
+                        <StackPanel Spacing="10">
+                          <TextBlock Text="Selected service" Classes="eyebrow" />
+                          <TextBlock x:Name="ServiceSelectedNameText" Text="No service selected" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+                          <TextBlock x:Name="ServiceSelectedStateText" Text="--" Classes="muted" TextWrapping="Wrap" />
+                          <Border Height="1" Background="{DynamicResource BorderBrush}" />
+                          <TextBlock x:Name="ServiceSelectedDescriptionText" Text="Select a service to inspect its current state and unit-file policy." Classes="muted" TextWrapping="Wrap" />
+                          <TextBlock x:Name="ServiceSelectedPolicyText" Text="--" Classes="dim" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+                    </Grid>
                   </StackPanel>
                 </Border>
               </StackPanel>
@@ -1188,9 +1280,12 @@
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel>
                         <TextBlock Text="Docker containers" Classes="sectionTitle" />
-                        <TextBlock Text="Exited (0) one-shot containers are informational; non-zero exits are findings." Classes="pageSubtitle" Margin="0,4,0,0" />
+                        <TextBlock Text="Running and actionable containers are shown by default. Harmless Exited (0) one-shot containers remain available as background entries." Classes="pageSubtitle" Margin="0,4,0,0" TextWrapping="Wrap" />
                       </StackPanel>
-                      <TextBlock Grid.Column="1" x:Name="DockerSummaryText" Text="--" Classes="muted" VerticalAlignment="Center" />
+                      <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                        <TextBlock x:Name="DockerSummaryText" Text="--" Classes="muted" HorizontalAlignment="Right" />
+                        <CheckBox x:Name="ShowInformationalContainersCheckBox" Content="Show informational exited containers" IsChecked="False" Margin="0,6,0,0" Click="ShowInformationalContainersCheckBox_OnClick" />
+                      </StackPanel>
                     </Grid>
                     <Grid ColumnDefinitions="300,Auto,Auto,Auto,*" ColumnSpacing="9">
                       <TextBox x:Name="DockerFilterText" Classes="filter" PlaceholderText="Filter containers" TextChanged="DockerFilterText_OnTextChanged" />
@@ -1199,19 +1294,32 @@
                       <Button Grid.Column="3" x:Name="DockerRestartButton" Content="Restart" IsEnabled="False" Click="DockerRestartButton_OnClick" />
                       <TextBlock Grid.Column="4" x:Name="DockerActionStatusText" Text="Select a container. Safe Mode is controlled on Services &amp; Actions." Classes="dim" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                     </Grid>
-                    <ListBox x:Name="DockerList" Classes="dataList" MinHeight="430" SelectionChanged="DockerList_OnSelectionChanged">
-                      <ListBox.ItemTemplate>
-                        <DataTemplate x:CompileBindings="False">
-                          <Grid ColumnDefinitions="170,90,260,220,*" ColumnSpacing="12">
-                            <TextBlock Text="{ReflectionBinding Name}" FontWeight="SemiBold" />
-                            <TextBlock Grid.Column="1" Text="{ReflectionBinding State}" />
-                            <TextBlock Grid.Column="2" Text="{ReflectionBinding Image}" Classes="muted" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Image}" />
-                            <TextBlock Grid.Column="3" Text="{ReflectionBinding Status}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Status}" />
-                            <TextBlock Grid.Column="4" Text="{ReflectionBinding Ports}" Classes="dim" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Ports}" />
-                          </Grid>
-                        </DataTemplate>
-                      </ListBox.ItemTemplate>
-                    </ListBox>
+                    <Grid ColumnDefinitions="1.12*,0.88*" ColumnSpacing="12">
+                      <ListBox x:Name="DockerList" Classes="dataList" MinHeight="430" SelectionChanged="DockerList_OnSelectionChanged">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <Grid ColumnDefinitions="170,90,*,210" ColumnSpacing="12">
+                              <TextBlock Text="{ReflectionBinding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Name}" />
+                              <TextBlock Grid.Column="1" Text="{ReflectionBinding State}" />
+                              <TextBlock Grid.Column="2" Text="{ReflectionBinding Image}" Classes="muted" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Image}" />
+                              <TextBlock Grid.Column="3" Text="{ReflectionBinding Status}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Status}" />
+                            </Grid>
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+                      <Border Grid.Column="1" Classes="inset">
+                        <StackPanel Spacing="10">
+                          <TextBlock Text="Selected container" Classes="eyebrow" />
+                          <TextBlock x:Name="DockerSelectedNameText" Text="No container selected" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+                          <TextBlock x:Name="DockerSelectedStateText" Text="--" Classes="muted" TextWrapping="Wrap" />
+                          <Border Height="1" Background="{DynamicResource BorderBrush}" />
+                          <TextBlock Text="IMAGE" Classes="eyebrow" />
+                          <TextBlock x:Name="DockerSelectedImageText" Text="--" Classes="muted" TextWrapping="Wrap" />
+                          <TextBlock Text="PORTS" Classes="eyebrow" Margin="0,4,0,0" />
+                          <TextBlock x:Name="DockerSelectedPortsText" Text="--" Classes="dim" FontFamily="DejaVu Sans Mono, monospace" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+                    </Grid>
                   </StackPanel>
                 </Border>
               </StackPanel>
@@ -1252,14 +1360,16 @@
                     <ListBox x:Name="StorageList" Classes="dataList" MinHeight="390" SelectionChanged="StorageList_OnSelectionChanged">
                       <ListBox.ItemTemplate>
                         <DataTemplate x:CompileBindings="False">
-                          <Grid ColumnDefinitions="200,90,90,90,90,90,*" ColumnSpacing="12">
+                          <Grid ColumnDefinitions="170,70,70,70,70,60,80,90,*" ColumnSpacing="10">
                             <TextBlock Text="{ReflectionBinding Source}" FontFamily="DejaVu Sans Mono, monospace" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Source}" />
                             <TextBlock Grid.Column="1" Text="{ReflectionBinding FileSystem}" Classes="muted" />
                             <TextBlock Grid.Column="2" Text="{ReflectionBinding Size}" />
                             <TextBlock Grid.Column="3" Text="{ReflectionBinding Used}" />
                             <TextBlock Grid.Column="4" Text="{ReflectionBinding Available}" />
                             <TextBlock Grid.Column="5" Text="{ReflectionBinding PercentUsed}" FontWeight="SemiBold" />
-                            <TextBlock Grid.Column="6" Text="{ReflectionBinding MountPoint}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding MountPoint}" />
+                            <TextBlock Grid.Column="6" Text="{ReflectionBinding PolicyLabel}" Classes="muted" />
+                            <TextBlock Grid.Column="7" Text="{ReflectionBinding StatusLabel}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
+                            <TextBlock Grid.Column="8" Text="{ReflectionBinding MountPoint}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding MountPoint}" />
                           </Grid>
                         </DataTemplate>
                       </ListBox.ItemTemplate>
@@ -1270,22 +1380,25 @@
             </ScrollViewer>
 
 <!-- Logs -->
-            <Grid x:Name="LogsPage" IsVisible="False" RowDefinitions="1.2*,0.8*" RowSpacing="14">
+            <Grid x:Name="LogsPage" IsVisible="False" RowDefinitions="1.15*,0.85*" RowSpacing="14">
               <Border Classes="card">
                 <StackPanel Spacing="12">
                   <Grid ColumnDefinitions="*,Auto">
                     <StackPanel>
-                      <TextBlock Text="Grouped warning journal" Classes="sectionTitle" />
-                      <TextBlock Text="Repeated messages are collapsed so unique incidents and crashes remain visible." Classes="pageSubtitle" Margin="0,4,0,0" />
+                      <TextBlock Text="Journal events" Classes="sectionTitle" />
+                      <TextBlock Text="Actionable warning and crash families are shown by default. Desktop-session and hardening observations remain available without affecting environment health." Classes="pageSubtitle" Margin="0,4,0,0" TextWrapping="Wrap" />
                     </StackPanel>
-                    <TextBlock Grid.Column="1" x:Name="LogsSummaryText" Text="--" Classes="muted" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                      <TextBlock x:Name="LogsSummaryText" Text="--" Classes="muted" HorizontalAlignment="Right" />
+                      <CheckBox x:Name="ShowInformationalLogsCheckBox" Content="Show informational observations" IsChecked="False" Margin="0,6,0,0" Click="ShowInformationalLogsCheckBox_OnClick" />
+                    </StackPanel>
                   </Grid>
                   <ListBox x:Name="LogsList" Classes="dataList" SelectionChanged="LogsList_OnSelectionChanged">
                     <ListBox.ItemTemplate>
                       <DataTemplate x:CompileBindings="False">
-                        <Grid ColumnDefinitions="90,170,160,70,*" ColumnSpacing="12">
+                        <Grid ColumnDefinitions="90,190,160,70,*" ColumnSpacing="12">
                           <TextBlock Text="{ReflectionBinding Severity}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
-                          <TextBlock Grid.Column="1" Text="{ReflectionBinding Source}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Grid.Column="1" Text="{ReflectionBinding Source}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Source}" />
                           <TextBlock Grid.Column="2" Text="{ReflectionBinding LastSeen, StringFormat='{}{0:g}'}" Classes="dim" />
                           <TextBlock Grid.Column="3" Text="{ReflectionBinding Count, StringFormat='{}{0}x'}" />
                           <TextBlock Grid.Column="4" Text="{ReflectionBinding Message}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Message}" />
@@ -1331,16 +1444,18 @@
                       <TextBlock Text="Ranked findings" Classes="sectionTitle" />
                       <TextBlock Grid.Column="1" x:Name="IntelligenceCountText" Text="0 findings" Classes="muted" VerticalAlignment="Center" />
                     </Grid>
-                    <ListBox x:Name="IntelligenceFindingsList" Classes="dataList" MinHeight="430">
+                    <ListBox x:Name="IntelligenceFindingsList" Classes="dataList passive" MinHeight="430">
                       <ListBox.ItemTemplate>
                         <DataTemplate x:CompileBindings="False">
-                          <Grid ColumnDefinitions="90,150,1.1*,1.1*,1.1*" ColumnSpacing="12">
-                            <TextBlock Text="{ReflectionBinding Severity}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
-                            <TextBlock Grid.Column="1" Text="{ReflectionBinding Component}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Grid.Column="2" Text="{ReflectionBinding Problem}" TextWrapping="Wrap" />
-                            <TextBlock Grid.Column="3" Text="{ReflectionBinding Impact}" Classes="muted" TextWrapping="Wrap" />
-                            <TextBlock Grid.Column="4" Text="{ReflectionBinding NextStep}" Classes="muted" TextWrapping="Wrap" />
-                          </Grid>
+                          <StackPanel Spacing="6">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                              <TextBlock Text="{ReflectionBinding Severity}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
+                              <TextBlock Text="{ReflectionBinding Component}" FontWeight="SemiBold" />
+                            </StackPanel>
+                            <TextBlock Text="{ReflectionBinding Problem}" TextWrapping="Wrap" />
+                            <TextBlock Text="{ReflectionBinding Impact, StringFormat='Impact · {0}'}" Classes="muted" TextWrapping="Wrap" />
+                            <TextBlock Text="{ReflectionBinding NextStep, StringFormat='Next · {0}'}" Classes="dim" TextWrapping="Wrap" />
+                          </StackPanel>
                         </DataTemplate>
                       </ListBox.ItemTemplate>
                     </ListBox>
@@ -1361,16 +1476,18 @@
                       </StackPanel>
                       <TextBlock Grid.Column="1" x:Name="LifecycleSummaryText" Text="Waiting for capture" Classes="muted" VerticalAlignment="Center" />
                     </Grid>
-                    <ListBox x:Name="LifecycleStagesList" Classes="dataList" MinHeight="500">
+                    <ListBox x:Name="LifecycleStagesList" Classes="dataList passive" MinHeight="500">
                       <ListBox.ItemTemplate>
                         <DataTemplate x:CompileBindings="False">
-                          <Grid ColumnDefinitions="50,130,110,1.2*,1.2*,1.2*" ColumnSpacing="12">
+                          <Grid ColumnDefinitions="46,125,110,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="5">
                             <TextBlock Text="{ReflectionBinding Order}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource DimBrush}" />
                             <TextBlock Grid.Column="1" Text="{ReflectionBinding Stage}" FontWeight="SemiBold" />
                             <TextBlock Grid.Column="2" Text="{ReflectionBinding State}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
                             <TextBlock Grid.Column="3" Text="{ReflectionBinding Evidence}" TextWrapping="Wrap" />
-                            <TextBlock Grid.Column="4" Text="{ReflectionBinding Impact}" Classes="muted" TextWrapping="Wrap" />
-                            <TextBlock Grid.Column="5" Text="{ReflectionBinding NextStep}" Classes="muted" TextWrapping="Wrap" />
+                            <StackPanel Grid.Row="1" Grid.Column="3" Spacing="3">
+                              <TextBlock Text="{ReflectionBinding Impact, StringFormat='Impact · {0}'}" Classes="muted" TextWrapping="Wrap" />
+                              <TextBlock Text="{ReflectionBinding NextStep, StringFormat='Next · {0}'}" Classes="dim" TextWrapping="Wrap" />
+                            </StackPanel>
                           </Grid>
                         </DataTemplate>
                       </ListBox.ItemTemplate>
@@ -1388,11 +1505,11 @@
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel>
                         <TextBlock Text="Transition and action history" Classes="sectionTitle" />
-                        <TextBlock Text="Meaningful state changes, guarded actions and future operator-policy changes are persisted locally." Classes="pageSubtitle" Margin="0,4,0,0" TextWrapping="Wrap" />
+                        <TextBlock Text="Meaningful state changes, guarded actions and operator-policy changes are persisted locally. Historical rows preserve the labels recorded at that time." Classes="pageSubtitle" Margin="0,4,0,0" TextWrapping="Wrap" />
                       </StackPanel>
                       <Button Grid.Column="1" Content="Clear history" Classes="danger" Click="ClearHistoryButton_OnClick" />
                     </Grid>
-                    <ListBox x:Name="HistoryList" Classes="dataList" MinHeight="520">
+                    <ListBox x:Name="HistoryList" Classes="dataList passive" MinHeight="520">
                       <ListBox.ItemTemplate>
                         <DataTemplate x:CompileBindings="False">
                           <Grid ColumnDefinitions="150,100,170,150,*" ColumnSpacing="10">
@@ -1430,14 +1547,14 @@
                   <Border Grid.Column="1" Classes="card">
                     <StackPanel Spacing="10">
                       <TextBlock Text="Readiness evidence" Classes="sectionTitle" />
-                      <ListBox x:Name="BackupEvidenceList" Classes="dataList" MinHeight="140" />
+                      <ListBox x:Name="BackupEvidenceList" Classes="dataList passive" MinHeight="140" />
                     </StackPanel>
                   </Border>
                 </Grid>
                 <Border Classes="card">
                   <StackPanel Spacing="12">
                     <TextBlock Text="Backup schedules and units" Classes="sectionTitle" />
-                    <ListBox x:Name="BackupUnitsList" Classes="dataList" MinHeight="230">
+                    <ListBox x:Name="BackupUnitsList" Classes="dataList passive" MinHeight="230">
                       <ListBox.ItemTemplate>
                         <DataTemplate x:CompileBindings="False">
                           <Grid ColumnDefinitions="260,100,100,120,180,180,*" ColumnSpacing="10">
@@ -1457,7 +1574,7 @@
                 <Border Classes="card">
                   <StackPanel Spacing="12">
                     <TextBlock Text="Recent backup artifacts" Classes="sectionTitle" />
-                    <ListBox x:Name="BackupArtifactsList" Classes="dataList" MinHeight="200">
+                    <ListBox x:Name="BackupArtifactsList" Classes="dataList passive" MinHeight="200">
                       <ListBox.ItemTemplate>
                         <DataTemplate x:CompileBindings="False">
                           <Grid ColumnDefinitions="*,110,180" ColumnSpacing="12">

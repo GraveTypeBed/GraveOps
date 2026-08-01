@@ -43,6 +43,25 @@ public partial class MainWindow : Window
             ["FlareSolverr"] = new[] { 8191 }
         };
 
+    private static readonly IReadOnlyDictionary<string, string>
+        IntegrationNavigationTargets =
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["DumbNav"] = "DUMB",
+                ["PlexNav"] = "Plex",
+                ["TautulliNav"] = "Tautulli",
+                ["KometaNav"] = "Kometa",
+                ["SonarrNav"] = "Sonarr",
+                ["RadarrNav"] = "Radarr",
+                ["LidarrNav"] = "Lidarr",
+                ["ProwlarrNav"] = "Prowlarr",
+                ["SabnzbdNav"] = "SABnzbd",
+                ["QBittorrentNav"] = "qBittorrent",
+                ["DecypharrNav"] = "Decypharr",
+                ["RecyclarrNav"] = "Recyclarr",
+                ["ZurgNav"] = "Zurg"
+            };
+
     private readonly IReadOnlyDictionary<string, NavigationTarget> _navigation =
         new Dictionary<string, NavigationTarget>(StringComparer.Ordinal)
         {
@@ -52,6 +71,19 @@ public partial class MainWindow : Window
             ["HistoryNav"] = new("HistoryPage", "History", "Persisted transitions, guarded actions and operator decisions"),
             ["ServersNav"] = new("ServersPage", "Servers", "Selected-host identity, runtime and provider capability"),
             ["MediaHubNav"] = new("MediaHubPage", "Media Hub", "Verified media and acquisition integrations"),
+            ["DumbNav"] = new("MediaHubPage", "DUMB", "Stack orchestration and verified local interface"),
+            ["PlexNav"] = new("MediaHubPage", "Plex", "Library availability, playback endpoint and related findings"),
+            ["TautulliNav"] = new("MediaHubPage", "Tautulli", "Playback analytics and related findings"),
+            ["KometaNav"] = new("MediaHubPage", "Kometa", "Library metadata automation and related findings"),
+            ["SonarrNav"] = new("MediaHubPage", "Sonarr", "Television acquisition, import and related findings"),
+            ["RadarrNav"] = new("MediaHubPage", "Radarr", "Movie acquisition, import and related findings"),
+            ["LidarrNav"] = new("MediaHubPage", "Lidarr", "Music acquisition, import and related findings"),
+            ["ProwlarrNav"] = new("MediaHubPage", "Prowlarr", "Indexer discovery and upstream acquisition health"),
+            ["SabnzbdNav"] = new("MediaHubPage", "SABnzbd", "Usenet download availability and related findings"),
+            ["QBittorrentNav"] = new("MediaHubPage", "qBittorrent", "Torrent download availability and related findings"),
+            ["DecypharrNav"] = new("MediaHubPage", "Decypharr", "Debrid processing and related findings"),
+            ["RecyclarrNav"] = new("MediaHubPage", "Recyclarr", "Quality-policy synchronization and related findings"),
+            ["ZurgNav"] = new("MediaHubPage", "Zurg", "Debrid mount availability and related findings"),
             ["ServicesNav"] = new("ServicesPage", "Services & Actions", "Native systemd inventory and guarded actions"),
             ["DockerNav"] = new("DockerPage", "Docker", "Containers, images, state, ports and guarded actions"),
             ["StorageNav"] = new("StoragePage", "Storage", "Operational filesystems and capacity health"),
@@ -97,25 +129,160 @@ public partial class MainWindow : Window
     private void ToggleMaximized() =>
         WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
 
-    private void NavigationButton_OnClick(object? sender, RoutedEventArgs e)
+    private void NavigationButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
     {
-        if (sender is Button button && !string.IsNullOrWhiteSpace(button.Name))
+        if (sender is Button button &&
+            !string.IsNullOrWhiteSpace(button.Name))
+        {
             Navigate(button.Name);
+        }
+    }
+
+    private void LibraryGroupButton_OnClick(
+        object? sender,
+        RoutedEventArgs e) =>
+        ToggleNavigationGroup(
+            "LibraryNavGroup",
+            "LibraryGroupGlyph");
+
+    private void AcquisitionGroupButton_OnClick(
+        object? sender,
+        RoutedEventArgs e) =>
+        ToggleNavigationGroup(
+            "AcquisitionNavGroup",
+            "AcquisitionGroupGlyph");
+
+    private void ProcessingGroupButton_OnClick(
+        object? sender,
+        RoutedEventArgs e) =>
+        ToggleNavigationGroup(
+            "ProcessingNavGroup",
+            "ProcessingGroupGlyph");
+
+    private void ToggleNavigationGroup(
+        string panelName,
+        string glyphName)
+    {
+        var panel = Get<StackPanel>(panelName);
+        panel.IsVisible = !panel.IsVisible;
+        Get<TextBlock>(glyphName).Text =
+            panel.IsVisible ? "▾" : "▸";
     }
 
     private void Navigate(string navigationName)
     {
-        if (!_navigation.TryGetValue(navigationName, out var target))
+        if (!_navigation.TryGetValue(
+                navigationName,
+                out var target))
+        {
             return;
+        }
+
+        foreach (var pageName in _navigation.Values
+                     .Select(item => item.PageName)
+                     .Distinct(StringComparer.Ordinal))
+        {
+            Get<Control>(pageName).IsVisible = false;
+        }
+
+        Get<Control>(target.PageName).IsVisible = true;
 
         foreach (var item in _navigation)
         {
-            Get<Control>(item.Value.PageName).IsVisible = item.Key == navigationName;
-            Get<Button>(item.Key).Classes.Set("selected", item.Key == navigationName);
+            Get<Button>(item.Key).Classes.Set(
+                "selected",
+                item.Key == navigationName);
         }
 
         Get<TextBlock>("PageTitleText").Text = target.Title;
         Get<TextBlock>("PageSubtitleText").Text = target.Subtitle;
+
+        if (IntegrationNavigationTargets.TryGetValue(
+                navigationName,
+                out var integrationName))
+        {
+            SelectIntegrationByName(integrationName);
+        }
+    }
+
+    private void SelectIntegrationByName(string integrationName)
+    {
+        if (_integrations.Count == 0)
+            return;
+
+        var filter = Get<TextBox>("MediaFilterText");
+        if (!string.IsNullOrWhiteSpace(filter.Text))
+            filter.Text = string.Empty;
+
+        var integration = _integrations.FirstOrDefault(item =>
+            item.Name.Equals(
+                integrationName,
+                StringComparison.OrdinalIgnoreCase));
+
+        if (integration is null)
+            return;
+
+        Get<ListBox>("IntegrationsList").SelectedItem =
+            integration;
+        PopulateIntegrationWorkspace();
+    }
+
+    private void UpdateIntegrationNavigation()
+    {
+        bool Detected(string name) =>
+            _integrations.Any(item =>
+                item.Name.Equals(
+                    name,
+                    StringComparison.OrdinalIgnoreCase));
+
+        void SetButton(string buttonName, string integrationName) =>
+            Get<Button>(buttonName).IsVisible =
+                Detected(integrationName);
+
+        SetButton("DumbNav", "DUMB");
+        SetButton("PlexNav", "Plex");
+        SetButton("TautulliNav", "Tautulli");
+        SetButton("KometaNav", "Kometa");
+        SetButton("SonarrNav", "Sonarr");
+        SetButton("RadarrNav", "Radarr");
+        SetButton("LidarrNav", "Lidarr");
+        SetButton("ProwlarrNav", "Prowlarr");
+        SetButton("SabnzbdNav", "SABnzbd");
+        SetButton("QBittorrentNav", "qBittorrent");
+        SetButton("DecypharrNav", "Decypharr");
+        SetButton("RecyclarrNav", "Recyclarr");
+        SetButton("ZurgNav", "Zurg");
+
+        var libraryVisible =
+            Detected("Plex") ||
+            Detected("Tautulli") ||
+            Detected("Kometa");
+        var acquisitionVisible =
+            Detected("Sonarr") ||
+            Detected("Radarr") ||
+            Detected("Lidarr") ||
+            Detected("Prowlarr") ||
+            Detected("SABnzbd") ||
+            Detected("qBittorrent");
+        var processingVisible =
+            Detected("Decypharr") ||
+            Detected("Recyclarr") ||
+            Detected("Zurg");
+
+        Get<Button>("LibraryGroupButton").IsVisible =
+            libraryVisible;
+        Get<StackPanel>("LibraryNavGroup").IsVisible =
+            libraryVisible;
+        Get<Button>("AcquisitionGroupButton").IsVisible =
+            acquisitionVisible;
+        Get<StackPanel>("AcquisitionNavGroup").IsVisible =
+            acquisitionVisible;
+        Get<Button>("ProcessingGroupButton").IsVisible =
+            processingVisible;
+        Get<StackPanel>("ProcessingNavGroup").IsVisible =
+            processingVisible;
     }
 
     private async void RefreshButton_OnClick(object? sender, RoutedEventArgs e) => await RefreshAsync();
@@ -215,11 +382,12 @@ public partial class MainWindow : Window
         PopulateLifecycle();
         PopulateHistory();
         PopulateServerPage();
+        UpdateIntegrationNavigation();
         ApplyMediaFilter();
         ApplyServicesFilter();
         ApplyDockerFilter();
         ApplyStorageFilter();
-        PopulateLogs();
+        ApplyLogsFilter();
         PopulateBackups();
         UpdateActionButtons();
     }
@@ -341,13 +509,46 @@ public partial class MainWindow : Window
         Get<TextBlock>("ServerNetworkText").Text = $"Addresses · {snapshot.IpAddresses}";
     }
 
-    private void PopulateLogs()
+    private void ApplyLogsFilter()
     {
-        Get<ListBox>("LogsList").ItemsSource = _logs;
-        Get<TextBlock>("LogsSummaryText").Text = $"{_logs.Count} unique event group(s)";
-        Get<TextBox>("LogDetailText").Text = _logs.FirstOrDefault() is { } first
-            ? FormatLog(first)
-            : "No warning-or-higher journal events were returned.";
+        var list = Get<ListBox>("LogsList");
+        var selectedKey =
+            (list.SelectedItem as OpsLogGroup) is { } selected
+                ? $"{selected.Source}|{selected.Message}"
+                : string.Empty;
+        var showInformational =
+            Get<CheckBox>("ShowInformationalLogsCheckBox")
+                .IsChecked == true;
+
+        var active = _logs.Count(item =>
+            item.Severity >= OpsSeverity.Warning);
+        var background = _logs.Count(item =>
+            item.Severity == OpsSeverity.Info);
+
+        var rows = _logs
+            .Where(item =>
+                showInformational ||
+                item.Severity >= OpsSeverity.Warning)
+            .ToArray();
+
+        list.ItemsSource = rows;
+        list.SelectedItem = rows.FirstOrDefault(item =>
+            $"{item.Source}|{item.Message}".Equals(
+                selectedKey,
+                StringComparison.Ordinal));
+
+        Get<TextBlock>("LogsSummaryText").Text =
+            $"{active} active · {background} background";
+
+        if (list.SelectedItem is null && rows.Length > 0)
+            list.SelectedIndex = 0;
+
+        Get<TextBox>("LogDetailText").Text =
+            list.SelectedItem is OpsLogGroup log
+                ? FormatLog(log)
+                : showInformational
+                    ? "No journal event groups were returned."
+                    : "No actionable warning or error journal events are active.";
     }
 
     private void PopulateBackups()
@@ -370,7 +571,9 @@ public partial class MainWindow : Window
     private void MediaFilterText_OnTextChanged(object? sender, TextChangedEventArgs e) => ApplyMediaFilter();
     private void ServicesFilterText_OnTextChanged(object? sender, TextChangedEventArgs e) => ApplyServicesFilter();
     private void DockerFilterText_OnTextChanged(object? sender, TextChangedEventArgs e) => ApplyDockerFilter();
+    private void ShowInformationalContainersCheckBox_OnClick(object? sender, RoutedEventArgs e) => ApplyDockerFilter();
     private void StorageFilterText_OnTextChanged(object? sender, TextChangedEventArgs e) => ApplyStorageFilter();
+    private void ShowInformationalLogsCheckBox_OnClick(object? sender, RoutedEventArgs e) => ApplyLogsFilter();
 
     private void ApplyMediaFilter()
     {
@@ -406,37 +609,106 @@ public partial class MainWindow : Window
 
     private void ApplyServicesFilter()
     {
-        if (_snapshot is null) return;
-        var filter = Get<TextBox>("ServicesFilterText").Text?.Trim();
+        if (_snapshot is null)
+            return;
+
+        var list = Get<ListBox>("ServicesList");
+        var selectedUnit =
+            (list.SelectedItem as ServiceSnapshot)?.Unit;
+        var filter =
+            Get<TextBox>("ServicesFilterText").Text?.Trim();
+
         var rows = LinuxOpsAnalyzer.UniqueServices(_snapshot)
-            .Where(item => Matches(filter, item.Unit, item.Description, item.ActiveState, item.SubState, item.UnitFileState))
+            .Where(item => Matches(
+                filter,
+                item.Unit,
+                item.Description,
+                item.ActiveState,
+                item.SubState,
+                item.UnitFileState))
             .ToArray();
-        Get<ListBox>("ServicesList").ItemsSource = rows;
-        Get<TextBlock>("ServicesSummaryText").Text = $"{rows.Length} shown · {_snapshot.FailedUnits.Count} failed";
+
+        list.ItemsSource = rows;
+        list.SelectedItem = rows.FirstOrDefault(item =>
+            item.Unit.Equals(
+                selectedUnit,
+                StringComparison.OrdinalIgnoreCase));
+
+        Get<TextBlock>("ServicesSummaryText").Text =
+            $"{rows.Length} shown · {_snapshot.FailedUnits.Count} failed";
+
+        UpdateServiceDetail();
     }
 
     private void ApplyDockerFilter()
     {
-        if (_snapshot is null) return;
-        var filter = Get<TextBox>("DockerFilterText").Text?.Trim();
-        var rows = _snapshot.Containers
-            .Where(item => Matches(filter, item.Name, item.Image, item.State, item.Status, item.Ports))
+        if (_snapshot is null)
+            return;
+
+        var list = Get<ListBox>("DockerList");
+        var selectedName =
+            (list.SelectedItem as DockerContainerSnapshot)?.Name;
+        var filter =
+            Get<TextBox>("DockerFilterText").Text?.Trim();
+        var showInformational =
+            Get<CheckBox>("ShowInformationalContainersCheckBox")
+                .IsChecked == true;
+
+        var all = _snapshot.Containers;
+        var rows = all
+            .Where(item =>
+                showInformational ||
+                LinuxOpsAnalyzer.ContainerSeverity(item) >=
+                    OpsSeverity.Warning ||
+                item.State.Equals(
+                    "running",
+                    StringComparison.OrdinalIgnoreCase))
+            .Where(item => Matches(
+                filter,
+                item.Name,
+                item.Image,
+                item.State,
+                item.Status,
+                item.Ports))
             .ToArray();
-        Get<ListBox>("DockerList").ItemsSource = rows;
-        var running = rows.Count(item => item.State.Equals("running", StringComparison.OrdinalIgnoreCase));
-        Get<TextBlock>("DockerSummaryText").Text = $"{running} running · {rows.Length} shown";
+
+        list.ItemsSource = rows;
+        list.SelectedItem = rows.FirstOrDefault(item =>
+            item.Name.Equals(
+                selectedName,
+                StringComparison.OrdinalIgnoreCase));
+
+        var running = rows.Count(item =>
+            item.State.Equals(
+                "running",
+                StringComparison.OrdinalIgnoreCase));
+        var hiddenInformational = all.Count(item =>
+            LinuxOpsAnalyzer.ContainerSeverity(item) ==
+                OpsSeverity.Info &&
+            !item.State.Equals(
+                "running",
+                StringComparison.OrdinalIgnoreCase));
+
+        Get<TextBlock>("DockerSummaryText").Text =
+            $"{running} running · {rows.Length} shown · " +
+            $"{(showInformational ? 0 : hiddenInformational)} background hidden";
+
+        UpdateDockerDetail();
     }
 
     private void ApplyStorageFilter()
     {
-        if (_snapshot is null) return;
+        if (_snapshot is null)
+            return;
 
         var list = Get<ListBox>("StorageList");
         var selectedMount =
-            (list.SelectedItem as StorageVolumeSnapshot)?.MountPoint;
-        var filter = Get<TextBox>("StorageFilterText").Text?.Trim();
+            (list.SelectedItem as StorageDisplayRow)?
+                .Snapshot.MountPoint;
+        var filter =
+            Get<TextBox>("StorageFilterText").Text?.Trim();
 
-        var rows = LinuxOpsAnalyzer.OperationalStorage(_snapshot)
+        var volumes = LinuxOpsAnalyzer.OperationalStorage(_snapshot)
             .Where(item => Matches(
                 filter,
                 item.Source,
@@ -445,24 +717,54 @@ public partial class MainWindow : Window
                 item.PercentUsed))
             .ToArray();
 
+        var rows = volumes
+            .Select(volume =>
+            {
+                var custom =
+                    _findingPolicies.HasCustomStorageThreshold(
+                        volume.MountPoint);
+                var severity =
+                    _findingPolicies.EvaluateStorageSeverity(
+                        volume);
+
+                return new StorageDisplayRow(
+                    volume,
+                    volume.Source,
+                    volume.FileSystem,
+                    volume.Size,
+                    volume.Used,
+                    volume.Available,
+                    volume.PercentUsed,
+                    custom ? "Custom" : "Default",
+                    LinuxOpsAnalyzer.SeverityLabel(severity),
+                    volume.MountPoint);
+            })
+            .ToArray();
+
         list.ItemsSource = rows;
         list.SelectedItem = rows.FirstOrDefault(item =>
             item.MountPoint.Equals(
                 selectedMount,
                 StringComparison.OrdinalIgnoreCase));
 
-        var attention = rows.Count(item =>
+        var attention = volumes.Count(item =>
             _findingPolicies.EvaluateStorageSeverity(item) >=
             OpsSeverity.Warning);
-        var custom = rows.Count(item =>
-            _findingPolicies.HasCustomStorageThreshold(item.MountPoint));
+        var customPolicies = volumes.Count(item =>
+            _findingPolicies.HasCustomStorageThreshold(
+                item.MountPoint));
 
         Get<TextBlock>("StorageSummaryText").Text =
             $"{rows.Length} shown · {attention} active capacity finding(s) · " +
-            $"{custom} custom {(custom == 1 ? "policy" : "policies")}";
+            $"{customPolicies} custom " +
+            $"{(customPolicies == 1 ? "policy" : "policies")}";
 
         UpdateStoragePolicyButtons();
     }
+
+    private StorageVolumeSnapshot? SelectedStorageVolume() =>
+        (Get<ListBox>("StorageList").SelectedItem
+            as StorageDisplayRow)?.Snapshot;
 
     private void DashboardAttentionList_OnSelectionChanged(
         object? sender,
@@ -504,8 +806,8 @@ public partial class MainWindow : Window
 
     private void UpdateStoragePolicyButtons()
     {
-        var selected = Get<ListBox>("StorageList").SelectedItem
-            as StorageVolumeSnapshot;
+        var selected =
+            SelectedStorageVolume();
 
         Get<Button>("StorageThresholdButton").IsEnabled =
             selected is not null;
@@ -682,11 +984,9 @@ public partial class MainWindow : Window
         object? sender,
         RoutedEventArgs e)
     {
-        if (Get<ListBox>("StorageList").SelectedItem
-            is not StorageVolumeSnapshot volume)
-        {
+        var volume = SelectedStorageVolume();
+        if (volume is null)
             return;
-        }
 
         await ConfigureStorageThresholdAsync(volume.MountPoint);
     }
@@ -695,11 +995,9 @@ public partial class MainWindow : Window
         object? sender,
         RoutedEventArgs e)
     {
-        if (Get<ListBox>("StorageList").SelectedItem
-            is not StorageVolumeSnapshot volume)
-        {
+        var volume = SelectedStorageVolume();
+        if (volume is null)
             return;
-        }
 
         if (!_findingPolicies.ResetStorageThreshold(volume.MountPoint))
             return;
@@ -769,6 +1067,7 @@ public partial class MainWindow : Window
             as OpsIntegration;
 
         var name = Get<TextBlock>("IntegrationNameText");
+        var runtime = Get<TextBlock>("IntegrationRuntimeText");
         var state = Get<TextBlock>("IntegrationStateText");
         var stateBorder = Get<Border>("IntegrationStateBorder");
         var kind = Get<TextBlock>("IntegrationKindText");
@@ -788,6 +1087,7 @@ public partial class MainWindow : Window
         if (selected is null)
         {
             name.Text = "Select an application";
+            runtime.Text = "--";
             state.Text = "WAITING";
             state.Foreground =
                 OpsPalette.Foreground(OpsSeverity.Info);
@@ -814,7 +1114,10 @@ public partial class MainWindow : Window
 
         var url = ResolveIntegrationUrl(selected);
         name.Text = selected.Name;
-        state.Text = selected.State;
+        runtime.Text = selected.State;
+        state.Text =
+            LinuxOpsAnalyzer.SeverityLabel(
+                selected.Severity);
         state.Foreground =
             OpsPalette.Foreground(selected.Severity);
         stateBorder.Background =
@@ -825,9 +1128,8 @@ public partial class MainWindow : Window
                 ? "No verified web endpoint"
                 : selected.Endpoint);
         role.Text = IntegrationRole(selected.Name);
-        evidence.Text = string.IsNullOrWhiteSpace(selected.Evidence)
-            ? "Detected without additional provider evidence."
-            : selected.Evidence;
+        evidence.Text =
+            IntegrationEvidenceSummary(selected);
         findingsSummary.Text = related.Length == 0
             ? "No active findings"
             : $"{related.Length} active";
@@ -905,6 +1207,34 @@ public partial class MainWindow : Window
             value?.Contains(
                 integrationName,
                 StringComparison.OrdinalIgnoreCase) == true);
+    }
+
+    private static string IntegrationEvidenceSummary(
+        OpsIntegration integration)
+    {
+        if (integration.Kind.Equals(
+                "Docker port inference",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return
+                $"{integration.Name} was identified from a published port mapping " +
+                $"owned by container '{integration.Evidence}'.";
+        }
+
+        if (integration.Kind.Equals(
+                "systemd",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return
+                $"{integration.Name} was verified through native systemd unit " +
+                $"'{integration.Evidence}'.";
+        }
+
+        if (string.IsNullOrWhiteSpace(integration.Evidence))
+            return "Detected without additional provider evidence.";
+
+        return
+            $"Detection evidence · {integration.Evidence}";
     }
 
     private static string IntegrationRole(string name)
@@ -990,9 +1320,87 @@ public partial class MainWindow : Window
                 ? $"{value / 1024:0.##} TiB"
                 : $"{value:0.##} GiB";
 
-    private void ServicesList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e) => UpdateActionButtons();
-    private void DockerList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e) => UpdateActionButtons();
-    private void SafeModeCheckBox_OnClick(object? sender, RoutedEventArgs e) => UpdateActionButtons();
+    private void ServicesList_OnSelectionChanged(
+        object? sender,
+        SelectionChangedEventArgs e)
+    {
+        UpdateActionButtons();
+        UpdateServiceDetail();
+    }
+
+    private void DockerList_OnSelectionChanged(
+        object? sender,
+        SelectionChangedEventArgs e)
+    {
+        UpdateActionButtons();
+        UpdateDockerDetail();
+    }
+
+    private void SafeModeCheckBox_OnClick(
+        object? sender,
+        RoutedEventArgs e) =>
+        UpdateActionButtons();
+
+    private void UpdateServiceDetail()
+    {
+        var selected =
+            Get<ListBox>("ServicesList").SelectedItem
+            as ServiceSnapshot;
+
+        if (selected is null)
+        {
+            Get<TextBlock>("ServiceSelectedNameText").Text =
+                "No service selected";
+            Get<TextBlock>("ServiceSelectedStateText").Text = "--";
+            Get<TextBlock>("ServiceSelectedDescriptionText").Text =
+                "Select a service to inspect its current state and unit-file policy.";
+            Get<TextBlock>("ServiceSelectedPolicyText").Text = "--";
+            return;
+        }
+
+        var severity =
+            LinuxOpsAnalyzer.ServiceSeverity(selected);
+        Get<TextBlock>("ServiceSelectedNameText").Text =
+            selected.Unit;
+        Get<TextBlock>("ServiceSelectedStateText").Text =
+            $"{LinuxOpsAnalyzer.SeverityLabel(severity)} · " +
+            $"{selected.ActiveState}/{selected.SubState}";
+        Get<TextBlock>("ServiceSelectedDescriptionText").Text =
+            selected.Description;
+        Get<TextBlock>("ServiceSelectedPolicyText").Text =
+            $"Unit-file state · {selected.UnitFileState}";
+    }
+
+    private void UpdateDockerDetail()
+    {
+        var selected =
+            Get<ListBox>("DockerList").SelectedItem
+            as DockerContainerSnapshot;
+
+        if (selected is null)
+        {
+            Get<TextBlock>("DockerSelectedNameText").Text =
+                "No container selected";
+            Get<TextBlock>("DockerSelectedStateText").Text = "--";
+            Get<TextBlock>("DockerSelectedImageText").Text = "--";
+            Get<TextBlock>("DockerSelectedPortsText").Text = "--";
+            return;
+        }
+
+        var severity =
+            LinuxOpsAnalyzer.ContainerSeverity(selected);
+        Get<TextBlock>("DockerSelectedNameText").Text =
+            selected.Name;
+        Get<TextBlock>("DockerSelectedStateText").Text =
+            $"{LinuxOpsAnalyzer.SeverityLabel(severity)} · " +
+            $"{selected.State} · {selected.Status}";
+        Get<TextBlock>("DockerSelectedImageText").Text =
+            selected.Image;
+        Get<TextBlock>("DockerSelectedPortsText").Text =
+            string.IsNullOrWhiteSpace(selected.Ports)
+                ? "No published ports"
+                : selected.Ports;
+    }
 
     private void UpdateActionButtons()
     {
@@ -1495,7 +1903,22 @@ public partial class MainWindow : Window
         return values.Any(value => value?.Contains(filter, StringComparison.OrdinalIgnoreCase) == true);
     }
 
-    private sealed record NavigationTarget(string PageName, string Title, string Subtitle);
+    private sealed record StorageDisplayRow(
+        StorageVolumeSnapshot Snapshot,
+        string Source,
+        string FileSystem,
+        string Size,
+        string Used,
+        string Available,
+        string PercentUsed,
+        string PolicyLabel,
+        string StatusLabel,
+        string MountPoint);
+
+    private sealed record NavigationTarget(
+        string PageName,
+        string Title,
+        string Subtitle);
 }
 
 public static class OpsPalette

@@ -505,16 +505,23 @@ public static class LinuxOpsAnalyzer
         if (sourceMatch.Success)
             source = sourceMatch.Groups[1].Value;
 
+        var canonicalSource = CanonicalSource(source);
         var lowered = message.ToLowerInvariant();
-        var severity = lowered.Contains("world-inaccessible")
+        var severity = IsDesktopSessionObservation(
+                canonicalSource,
+                message)
             ? OpsSeverity.Info
-            : lowered.Contains("dumped core") || lowered.Contains("core dump") || lowered.Contains("segfault")
-                ? OpsSeverity.Error
-                : OpsSeverity.Warning;
+            : lowered.Contains("world-inaccessible")
+                ? OpsSeverity.Info
+                : lowered.Contains("dumped core") ||
+                  lowered.Contains("core dump") ||
+                  lowered.Contains("segfault")
+                    ? OpsSeverity.Error
+                    : OpsSeverity.Warning;
 
         return new OpsLogGroup(
             severity,
-            CanonicalSource(source),
+            canonicalSource,
             timestamp,
             1,
             message);
@@ -529,6 +536,20 @@ public static class LinuxOpsAnalyzer
                 StringComparison.OrdinalIgnoreCase))
         {
             return "gnome-keyring-daemon";
+        }
+
+        if (source.StartsWith(
+                "xdg-desktop-por",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return "xdg-desktop-portal";
+        }
+
+        if (source.StartsWith(
+                "gvfsd-network",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return "gvfsd-network";
         }
 
         return source;
@@ -546,6 +567,24 @@ public static class LinuxOpsAnalyzer
             lowered.Contains("assertion"))
         {
             return "gnome-keyring assertion family";
+        }
+
+        if (source.Equals(
+                "xdg-desktop-portal",
+                StringComparison.OrdinalIgnoreCase) &&
+            lowered.Contains("application id not specified"))
+        {
+            return "xdg desktop portal missing application id";
+        }
+
+        if (source.Equals(
+                "gvfsd-network",
+                StringComparison.OrdinalIgnoreCase) &&
+            (lowered.Contains("wsdd") ||
+             lowered.Contains("automount failed") ||
+             lowered.Contains("directory monitor")))
+        {
+            return "gvfs network discovery helper unavailable";
         }
 
         if (lowered.Contains("world-inaccessible"))
@@ -570,6 +609,42 @@ public static class LinuxOpsAnalyzer
             "#");
 
         return text.Trim();
+    }
+
+    private static bool IsDesktopSessionObservation(
+        string source,
+        string message)
+    {
+        var lowered = message.ToLowerInvariant();
+
+        if (source.Equals(
+                "xdg-desktop-portal",
+                StringComparison.OrdinalIgnoreCase) &&
+            (lowered.Contains("application id not specified") ||
+             lowered.Contains("backend call failed")))
+        {
+            return true;
+        }
+
+        if (source.Equals(
+                "gnome-keyring-daemon",
+                StringComparison.OrdinalIgnoreCase) &&
+            lowered.Contains("assertion"))
+        {
+            return true;
+        }
+
+        if (source.Equals(
+                "gvfsd-network",
+                StringComparison.OrdinalIgnoreCase) &&
+            (lowered.Contains("wsdd") ||
+             lowered.Contains("automount failed") ||
+             lowered.Contains("directory monitor")))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private static OpsSeverity SeverityFromState(string state)
