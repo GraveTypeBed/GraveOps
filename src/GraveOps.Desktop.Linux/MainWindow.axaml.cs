@@ -26,7 +26,7 @@ public partial class MainWindow : Window
             ["DashboardNav"] = new("DashboardPage", "Dashboard", "Fleet-aware local Linux operations"),
             ["IntelligenceNav"] = new("IntelligencePage", "Intelligence", "Impact-aware inspection and recommendations"),
             ["LifecycleNav"] = new("LifecyclePage", "Lifecycle", "Provider-neutral media workflow readiness"),
-            ["HistoryNav"] = new("HistoryPage", "History & Incidents", "Persisted transitions, incidents and guarded actions"),
+            ["HistoryNav"] = new("HistoryPage", "History", "Persisted transitions, guarded actions and operator decisions"),
             ["ServersNav"] = new("ServersPage", "Servers", "Selected-host identity, runtime and provider capability"),
             ["MediaHubNav"] = new("MediaHubPage", "Media Hub", "Verified media and acquisition integrations"),
             ["ServicesNav"] = new("ServicesPage", "Services & Actions", "Native systemd inventory and guarded actions"),
@@ -99,7 +99,10 @@ public partial class MainWindow : Window
         var refresh = Get<Button>("RefreshButton");
         refresh.IsEnabled = false;
         refresh.Content = "Refreshing environment...";
-        Get<TextBlock>("StatusStripText").Text = "Capturing native Linux telemetry...";
+        SetControlPlaneState(
+            OpsSeverity.Info,
+            "REFRESHING",
+            "Capturing local telemetry");
 
         try
         {
@@ -114,8 +117,12 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            SetConnection(OpsSeverity.Error, "Capture failed");
-            Get<TextBlock>("StatusStripText").Text = $"Local provider capture failed: {exception.Message}";
+            SetControlPlaneState(
+                OpsSeverity.Error,
+                "OFFLINE",
+                "Provider capture failed");
+            Get<TextBlock>("LastUpdatedText").Text =
+                $"Capture failed · {exception.Message}";
         }
         finally
         {
@@ -131,9 +138,12 @@ public partial class MainWindow : Window
 
         Get<TextBlock>("SidebarHostname").Text = _snapshot.Hostname;
         Get<TextBlock>("SidebarOperatingSystem").Text = _snapshot.OperatingSystem;
-        Get<TextBlock>("LastUpdatedText").Text = $"Captured {_snapshot.CapturedAt.ToLocalTime():g}";
-        Get<TextBlock>("StatusStripText").Text = _analysis.Headline;
-        SetConnection(_analysis.Severity, _analysis.Label);
+        Get<TextBlock>("LastUpdatedText").Text =
+            $"Captured {_snapshot.CapturedAt.ToLocalTime():g}";
+        SetControlPlaneState(
+            OpsSeverity.Healthy,
+            "ONLINE",
+            "Native Linux provider");
 
         PopulateDashboard();
         PopulateIntelligence();
@@ -168,19 +178,35 @@ public partial class MainWindow : Window
         Get<TextBlock>("DashboardIpText").Text = snapshot.IpAddresses;
         Get<TextBlock>("DashboardDiscoveryText").Text = $"{_integrations.Count} integrations · {snapshot.Containers.Count} containers";
 
-        var badgeBorder = Get<Border>("DashboardHealthBadgeBorder");
-        var badgeText = Get<TextBlock>("DashboardHealthBadge");
-        badgeBorder.Background = OpsPalette.Background(analysis.Severity);
-        badgeText.Foreground = OpsPalette.Foreground(analysis.Severity);
-        badgeText.Text = analysis.Label;
-
         var findings = analysis.Findings
             .Where(item => item.Severity >= OpsSeverity.Warning)
-            .Take(8)
+            .Take(12)
             .ToArray();
-        Get<ListBox>("DashboardAttentionList").ItemsSource = findings.Length == 0
-            ? new[] { new OpsFinding(OpsSeverity.Healthy, "Environment", "No active warnings or failed services.", "", "", "", 0) }
-            : findings;
+
+        var errors = findings.Count(item =>
+            item.Severity >= OpsSeverity.Error);
+        var warnings = findings.Count(item =>
+            item.Severity == OpsSeverity.Warning);
+
+        Get<TextBlock>("DashboardFindingsSummaryText").Text =
+            findings.Length == 0
+                ? "No active findings"
+                : $"{errors} error · {warnings} warning";
+
+        Get<ListBox>("DashboardAttentionList").ItemsSource =
+            findings.Length == 0
+                ? new[]
+                {
+                    new OpsFinding(
+                        OpsSeverity.Healthy,
+                        "Environment",
+                        "No active operational findings.",
+                        "Latest capture completed successfully.",
+                        "No impact detected.",
+                        "Continue normal monitoring.",
+                        0)
+                }
+                : findings;
 
         Get<TextBlock>("DashboardServicesModuleText").Text = services.Count.ToString();
         Get<TextBlock>("DashboardStorageModuleText").Text = storage.Count.ToString();
@@ -215,11 +241,8 @@ public partial class MainWindow : Window
 
     private void PopulateHistory()
     {
-        Get<ListBox>("CurrentIncidentsList").ItemsSource = _analysis!.Findings
-            .Where(item => item.Severity >= OpsSeverity.Warning)
-            .Take(20)
-            .ToArray();
-        Get<ListBox>("HistoryList").ItemsSource = _history.Records;
+        Get<ListBox>("HistoryList").ItemsSource =
+            _history.Records;
     }
 
     private void PopulateServerPage()
@@ -438,13 +461,16 @@ public partial class MainWindow : Window
     private static string FormatLog(OpsLogGroup log) =>
         $"Severity: {log.Severity}\nSource: {log.Source}\nLast seen: {log.LastSeen.LocalDateTime:g}\nOccurrences: {log.Count}\n\n{log.Message}";
 
-    private void SetConnection(OpsSeverity severity, string text)
+    private void SetControlPlaneState(
+        OpsSeverity severity,
+        string state,
+        string detail)
     {
         var brush = OpsPalette.Foreground(severity);
-        Get<TextBlock>("ConnectionText").Text = text;
+        Get<TextBlock>("ConnectionText").Text = state;
         Get<TextBlock>("ConnectionText").Foreground = brush;
         Get<TextBlock>("ConnectionDot").Foreground = brush;
-        Get<TextBlock>("StatusStripDot").Foreground = brush;
+        Get<TextBlock>("ConnectionDetailText").Text = detail;
     }
 
     private static bool Matches(string? filter, params string?[] values)
