@@ -152,7 +152,7 @@ public static class LinuxOpsAnalyzer
 
         return rows
             .GroupBy(
-                row => $"{row.Name}|{row.Evidence}",
+                row => $"{row.Name}|{row.Endpoint}|{row.Evidence}",
                 StringComparer.OrdinalIgnoreCase)
             .Select(group => group
                 .OrderBy(row => row.Severity)

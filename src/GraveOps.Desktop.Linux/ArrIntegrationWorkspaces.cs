@@ -19,6 +19,7 @@ public sealed class ArrWorkspaceProfile
     public string FriendlyName { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
     public bool PrivacyMode { get; set; }
+    public string ConfigPath { get; set; } = string.Empty;
     public List<string> EnabledModules { get; set; } = new();
 }
 
@@ -117,6 +118,7 @@ public sealed class ArrWorkspaceProfileStore
             FriendlyName = profile.FriendlyName,
             Role = profile.Role,
             PrivacyMode = profile.PrivacyMode,
+            ConfigPath = profile.ConfigPath ?? string.Empty,
             EnabledModules = profile.EnabledModules
                 .Where(supported.Contains)
                 .Distinct(
@@ -130,6 +132,7 @@ public sealed class ArrWorkspaceProfileStore
         ArrIntegrationDefinition definition,
         string friendlyName,
         string role,
+        string configPath,
         bool privacyMode,
         IEnumerable<string> enabledModules)
     {
@@ -146,6 +149,7 @@ public sealed class ArrWorkspaceProfileStore
                 Role =
                     role?.Trim() ?? string.Empty,
                 PrivacyMode = privacyMode,
+                ConfigPath = configPath?.Trim() ?? string.Empty,
                 EnabledModules = enabledModules
                     .Where(supported.Contains)
                     .Distinct(
@@ -173,6 +177,7 @@ public sealed class ArrWorkspaceProfileStore
             FriendlyName = string.Empty,
             Role = definition.DefaultRole,
             PrivacyMode = false,
+            ConfigPath = string.Empty,
             EnabledModules = definition.Modules
                 .Select(module => module.Id)
                 .ToList()

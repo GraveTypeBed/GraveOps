@@ -11,6 +11,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
+using Avalonia.Threading;
 using Avalonia.Media;
 using GraveOps.Core.Hosts;
 using GraveOps.Platform.Linux;
@@ -25,6 +26,7 @@ public partial class MainWindow : Window
     private readonly LinuxHistoryStore _history = new();
     private readonly LinuxFindingPolicyStore _findingPolicies = new();
     private readonly ArrWorkspaceProfileStore _arrWorkspaceProfiles = new();
+    private readonly ArrLiveTelemetryService _arrTelemetry = new();
     private readonly LinuxOperatorSettingsStore _operatorSettingsStore = new();
     private readonly string _repositoryPath =
         LinuxOperatorTools.FindRepositoryRoot();
@@ -85,7 +87,6 @@ public partial class MainWindow : Window
             ["HistoryNav"] = new("HistoryPage", "History", "Persisted transitions, guarded actions and operator decisions"),
             ["ServersNav"] = new("ServersPage", "Servers", "Selected-host identity, runtime and provider capability"),
             ["MediaHubNav"] = new("MediaHubPage", "Media Hub", "Verified media and acquisition integrations"),
-            ["ArrWorkspacesNav"] = new("ArrWorkspacePage", "Arr Workspaces", "Configurable per-instance workspaces across the Arr ecosystem"),
             ["DumbNav"] = new("MediaHubPage", "DUMB", "Stack orchestration and verified local interface"),
             ["PlexNav"] = new("MediaHubPage", "Plex", "Library availability, playback endpoint and related findings"),
             ["TautulliNav"] = new("MediaHubPage", "Tautulli", "Playback analytics and related findings"),
@@ -122,6 +123,12 @@ public partial class MainWindow : Window
     private IReadOnlyList<OpsLogGroup> _logs = Array.Empty<OpsLogGroup>();
     private IReadOnlyList<ArrWorkspaceView> _arrWorkspaceRows =
         Array.Empty<ArrWorkspaceView>();
+    private readonly DispatcherTimer _arrLiveTimer;
+    private ArrLiveTelemetrySnapshot? _arrTelemetrySnapshot;
+    private string _arrTelemetryProduct = string.Empty;
+    private string _activeArrProduct = "Sonarr";
+    private string _selectedArrInstanceKey = string.Empty;
+    private bool _arrTelemetryBusy;
     private OpsPolicyEvaluation? _policyEvaluation;
     private IReadOnlyList<CommandPaletteItem> _commandPaletteItems =
         Array.Empty<CommandPaletteItem>();
@@ -132,11 +139,22 @@ public partial class MainWindow : Window
         _operatorSettings = _operatorSettingsStore.Load();
         ApplyOperatorSettingsToUi();
 
+        _arrLiveTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(10)
+        };
+        _arrLiveTimer.Tick += async (_, _) =>
+        {
+            if (Get<Control>("ArrWorkspacePage").IsVisible)
+                await RefreshArrLiveTelemetryAsync();
+        };
+
         Opened += async (_, _) =>
         {
             Navigate("DashboardNav");
             await RefreshAsync();
             await RefreshVersionInfoAsync();
+            _arrLiveTimer.Start();
 
             if (_operatorSettings.OpenOverviewAfterStartup)
             {
@@ -144,6 +162,13 @@ public partial class MainWindow : Window
                 PopulateOperatorShell();
             }
         };
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        _arrLiveTimer.Stop();
+        _arrTelemetry.Dispose();
+        base.OnClosed(e);
     }
 
     private T Get<T>(string name) where T : Control =>
@@ -242,20 +267,13 @@ public partial class MainWindow : Window
                     "ArrWorkspacePage",
                     StringComparison.Ordinal))
             {
-                SelectArrWorkspaceByName(integrationName);
+                ActivateArrProduct(integrationName);
             }
             else
             {
                 SelectIntegrationByName(integrationName);
             }
         }
-        else if (target.PageName.Equals(
-                     "ArrWorkspacePage",
-                     StringComparison.Ordinal))
-        {
-            PopulateArrWorkspaces();
-        }
-
         CloseCommandPalette();
 
         if (navigationName is "SettingsNav" or "ToolsNav")
@@ -1048,7 +1066,7 @@ public partial class MainWindow : Window
         PopulateServerPage();
         UpdateIntegrationNavigation();
         ApplyMediaFilter();
-        PopulateArrWorkspaces();
+        PopulateArrApplicationPage();
         ApplyServicesFilter();
         ApplyDockerFilter();
         ApplyStorageFilter();
@@ -1236,256 +1254,396 @@ public partial class MainWindow : Window
         Get<ListBox>("BackupArtifactsList").ItemsSource = backup.Artifacts;
     }
 
-    private void ArrWorkspaceFilterText_OnTextChanged(
-        object? sender,
-        TextChangedEventArgs e) =>
-        PopulateArrWorkspaces();
-
-    private void PopulateArrWorkspaces()
+    private void ActivateArrProduct(string productName)
     {
-        var list = Get<ListBox>("ArrWorkspaceList");
-        var selectedKey =
-            (list.SelectedItem as ArrWorkspaceView)?
-                .InstanceKey;
-        var filter =
-            Get<TextBox>("ArrWorkspaceFilterText")
-                .Text?
-                .Trim();
+        _activeArrProduct = productName;
+        PopulateArrApplicationPage();
+        _ = RefreshArrLiveTelemetryAsync();
+    }
 
+    private void PopulateArrApplicationPage()
+    {
         _arrWorkspaceRows =
             ArrWorkspaceRegistry.BuildViews(
                 _integrations,
                 _arrWorkspaceProfiles);
 
-        var rows = _arrWorkspaceRows
-            .Where(item =>
-                Matches(
-                    filter,
-                    item.DisplayName,
-                    item.ProductName,
-                    item.Family,
-                    item.Role,
-                    item.State,
-                    item.Detection,
-                    item.Evidence,
-                    item.Endpoint))
-            .ToArray();
+        var instances = ActiveArrInstances();
 
-        list.ItemsSource = rows;
-        list.SelectedItem = rows.FirstOrDefault(item =>
-            item.InstanceKey.Equals(
-                selectedKey,
-                StringComparison.OrdinalIgnoreCase));
-
-        if (list.SelectedItem is null &&
-            rows.Length > 0)
-        {
-            list.SelectedIndex = 0;
-        }
-
-        var customized = _arrWorkspaceRows.Count(item =>
-            _arrWorkspaceProfiles.IsCustomized(
-                item.InstanceKey));
-
-        Get<TextBlock>("ArrWorkspaceSummaryText").Text =
-            $"{rows.Length} shown · " +
-            $"{_arrWorkspaceRows.Count} compatible detected · " +
-            $"{customized} customized";
+        Get<TextBlock>("ArrApplicationTitleText").Text =
+            _activeArrProduct;
+        Get<TextBlock>("ArrApplicationSubtitleText").Text =
+            ArrPageSubtitle(_activeArrProduct);
+        Get<TextBlock>("ArrOperationsSubtitleText").Text =
+            ArrOperationsSubtitle(_activeArrProduct);
+        Get<TextBlock>("ArrWorkMetricLabelText").Text =
+            ArrWorkMetricLabel(_activeArrProduct);
+        Get<TextBlock>("ArrWorkSectionTitleText").Text =
+            ArrWorkSectionTitle(_activeArrProduct);
+        Get<TextBlock>("ArrWorkSectionSubtitleText").Text =
+            ArrWorkSectionSubtitle(_activeArrProduct);
+        Get<TextBlock>("ArrInstanceCountText").Text =
+            $"{instances.Length} " +
+            $"{(instances.Length == 1 ? "instance" : "instances")}";
 
         Get<TextBlock>("ArrWorkspaceConfigPathText").Text =
             $"Profiles · {_arrWorkspaceProfiles.FilePath}";
 
-        PopulateSelectedArrWorkspace();
+        PopulateArrOpenButtons(instances);
+        PopulateArrDetectionFallback(instances);
+        PopulateArrCustomizationInstances(instances);
     }
 
-    private void SelectArrWorkspaceByName(
-        string productName)
-    {
-        var filter =
-            Get<TextBox>("ArrWorkspaceFilterText");
-
-        if (!string.IsNullOrWhiteSpace(filter.Text))
-            filter.Text = string.Empty;
-
-        PopulateArrWorkspaces();
-
-        var selected = _arrWorkspaceRows
-            .FirstOrDefault(item =>
+    private ArrWorkspaceView[] ActiveArrInstances() =>
+        _arrWorkspaceRows
+            .Where(item =>
                 item.ProductName.Equals(
-                    productName,
+                    _activeArrProduct,
                     StringComparison.OrdinalIgnoreCase) ||
                 item.Integration.Name.Equals(
-                    productName,
-                    StringComparison.OrdinalIgnoreCase));
+                    _activeArrProduct,
+                    StringComparison.OrdinalIgnoreCase))
+            .ToArray();
 
-        if (selected is null)
-            return;
+    private void PopulateArrOpenButtons(
+        ArrWorkspaceView[] instances)
+    {
+        var panel =
+            Get<WrapPanel>("ArrOpenButtonsPanel");
+        panel.Children.Clear();
 
-        Get<ListBox>("ArrWorkspaceList").SelectedItem =
-            selected;
-        PopulateSelectedArrWorkspace();
+        foreach (var instance in instances)
+        {
+            var url =
+                ResolveIntegrationUrl(
+                    instance.Integration);
+
+            var button = new Button
+            {
+                Content = $"Open {instance.DisplayName}",
+                Tag = instance,
+                IsEnabled = url is not null,
+                Margin = new Thickness(0, 0, 8, 8)
+            };
+
+            button.Click +=
+                ArrDynamicOpenButton_OnClick;
+
+            panel.Children.Add(button);
+        }
+
+        if (panel.Children.Count == 0)
+        {
+            panel.Children.Add(
+                new TextBlock
+                {
+                    Text =
+                        $"No {_activeArrProduct} instance was detected.",
+                    Classes = { "muted" },
+                    VerticalAlignment =
+                        VerticalAlignment.Center
+                });
+        }
     }
 
-    private void ArrWorkspaceList_OnSelectionChanged(
+    private void PopulateArrDetectionFallback(
+        ArrWorkspaceView[] instances)
+    {
+        if (_arrTelemetrySnapshot is not null &&
+            _arrTelemetryProduct.Equals(
+                _activeArrProduct,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            ApplyArrTelemetry(
+                _arrTelemetrySnapshot);
+            return;
+        }
+
+        var services = instances
+            .Select(instance =>
+                new ArrServiceTelemetryRow(
+                    instance.InstanceKey,
+                    instance.DisplayName,
+                    ResolveIntegrationUrl(
+                        instance.Integration) ??
+                    instance.Endpoint ??
+                    "--",
+                    "--",
+                    "--",
+                    "--",
+                    "Waiting for live probe",
+                    instance.SeverityLabel))
+            .ToArray();
+
+        Get<ListBox>("ArrInstanceTelemetryList")
+            .ItemsSource = services;
+
+        Get<ListBox>("ArrQueueHealthList")
+            .ItemsSource =
+                instances.Length == 0
+                    ? new[]
+                    {
+                        new ArrWorkItemRow(
+                            _activeArrProduct,
+                            "Detection",
+                            "No compatible instance detected",
+                            "Unavailable",
+                            string.Empty,
+                            string.Empty,
+                            "Verify the service, container identity or published port.")
+                    }
+                    : new[]
+                    {
+                        new ArrWorkItemRow(
+                            _activeArrProduct,
+                            "Telemetry",
+                            "Live application probe pending",
+                            "Waiting",
+                            string.Empty,
+                            string.Empty,
+                            "GraveOps reads the local config.xml without displaying or storing its API key.")
+                    };
+
+        Get<TextBlock>("ArrStateMetricText").Text =
+            instances.Length > 0
+                ? "DETECTED"
+                : "NOT DETECTED";
+        Get<TextBlock>("ArrVersionMetricText").Text =
+            "--";
+        Get<TextBlock>("ArrWorkMetricText").Text =
+            "--";
+        Get<TextBlock>("ArrHealthMetricText").Text =
+            "--";
+        Get<TextBlock>("ArrQueueFooterText").Text =
+            "Waiting for the first live application probe.";
+        Get<TextBlock>("ArrLiveUpdatedText").Text =
+            "Waiting for live telemetry";
+    }
+
+    private async Task RefreshArrLiveTelemetryAsync()
+    {
+        if (_arrTelemetryBusy)
+            return;
+
+        var page =
+            Get<Control>("ArrWorkspacePage");
+
+        if (!page.IsVisible)
+            return;
+
+        var instances = ActiveArrInstances();
+
+        if (instances.Length == 0)
+        {
+            PopulateArrDetectionFallback(instances);
+            return;
+        }
+
+        _arrTelemetryBusy = true;
+
+        var button =
+            Get<Button>("ArrRefreshTelemetryButton");
+        button.IsEnabled = false;
+        button.Content = "Refreshing...";
+
+        try
+        {
+            var snapshot =
+                await _arrTelemetry.CaptureAsync(
+                    instances);
+
+            _arrTelemetrySnapshot = snapshot;
+            _arrTelemetryProduct =
+                _activeArrProduct;
+
+            ApplyArrTelemetry(snapshot);
+        }
+        catch (Exception exception)
+        {
+            Get<TextBlock>("ArrQueueFooterText").Text =
+                $"Live telemetry failed: {exception.Message}";
+        }
+        finally
+        {
+            button.IsEnabled = true;
+            button.Content = "Refresh";
+            _arrTelemetryBusy = false;
+        }
+    }
+
+    private void ApplyArrTelemetry(
+        ArrLiveTelemetrySnapshot snapshot)
+    {
+        Get<TextBlock>("ArrStateMetricText").Text =
+            snapshot.OverallState;
+        Get<TextBlock>("ArrVersionMetricText").Text =
+            snapshot.VersionSummary;
+        Get<TextBlock>("ArrWorkMetricText").Text =
+            snapshot.WorkSummary;
+        Get<TextBlock>("ArrHealthMetricText").Text =
+            snapshot.HealthSummary;
+        Get<TextBlock>("ArrLiveUpdatedText").Text =
+            $"LIVE · updated {snapshot.CapturedAt:t}";
+
+        Get<ListBox>("ArrInstanceTelemetryList")
+            .ItemsSource = snapshot.Services;
+        Get<ListBox>("ArrQueueHealthList")
+            .ItemsSource = snapshot.WorkItems;
+
+        Get<TextBlock>("ArrQueueFooterText").Text =
+            $"LIVE · updated {snapshot.CapturedAt:T} · " +
+            $"{snapshot.WorkItems.Count} " +
+            $"{(snapshot.WorkItems.Count == 1 ? "row" : "rows")}.";
+    }
+
+    private async void ArrRefreshTelemetryButton_OnClick(
+        object? sender,
+        RoutedEventArgs e) =>
+        await RefreshArrLiveTelemetryAsync();
+
+    private void ArrCustomizeButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        var panel =
+            Get<Border>("ArrCustomizationPanel");
+        panel.IsVisible = !panel.IsVisible;
+
+        if (panel.IsVisible)
+            PopulateArrCustomization();
+    }
+
+    private void ArrCustomizeCloseButton_OnClick(
+        object? sender,
+        RoutedEventArgs e) =>
+        Get<Border>("ArrCustomizationPanel")
+            .IsVisible = false;
+
+    private void PopulateArrCustomizationInstances(
+        IReadOnlyList<ArrWorkspaceView> instances)
+    {
+        var combo =
+            Get<ComboBox>(
+                "ArrCustomizeInstanceComboBox");
+        var selectedKey =
+            (combo.SelectedItem as ArrWorkspaceView)?
+                .InstanceKey ??
+            _selectedArrInstanceKey;
+
+        combo.ItemsSource = instances;
+        combo.SelectedItem =
+            instances.FirstOrDefault(item =>
+                item.InstanceKey.Equals(
+                    selectedKey,
+                    StringComparison.OrdinalIgnoreCase)) ??
+            instances.FirstOrDefault();
+
+        PopulateArrCustomization();
+    }
+
+    private void ArrCustomizeInstanceComboBox_OnSelectionChanged(
         object? sender,
         SelectionChangedEventArgs e) =>
-        PopulateSelectedArrWorkspace();
+        PopulateArrCustomization();
 
     private ArrWorkspaceView? SelectedArrWorkspace() =>
-        Get<ListBox>("ArrWorkspaceList")
+        Get<ComboBox>("ArrCustomizeInstanceComboBox")
             .SelectedItem as ArrWorkspaceView;
 
-    private void PopulateSelectedArrWorkspace()
+    private void PopulateArrCustomization()
     {
         var selected = SelectedArrWorkspace();
-        var panel =
-            Get<StackPanel>("ArrWorkspaceModulesPanel");
+        var modulesPanel =
+            Get<StackPanel>(
+                "ArrWorkspaceModulesPanel");
+        modulesPanel.Children.Clear();
 
-        var stateBorder =
-            Get<Border>("ArrWorkspaceStateBorder");
-        var stateText =
-            Get<TextBlock>("ArrWorkspaceStateText");
         var save =
             Get<Button>("SaveArrWorkspaceButton");
         var reset =
             Get<Button>("ResetArrWorkspaceButton");
-        var open =
-            Get<Button>("OpenArrWorkspaceButton");
-        var media =
-            Get<Button>("ArrWorkspaceMediaHubButton");
-
-        panel.Children.Clear();
 
         if (selected is null)
         {
-            Get<TextBlock>("ArrWorkspaceProductText").Text =
-                "Select an Arr workspace";
-            Get<TextBlock>("ArrWorkspaceFamilyText").Text =
-                "--";
-            Get<TextBlock>("ArrWorkspaceDescriptionText").Text =
-                "Select a detected integration.";
-            stateText.Text = "WAITING";
-            stateText.Foreground =
-                OpsPalette.Foreground(OpsSeverity.Info);
-            stateBorder.Background =
-                OpsPalette.Background(OpsSeverity.Info);
-            Get<TextBlock>("ArrWorkspaceDetectionText").Text =
-                "--";
-            Get<TextBlock>("ArrWorkspaceEndpointText").Text =
-                "--";
-            Get<TextBlock>("ArrWorkspaceRuntimeText").Text =
-                "--";
-            Get<TextBlock>("ArrWorkspaceModuleCountText").Text =
-                "--";
             Get<TextBox>("ArrFriendlyNameTextBox").Text =
                 string.Empty;
             Get<TextBox>("ArrRoleTextBox").Text =
+                string.Empty;
+            Get<TextBox>("ArrConfigPathTextBox").Text =
                 string.Empty;
             Get<CheckBox>("ArrPrivacyModeCheckBox")
                 .IsChecked = false;
             save.IsEnabled = false;
             reset.IsEnabled = false;
-            open.IsEnabled = false;
-            media.IsEnabled = false;
             Get<TextBlock>("ArrWorkspaceProfileStatusText")
                 .Text = "No instance selected.";
-            Get<TextBlock>("ArrWorkspaceActionStatusText")
-                .Text = "Select a workspace.";
             return;
         }
 
-        var url =
-            ResolveIntegrationUrl(
-                selected.Integration);
-        var enabled =
-            selected.Profile.EnabledModules.ToHashSet(
-                StringComparer.OrdinalIgnoreCase);
-
-        Get<TextBlock>("ArrWorkspaceProductText").Text =
-            selected.DisplayName;
-        Get<TextBlock>("ArrWorkspaceFamilyText").Text =
-            $"{selected.ProductName} · {selected.Family}";
-        Get<TextBlock>("ArrWorkspaceDescriptionText").Text =
-            selected.Summary;
-
-        stateText.Text = selected.SeverityLabel;
-        stateText.Foreground =
-            OpsPalette.Foreground(
-                selected.Integration.Severity);
-        stateBorder.Background =
-            OpsPalette.Background(
-                selected.Integration.Severity);
-
-        Get<TextBlock>("ArrWorkspaceDetectionText").Text =
-            $"{selected.Detection} · {selected.Evidence}";
-        Get<TextBlock>("ArrWorkspaceEndpointText").Text =
-            url ??
-            (string.IsNullOrWhiteSpace(selected.Endpoint)
-                ? "No verified web endpoint"
-                : selected.Endpoint);
-        Get<TextBlock>("ArrWorkspaceRuntimeText").Text =
-            selected.State;
-        Get<TextBlock>("ArrWorkspaceModuleCountText").Text =
-            $"{selected.EnabledModuleCount} enabled · " +
-            $"{selected.AvailableModuleCount} available";
+        _selectedArrInstanceKey =
+            selected.InstanceKey;
 
         Get<TextBox>("ArrFriendlyNameTextBox").Text =
             selected.Profile.FriendlyName;
         Get<TextBox>("ArrRoleTextBox").Text =
             selected.Role;
+        Get<TextBox>("ArrConfigPathTextBox").Text =
+            selected.Profile.ConfigPath;
         Get<CheckBox>("ArrPrivacyModeCheckBox")
             .IsChecked =
             selected.Profile.PrivacyMode;
 
-        foreach (var module in selected.Definition.Modules)
+        var enabled =
+            selected.Profile.EnabledModules.ToHashSet(
+                StringComparer.OrdinalIgnoreCase);
+
+        foreach (var module in
+                 selected.Definition.Modules)
         {
-            var checkbox = new CheckBox
+            var checkBox = new CheckBox
             {
                 Tag = module.Id,
-                IsChecked = enabled.Contains(module.Id)
+                IsChecked =
+                    enabled.Contains(module.Id)
             };
 
-            checkbox.Content = new StackPanel
+            checkBox.Content = new StackPanel
             {
-                Margin = new Thickness(6, 0, 0, 0),
+                Margin =
+                    new Thickness(6, 0, 0, 0),
                 Spacing = 3,
                 Children =
                 {
                     new TextBlock
                     {
                         Text = module.Title,
-                        FontWeight = FontWeight.SemiBold
+                        FontWeight =
+                            FontWeight.SemiBold
                     },
                     new TextBlock
                     {
                         Text = module.Description,
-                        TextWrapping = TextWrapping.Wrap,
                         Classes = { "muted" },
-                        FontSize = 10
+                        FontSize = 10,
+                        TextWrapping =
+                            TextWrapping.Wrap
                     }
                 }
             };
 
-            panel.Children.Add(checkbox);
+            modulesPanel.Children.Add(checkBox);
         }
 
         save.IsEnabled = true;
         reset.IsEnabled =
             _arrWorkspaceProfiles.IsCustomized(
                 selected.InstanceKey);
-        open.IsEnabled = url is not null;
-        media.IsEnabled = true;
 
         Get<TextBlock>("ArrWorkspaceProfileStatusText")
             .Text =
             reset.IsEnabled
                 ? "Custom profile active."
                 : "Default integration profile.";
-        Get<TextBlock>("ArrWorkspaceActionStatusText")
-            .Text =
-            url is null
-                ? "No verified local web interface is available."
-                : "Ready to open the local interface.";
     }
 
     private IEnumerable<string> SelectedArrModuleIds() =>
@@ -1515,6 +1673,8 @@ public partial class MainWindow : Window
                     .Text ?? string.Empty,
                 Get<TextBox>("ArrRoleTextBox")
                     .Text ?? string.Empty,
+                Get<TextBox>("ArrConfigPathTextBox")
+                    .Text ?? string.Empty,
                 Get<CheckBox>("ArrPrivacyModeCheckBox")
                     .IsChecked == true,
                 SelectedArrModuleIds());
@@ -1524,11 +1684,14 @@ public partial class MainWindow : Window
                 "WORKSPACE PROFILE SAVED",
                 selected.InstanceKey);
 
-            ReselectArrWorkspace(
-                selected.InstanceKey);
+            _arrTelemetrySnapshot = null;
+            PopulateArrApplicationPage();
 
             Get<TextBlock>("ArrWorkspaceProfileStatusText")
                 .Text = "Workspace profile saved.";
+
+            _ = RefreshArrLiveTelemetryAsync();
+            PopulateHistory();
         }
         catch (Exception exception)
         {
@@ -1556,12 +1719,15 @@ public partial class MainWindow : Window
                 "WORKSPACE DEFAULTS RESTORED",
                 selected.InstanceKey);
 
-            ReselectArrWorkspace(
-                selected.InstanceKey);
+            _arrTelemetrySnapshot = null;
+            PopulateArrApplicationPage();
 
             Get<TextBlock>("ArrWorkspaceProfileStatusText")
                 .Text =
                 "Default workspace profile restored.";
+
+            _ = RefreshArrLiveTelemetryAsync();
+            PopulateHistory();
         }
         catch (Exception exception)
         {
@@ -1569,20 +1735,6 @@ public partial class MainWindow : Window
                 .Text =
                 $"Could not restore defaults: {exception.Message}";
         }
-    }
-
-    private void ReselectArrWorkspace(string instanceKey)
-    {
-        PopulateArrWorkspaces();
-
-        Get<ListBox>("ArrWorkspaceList").SelectedItem =
-            _arrWorkspaceRows.FirstOrDefault(item =>
-                item.InstanceKey.Equals(
-                    instanceKey,
-                    StringComparison.OrdinalIgnoreCase));
-
-        PopulateSelectedArrWorkspace();
-        PopulateHistory();
     }
 
     private void EnableAllArrModulesButton_OnClick(
@@ -1597,13 +1749,13 @@ public partial class MainWindow : Window
 
     private void SetAllArrModules(bool enabled)
     {
-        foreach (var checkbox in
+        foreach (var checkBox in
                  Get<StackPanel>(
                          "ArrWorkspaceModulesPanel")
                      .Children
                      .OfType<CheckBox>())
         {
-            checkbox.IsChecked = enabled;
+            checkBox.IsChecked = enabled;
         }
 
         Get<TextBlock>("ArrWorkspaceProfileStatusText")
@@ -1613,17 +1765,25 @@ public partial class MainWindow : Window
                 : "All modules cleared. Save to persist.";
     }
 
-    private async void OpenArrWorkspaceButton_OnClick(
+    private async void ArrDynamicOpenButton_OnClick(
         object? sender,
         RoutedEventArgs e)
     {
-        var selected = SelectedArrWorkspace();
-        if (selected is null)
+        if (sender is not Button button ||
+            button.Tag is not ArrWorkspaceView instance)
+        {
             return;
+        }
 
+        await OpenArrInstanceAsync(instance);
+    }
+
+    private async Task OpenArrInstanceAsync(
+        ArrWorkspaceView instance)
+    {
         var url =
             ResolveIntegrationUrl(
-                selected.Integration);
+                instance.Integration);
 
         if (url is null)
             return;
@@ -1643,42 +1803,107 @@ public partial class MainWindow : Window
             process.StartInfo.ArgumentList.Add(url);
             process.Start();
 
-            Get<TextBlock>("ArrWorkspaceActionStatusText")
-                .Text = $"Opened {url}";
+            Get<TextBlock>("ArrQueueFooterText").Text =
+                $"Opened {url}";
             await Task.CompletedTask;
         }
         catch (Exception exception)
         {
-            Get<TextBlock>("ArrWorkspaceActionStatusText")
-                .Text =
+            Get<TextBlock>("ArrQueueFooterText").Text =
                 $"Could not open interface: {exception.Message}";
         }
     }
 
-    private void ArrWorkspaceMediaHubButton_OnClick(
+    private async void ArrOpenNativeDetailButton_OnClick(
         object? sender,
         RoutedEventArgs e)
     {
-        var selected = SelectedArrWorkspace();
-        if (selected is null)
-            return;
+        var instance =
+            ActiveArrInstances().FirstOrDefault();
 
-        Navigate("MediaHubNav");
-
-        Get<ListBox>("IntegrationsList").SelectedItem =
-            _integrations.FirstOrDefault(item =>
-                ArrWorkspaceRegistry.InstanceKey(item)
-                    .Equals(
-                        selected.InstanceKey,
-                        StringComparison.OrdinalIgnoreCase));
-
-        PopulateIntegrationWorkspace();
+        if (instance is not null)
+            await OpenArrInstanceAsync(instance);
     }
+
+    private void ArrDockerButton_OnClick(
+        object? sender,
+        RoutedEventArgs e) =>
+        Navigate("DockerNav");
+
+    private void ArrLogsButton_OnClick(
+        object? sender,
+        RoutedEventArgs e) =>
+        Navigate("LogsNav");
 
     private void ArrWorkspaceIntelligenceButton_OnClick(
         object? sender,
         RoutedEventArgs e) =>
         Navigate("IntelligenceNav");
+
+    private static string ArrPageSubtitle(
+        string product) =>
+        product.ToLowerInvariant() switch
+        {
+            "sonarr" =>
+                "Series and episode health, queues and operational tools.",
+            "radarr" =>
+                "Movie health, queues, editions and operational tools.",
+            "lidarr" =>
+                "Artist, album and track health, queues and operational tools.",
+            "prowlarr" =>
+                "Indexer health, application synchronization and operational tools.",
+            "readarr" =>
+                "Author, book and edition health, queues and operational tools.",
+            "whisparr" =>
+                "Version-aware acquisition health, queues and operational tools.",
+            "mylar3" =>
+                "Comic-series acquisition, pull-list and post-processing tools.",
+            "bazarr" =>
+                "Subtitle coverage, provider health and synchronization tools.",
+            "recyclarr" =>
+                "Configuration targets, drift, validation and synchronization evidence.",
+            _ =>
+                $"{product} health, work and operational tools."
+        };
+
+    private static string ArrOperationsSubtitle(
+        string product) =>
+        $"{product} instances, native interface access, logs and stack context are kept together here.";
+
+    private static string ArrWorkMetricLabel(
+        string product) =>
+        product.Equals(
+            "Prowlarr",
+            StringComparison.OrdinalIgnoreCase)
+            ? "INDEXERS"
+            : product.Equals(
+                "Maintainerr",
+                StringComparison.OrdinalIgnoreCase)
+                ? "RULES"
+                : "QUEUE";
+
+    private static string ArrWorkSectionTitle(
+        string product) =>
+        product.ToLowerInvariant() switch
+        {
+            "sonarr" => "Episode queue & health",
+            "radarr" => "Movie queue & health",
+            "lidarr" => "Album queue & health",
+            "prowlarr" => "Indexer health & activity",
+            "readarr" => "Book queue & health",
+            "mylar3" => "Issue queue & health",
+            "bazarr" => "Subtitle coverage & health",
+            "recyclarr" => "Drift, validation & health",
+            _ => "Work & health"
+        };
+
+    private static string ArrWorkSectionSubtitle(
+        string product) =>
+        product.Equals(
+            "Prowlarr",
+            StringComparison.OrdinalIgnoreCase)
+            ? "Indexer inventory and application health from the active Prowlarr instance."
+            : $"Item-level work and health messages from every detected {product} instance.";
 
     private void MediaFilterText_OnTextChanged(object? sender, TextChangedEventArgs e) => ApplyMediaFilter();
     private void ServicesFilterText_OnTextChanged(object? sender, TextChangedEventArgs e) => ApplyServicesFilter();
