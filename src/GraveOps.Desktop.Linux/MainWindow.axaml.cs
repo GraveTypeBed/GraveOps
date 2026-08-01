@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
@@ -19,6 +20,7 @@ public partial class MainWindow : Window
     private readonly LinuxBackupProbe _backupProbe = new();
     private readonly LinuxHostActionService _actions = new();
     private readonly LinuxHistoryStore _history = new();
+    private readonly LinuxFindingPolicyStore _findingPolicies = new();
 
     private readonly IReadOnlyDictionary<string, NavigationTarget> _navigation =
         new Dictionary<string, NavigationTarget>(StringComparer.Ordinal)
@@ -38,10 +40,13 @@ public partial class MainWindow : Window
 
     private HostSnapshot? _snapshot;
     private OpsBackupSnapshot? _backup;
+    private OpsAnalysis? _rawAnalysis;
     private OpsAnalysis? _analysis;
+    private IReadOnlyList<OpsLifecycleStage> _rawLifecycle = Array.Empty<OpsLifecycleStage>();
     private IReadOnlyList<OpsLifecycleStage> _lifecycle = Array.Empty<OpsLifecycleStage>();
     private IReadOnlyList<OpsIntegration> _integrations = Array.Empty<OpsIntegration>();
     private IReadOnlyList<OpsLogGroup> _logs = Array.Empty<OpsLogGroup>();
+    private OpsPolicyEvaluation? _policyEvaluation;
 
     public MainWindow()
     {
@@ -110,9 +115,22 @@ public partial class MainWindow : Window
             _backup = await _backupProbe.CaptureAsync();
             _integrations = LinuxOpsAnalyzer.EnrichIntegrations(_snapshot);
             _logs = LinuxOpsAnalyzer.GroupLogs(_snapshot.RecentLogs);
-            _analysis = LinuxOpsAnalyzer.Analyze(_snapshot, _backup, _logs, _integrations);
-            _lifecycle = LinuxOpsAnalyzer.BuildLifecycle(_snapshot, _integrations, _analysis);
-            _history.Record(_snapshot, _analysis, _lifecycle, _backup);
+            _rawAnalysis = LinuxOpsAnalyzer.Analyze(
+                _snapshot,
+                _backup,
+                _logs,
+                _integrations);
+            _rawLifecycle = LinuxOpsAnalyzer.BuildLifecycle(
+                _snapshot,
+                _integrations,
+                _rawAnalysis);
+            ApplyFindingPolicies();
+            _history.Record(
+                _snapshot,
+                _analysis!,
+                _lifecycle,
+                _backup,
+                _findingPolicies.EvaluateStorageSeverity);
             PopulateAll();
         }
         catch (Exception exception)
@@ -131,10 +149,36 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ApplyFindingPolicies()
+    {
+        if (_snapshot is null || _rawAnalysis is null)
+            return;
+
+        _policyEvaluation = _findingPolicies.Evaluate(
+            _snapshot,
+            _rawAnalysis);
+        _analysis = _policyEvaluation.Analysis;
+        _lifecycle = _findingPolicies.ApplyLifecycle(
+            _snapshot,
+            _rawLifecycle,
+            _policyEvaluation);
+    }
+
+    private void RefreshPolicyProjection()
+    {
+        ApplyFindingPolicies();
+        PopulateAll();
+    }
+
     private void PopulateAll()
     {
-        if (_snapshot is null || _backup is null || _analysis is null)
+        if (_snapshot is null ||
+            _backup is null ||
+            _analysis is null ||
+            _policyEvaluation is null)
+        {
             return;
+        }
 
         Get<TextBlock>("SidebarHostname").Text = _snapshot.Hostname;
         Get<TextBlock>("SidebarOperatingSystem").Text = _snapshot.OperatingSystem;
@@ -178,10 +222,11 @@ public partial class MainWindow : Window
         Get<TextBlock>("DashboardIpText").Text = snapshot.IpAddresses;
         Get<TextBlock>("DashboardDiscoveryText").Text = $"{_integrations.Count} integrations · {snapshot.Containers.Count} containers";
 
-        var findings = analysis.Findings
+        var findings = _policyEvaluation!.Active
             .Where(item => item.Severity >= OpsSeverity.Warning)
             .Take(12)
             .ToArray();
+        var muted = _policyEvaluation.Muted;
 
         var errors = findings.Count(item =>
             item.Severity >= OpsSeverity.Error);
@@ -189,24 +234,32 @@ public partial class MainWindow : Window
             item.Severity == OpsSeverity.Warning);
 
         Get<TextBlock>("DashboardFindingsSummaryText").Text =
-            findings.Length == 0
+            findings.Length == 0 && muted.Count == 0
                 ? "No active findings"
-                : $"{errors} error · {warnings} warning";
+                : $"{errors} error · {warnings} warning · {muted.Count} muted";
 
         Get<ListBox>("DashboardAttentionList").ItemsSource =
             findings.Length == 0
                 ? new[]
                 {
-                    new OpsFinding(
-                        OpsSeverity.Healthy,
-                        "Environment",
-                        "No active operational findings.",
-                        "Latest capture completed successfully.",
-                        "No impact detected.",
-                        "Continue normal monitoring.",
-                        0)
+                    _findingPolicies.CreateRow(
+                        new OpsFinding(
+                            OpsSeverity.Healthy,
+                            "Environment",
+                            "No active operational findings.",
+                            "Latest capture completed successfully.",
+                            "No impact detected.",
+                            "Continue normal monitoring.",
+                            0))
                 }
                 : findings;
+
+        var mutedPanel = Get<Border>("MutedFindingsPanel");
+        mutedPanel.IsVisible = muted.Count > 0;
+        Get<TextBlock>("MutedFindingsSummaryText").Text =
+            $"{muted.Count} muted";
+        Get<ListBox>("MutedFindingsList").ItemsSource = muted;
+        UpdateFindingPolicyButtons();
 
         Get<TextBlock>("DashboardServicesModuleText").Text = services.Count.ToString();
         Get<TextBlock>("DashboardStorageModuleText").Text = storage.Count.ToString();
@@ -324,11 +377,279 @@ public partial class MainWindow : Window
         if (_snapshot is null) return;
         var filter = Get<TextBox>("StorageFilterText").Text?.Trim();
         var rows = LinuxOpsAnalyzer.OperationalStorage(_snapshot)
-            .Where(item => Matches(filter, item.Source, item.FileSystem, item.MountPoint, item.PercentUsed))
+            .Where(item => Matches(
+                filter,
+                item.Source,
+                item.FileSystem,
+                item.MountPoint,
+                item.PercentUsed))
             .ToArray();
         Get<ListBox>("StorageList").ItemsSource = rows;
-        var attention = rows.Count(item => LinuxOpsAnalyzer.StorageSeverity(LinuxOpsAnalyzer.UsePercent(item.PercentUsed)) >= OpsSeverity.Warning);
-        Get<TextBlock>("StorageSummaryText").Text = $"{rows.Length} shown · {attention} capacity finding(s)";
+        var attention = rows.Count(item =>
+            _findingPolicies.EvaluateStorageSeverity(item) >=
+            OpsSeverity.Warning);
+        var custom = rows.Count(item =>
+            _findingPolicies.HasCustomStorageThreshold(item.MountPoint));
+        Get<TextBlock>("StorageSummaryText").Text =
+            $"{rows.Length} shown · {attention} active capacity finding(s) · {custom} custom policy";
+        UpdateStoragePolicyButtons();
+    }
+
+    private void DashboardAttentionList_OnSelectionChanged(
+        object? sender,
+        SelectionChangedEventArgs e) =>
+        UpdateFindingPolicyButtons();
+
+    private void MutedFindingsList_OnSelectionChanged(
+        object? sender,
+        SelectionChangedEventArgs e) =>
+        UpdateFindingPolicyButtons();
+
+    private void StorageList_OnSelectionChanged(
+        object? sender,
+        SelectionChangedEventArgs e) =>
+        UpdateStoragePolicyButtons();
+
+    private void UpdateFindingPolicyButtons()
+    {
+        var selected = Get<ListBox>("DashboardAttentionList").SelectedItem
+            as OpsPolicyFinding;
+        var muted = Get<ListBox>("MutedFindingsList").SelectedItem
+            as OpsMutedFinding;
+
+        Get<Button>("AcknowledgeFindingButton").IsEnabled =
+            selected?.CanAcknowledge == true &&
+            selected.Severity >= OpsSeverity.Warning;
+        Get<Button>("SnoozeFindingButton").IsEnabled =
+            selected?.CanAcknowledge == true &&
+            selected.Severity >= OpsSeverity.Warning;
+        Get<Button>("IgnoreFindingButton").IsEnabled =
+            selected?.CanIgnore == true &&
+            selected.Severity >= OpsSeverity.Warning;
+        Get<Button>("FindingThresholdButton").IsEnabled =
+            selected is not null &&
+            LinuxFindingPolicyStore.IsStorageCapacityKey(selected.Key);
+        Get<Button>("RestoreMutedFindingButton").IsEnabled =
+            muted is not null;
+    }
+
+    private void UpdateStoragePolicyButtons()
+    {
+        var selected = Get<ListBox>("StorageList").SelectedItem
+            as StorageVolumeSnapshot;
+        Get<Button>("StorageThresholdButton").IsEnabled =
+            selected is not null;
+        Get<Button>("RestoreStorageThresholdButton").IsEnabled =
+            selected is not null &&
+            _findingPolicies.HasCustomStorageThreshold(
+                selected.MountPoint);
+    }
+
+    private void AcknowledgeFindingButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        if (Get<ListBox>("DashboardAttentionList").SelectedItem
+            is not OpsPolicyFinding finding)
+        {
+            return;
+        }
+
+        try
+        {
+            _findingPolicies.Acknowledge(finding);
+            _history.RecordPolicy(
+                finding.Component,
+                "ACKNOWLEDGED",
+                $"{finding.Resource} · {finding.Problem}");
+            Get<TextBlock>("DashboardPolicyStatusText").Text =
+                "Finding acknowledged until its observed state changes.";
+            RefreshPolicyProjection();
+        }
+        catch (Exception exception)
+        {
+            Get<TextBlock>("DashboardPolicyStatusText").Text =
+                exception.Message;
+        }
+    }
+
+    private async void SnoozeFindingButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        if (Get<ListBox>("DashboardAttentionList").SelectedItem
+            is not OpsPolicyFinding finding)
+        {
+            return;
+        }
+
+        var duration = await ShowSnoozeDialogAsync();
+        if (duration is null)
+            return;
+
+        try
+        {
+            _findingPolicies.Snooze(finding, duration.Value);
+            _history.RecordPolicy(
+                finding.Component,
+                "SNOOZED",
+                $"{finding.Resource} · until " +
+                $"{DateTimeOffset.Now.Add(duration.Value).ToLocalTime():g}");
+            Get<TextBlock>("DashboardPolicyStatusText").Text =
+                "Finding snoozed.";
+            RefreshPolicyProjection();
+        }
+        catch (Exception exception)
+        {
+            Get<TextBlock>("DashboardPolicyStatusText").Text =
+                exception.Message;
+        }
+    }
+
+    private async void IgnoreFindingButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        if (Get<ListBox>("DashboardAttentionList").SelectedItem
+            is not OpsPolicyFinding finding)
+        {
+            return;
+        }
+
+        if (!await ConfirmActionAsync(
+                $"Ignore {finding.Resource}?",
+                "This creates a permanent rule for this exact finding and resource. Critical conditions still reactivate automatically."))
+        {
+            return;
+        }
+
+        try
+        {
+            _findingPolicies.Ignore(finding);
+            _history.RecordPolicy(
+                finding.Component,
+                "IGNORED",
+                $"{finding.Resource} · {finding.Problem}");
+            Get<TextBlock>("DashboardPolicyStatusText").Text =
+                "Exact-resource ignore rule created.";
+            RefreshPolicyProjection();
+        }
+        catch (Exception exception)
+        {
+            Get<TextBlock>("DashboardPolicyStatusText").Text =
+                exception.Message;
+        }
+    }
+
+    private async void FindingThresholdButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        if (Get<ListBox>("DashboardAttentionList").SelectedItem
+            is not OpsPolicyFinding finding ||
+            !LinuxFindingPolicyStore.IsStorageCapacityKey(finding.Key))
+        {
+            return;
+        }
+
+        var mountPoint =
+            LinuxFindingPolicyStore.MountPointFromStorageKey(finding.Key);
+        await ConfigureStorageThresholdAsync(mountPoint);
+    }
+
+    private void RestoreMutedFindingButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        if (Get<ListBox>("MutedFindingsList").SelectedItem
+            is not OpsMutedFinding finding)
+        {
+            return;
+        }
+
+        if (!_findingPolicies.Restore(finding.Key))
+            return;
+
+        _history.RecordPolicy(
+            finding.Component,
+            "MONITORING RESTORED",
+            $"{finding.Resource} · removed {finding.Reason}");
+        Get<TextBlock>("DashboardPolicyStatusText").Text =
+            "Monitoring restored for the selected finding.";
+        RefreshPolicyProjection();
+    }
+
+    private async void StorageThresholdButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        if (Get<ListBox>("StorageList").SelectedItem
+            is not StorageVolumeSnapshot volume)
+        {
+            return;
+        }
+
+        await ConfigureStorageThresholdAsync(volume.MountPoint);
+    }
+
+    private void RestoreStorageThresholdButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        if (Get<ListBox>("StorageList").SelectedItem
+            is not StorageVolumeSnapshot volume)
+        {
+            return;
+        }
+
+        if (!_findingPolicies.ResetStorageThreshold(volume.MountPoint))
+            return;
+
+        _history.RecordPolicy(
+            "Storage",
+            "DEFAULT THRESHOLDS RESTORED",
+            $"{volume.MountPoint} · 85/90/95% · free-space thresholds disabled");
+        Get<TextBlock>("StoragePolicyStatusText").Text =
+            "Default policy restored.";
+        RefreshPolicyProjection();
+    }
+
+    private async Task ConfigureStorageThresholdAsync(string mountPoint)
+    {
+        var result = await ShowStorageThresholdDialogAsync(mountPoint);
+        if (result is null)
+            return;
+
+        if (result.Reset)
+        {
+            _findingPolicies.ResetStorageThreshold(mountPoint);
+            _history.RecordPolicy(
+                "Storage",
+                "DEFAULT THRESHOLDS RESTORED",
+                $"{mountPoint} · 85/90/95% · free-space thresholds disabled");
+            Get<TextBlock>("StoragePolicyStatusText").Text =
+                "Default policy restored.";
+        }
+        else if (result.Policy is not null)
+        {
+            _findingPolicies.SetStorageThreshold(
+                mountPoint,
+                result.Policy);
+            _history.RecordPolicy(
+                "Storage",
+                "CUSTOM THRESHOLDS SAVED",
+                $"{mountPoint} · " +
+                $"{result.Policy.WarningPercent}/" +
+                $"{result.Policy.ErrorPercent}/" +
+                $"{result.Policy.CriticalPercent}% · free GiB " +
+                $"{result.Policy.WarningFreeGiB:0.##}/" +
+                $"{result.Policy.ErrorFreeGiB:0.##}/" +
+                $"{result.Policy.CriticalFreeGiB:0.##}");
+            Get<TextBlock>("StoragePolicyStatusText").Text =
+                "Custom policy saved.";
+        }
+
+        RefreshPolicyProjection();
     }
 
     private void ServicesList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e) => UpdateActionButtons();
@@ -414,6 +735,363 @@ public partial class MainWindow : Window
         if (Get<ListBox>("LogsList").SelectedItem is OpsLogGroup log)
             Get<TextBox>("LogDetailText").Text = FormatLog(log);
     }
+
+    private async Task<TimeSpan?> ShowSnoozeDialogAsync()
+    {
+        var dialog = new Window
+        {
+            Title = "Snooze finding",
+            Width = 500,
+            Height = 310,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Background = new SolidColorBrush(Color.Parse("#111113"))
+        };
+
+        var customHours = new TextBox
+        {
+            Width = 110,
+            Text = "12",
+            PlaceholderText = "Hours"
+        };
+        var validation = new TextBlock
+        {
+            Foreground = OpsPalette.Foreground(OpsSeverity.Error),
+            TextWrapping = TextWrapping.Wrap
+        };
+
+        var oneHour = new Button { Content = "1 hour" };
+        var oneDay = new Button { Content = "24 hours" };
+        var oneWeek = new Button { Content = "7 days" };
+        var custom = new Button { Content = "Custom hours" };
+        var cancel = new Button { Content = "Cancel" };
+
+        oneHour.Click += (_, _) => dialog.Close("1");
+        oneDay.Click += (_, _) => dialog.Close("24");
+        oneWeek.Click += (_, _) => dialog.Close("168");
+        cancel.Click += (_, _) => dialog.Close(string.Empty);
+        custom.Click += (_, _) =>
+        {
+            if (!double.TryParse(
+                    customHours.Text,
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out var hours) ||
+                hours <= 0 ||
+                hours > 8760)
+            {
+                validation.Text =
+                    "Enter a value greater than 0 and no more than 8760 hours.";
+                return;
+            }
+
+            dialog.Close(hours.ToString(CultureInfo.InvariantCulture));
+        };
+
+        dialog.Content = new Border
+        {
+            Padding = new Thickness(24),
+            Child = new StackPanel
+            {
+                Spacing = 16,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = "Snooze selected finding",
+                        FontSize = 20,
+                        FontWeight = FontWeight.SemiBold
+                    },
+                    new TextBlock
+                    {
+                        Text = "The finding returns automatically when the period expires. Critical conditions are never suppressed.",
+                        Classes = { "muted" },
+                        TextWrapping = TextWrapping.Wrap
+                    },
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Spacing = 8,
+                        Children = { oneHour, oneDay, oneWeek }
+                    },
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Spacing = 8,
+                        Children = { customHours, custom }
+                    },
+                    validation,
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                        Children = { cancel }
+                    }
+                }
+            }
+        };
+
+        var result = await dialog.ShowDialog<string>(this);
+        if (!double.TryParse(
+                result,
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out var selectedHours) ||
+            selectedHours <= 0)
+        {
+            return null;
+        }
+
+        return TimeSpan.FromHours(selectedHours);
+    }
+
+    private async Task<StorageThresholdDialogResult?>
+        ShowStorageThresholdDialogAsync(string mountPoint)
+    {
+        var current = _findingPolicies.GetStorageThreshold(mountPoint);
+
+        TextBox NewBox(double value) => new()
+        {
+            Width = 100,
+            Text = value.ToString("0.##", CultureInfo.InvariantCulture)
+        };
+
+        var warningPercent = NewBox(current.WarningPercent);
+        var errorPercent = NewBox(current.ErrorPercent);
+        var criticalPercent = NewBox(current.CriticalPercent);
+        var warningFree = NewBox(current.WarningFreeGiB);
+        var errorFree = NewBox(current.ErrorFreeGiB);
+        var criticalFree = NewBox(current.CriticalFreeGiB);
+
+        StackPanel ThresholdRow(
+            string label,
+            TextBox percent,
+            TextBox free) =>
+            new()
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 12,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = label,
+                        Width = 90,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        FontWeight = FontWeight.SemiBold
+                    },
+                    percent,
+                    free
+                }
+            };
+
+        bool TryBuildPolicy(
+            out StorageThresholdPolicy? policy,
+            out string error)
+        {
+            policy = null;
+            error = string.Empty;
+
+            bool Parse(TextBox box, out double value) =>
+                double.TryParse(
+                    box.Text,
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out value);
+
+            if (!Parse(warningPercent, out var warningPercentValue) ||
+                !Parse(errorPercent, out var errorPercentValue) ||
+                !Parse(criticalPercent, out var criticalPercentValue) ||
+                !Parse(warningFree, out var warningFreeValue) ||
+                !Parse(errorFree, out var errorFreeValue) ||
+                !Parse(criticalFree, out var criticalFreeValue))
+            {
+                error = "All threshold fields must contain numbers.";
+                return false;
+            }
+
+            if (warningPercentValue % 1 != 0 ||
+                errorPercentValue % 1 != 0 ||
+                criticalPercentValue % 1 != 0)
+            {
+                error = "Percentage thresholds must be whole numbers.";
+                return false;
+            }
+
+            policy = new StorageThresholdPolicy
+            {
+                WarningPercent = (int)warningPercentValue,
+                ErrorPercent = (int)errorPercentValue,
+                CriticalPercent = (int)criticalPercentValue,
+                WarningFreeGiB = warningFreeValue,
+                ErrorFreeGiB = errorFreeValue,
+                CriticalFreeGiB = criticalFreeValue
+            };
+
+            if (policy.WarningPercent is < 1 or > 100 ||
+                policy.ErrorPercent is < 1 or > 100 ||
+                policy.CriticalPercent is < 1 or > 100)
+            {
+                error = "Percentages must be between 1 and 100.";
+                return false;
+            }
+
+            if (!(policy.WarningPercent < policy.ErrorPercent &&
+                  policy.ErrorPercent < policy.CriticalPercent))
+            {
+                error =
+                    "Percentages must increase from warning to error to critical.";
+                return false;
+            }
+
+            if (policy.WarningFreeGiB < 0 ||
+                policy.ErrorFreeGiB < 0 ||
+                policy.CriticalFreeGiB < 0)
+            {
+                error = "Remaining-space values cannot be negative.";
+                return false;
+            }
+
+            return true;
+        }
+
+        void LoadPolicy(StorageThresholdPolicy policy)
+        {
+            warningPercent.Text = policy.WarningPercent.ToString(
+                CultureInfo.InvariantCulture);
+            errorPercent.Text = policy.ErrorPercent.ToString(
+                CultureInfo.InvariantCulture);
+            criticalPercent.Text = policy.CriticalPercent.ToString(
+                CultureInfo.InvariantCulture);
+            warningFree.Text = policy.WarningFreeGiB.ToString(
+                "0.##",
+                CultureInfo.InvariantCulture);
+            errorFree.Text = policy.ErrorFreeGiB.ToString(
+                "0.##",
+                CultureInfo.InvariantCulture);
+            criticalFree.Text = policy.CriticalFreeGiB.ToString(
+                "0.##",
+                CultureInfo.InvariantCulture);
+        }
+
+        var dialog = new Window
+        {
+            Title = $"Storage policy · {mountPoint}",
+            Width = 580,
+            Height = 500,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Background = new SolidColorBrush(Color.Parse("#111113"))
+        };
+
+        var validation = new TextBlock
+        {
+            Foreground = OpsPalette.Foreground(OpsSeverity.Error),
+            TextWrapping = TextWrapping.Wrap
+        };
+        var preset = new Button { Content = "Large media preset" };
+        var defaults = new Button { Content = "Restore defaults" };
+        var cancel = new Button { Content = "Cancel" };
+        var save = new Button { Content = "Save" };
+        save.Classes.Add("primary");
+
+        preset.Click += (_, _) =>
+            LoadPolicy(StorageThresholdPolicy.LargeMediaPreset());
+        defaults.Click += (_, _) => dialog.Close("reset");
+        cancel.Click += (_, _) => dialog.Close(string.Empty);
+        save.Click += (_, _) =>
+        {
+            if (!TryBuildPolicy(out _, out var error))
+            {
+                validation.Text = error;
+                return;
+            }
+
+            dialog.Close("save");
+        };
+
+        dialog.Content = new Border
+        {
+            Padding = new Thickness(24),
+            Child = new StackPanel
+            {
+                Spacing = 14,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = mountPoint,
+                        FontSize = 20,
+                        FontWeight = FontWeight.SemiBold,
+                        TextWrapping = TextWrapping.Wrap
+                    },
+                    new TextBlock
+                    {
+                        Text = "A threshold triggers when either used percentage is reached or remaining space falls at or below the configured GiB value. Set free GiB to 0 to disable that side of the rule.",
+                        Classes = { "muted" },
+                        TextWrapping = TextWrapping.Wrap
+                    },
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Spacing = 12,
+                        Children =
+                        {
+                            new TextBlock
+                            {
+                                Text = "Severity",
+                                Width = 90,
+                                Classes = { "eyebrow" }
+                            },
+                            new TextBlock
+                            {
+                                Text = "Used %",
+                                Width = 100,
+                                Classes = { "eyebrow" }
+                            },
+                            new TextBlock
+                            {
+                                Text = "Free GiB",
+                                Width = 100,
+                                Classes = { "eyebrow" }
+                            }
+                        }
+                    },
+                    ThresholdRow("Warning", warningPercent, warningFree),
+                    ThresholdRow("Error", errorPercent, errorFree),
+                    ThresholdRow("Critical", criticalPercent, criticalFree),
+                    validation,
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Spacing = 8,
+                        Children = { preset, defaults }
+                    },
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                        Spacing = 8,
+                        Children = { cancel, save }
+                    }
+                }
+            }
+        };
+
+        var result = await dialog.ShowDialog<string>(this);
+        if (result == "reset")
+            return new StorageThresholdDialogResult(true, null);
+        if (result != "save")
+            return null;
+        if (!TryBuildPolicy(out var policy, out _))
+            return null;
+
+        return new StorageThresholdDialogResult(false, policy);
+    }
+
+    private sealed record StorageThresholdDialogResult(
+        bool Reset,
+        StorageThresholdPolicy? Policy);
 
     private async Task<bool> ConfirmActionAsync(string title, string message)
     {

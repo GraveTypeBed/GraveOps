@@ -663,8 +663,9 @@
                       <ListBox
                           x:Name="DashboardAttentionList"
                           Classes="dataList"
-                          MinHeight="260"
-                          MaxHeight="370">
+                          MinHeight="230"
+                          MaxHeight="330"
+                          SelectionChanged="DashboardAttentionList_OnSelectionChanged">
                         <ListBox.ItemTemplate>
                           <DataTemplate x:CompileBindings="False">
                             <Grid ColumnDefinitions="85,145,1.1*,0.9*" ColumnSpacing="10">
@@ -694,6 +695,123 @@
                           </DataTemplate>
                         </ListBox.ItemTemplate>
                       </ListBox>
+
+                      <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*" ColumnSpacing="8">
+                        <Button
+                            x:Name="AcknowledgeFindingButton"
+                            Content="Acknowledge"
+                            IsEnabled="False"
+                            Click="AcknowledgeFindingButton_OnClick" />
+
+                        <Button
+                            Grid.Column="1"
+                            x:Name="SnoozeFindingButton"
+                            Content="Snooze..."
+                            IsEnabled="False"
+                            Click="SnoozeFindingButton_OnClick" />
+
+                        <Button
+                            Grid.Column="2"
+                            x:Name="IgnoreFindingButton"
+                            Content="Ignore"
+                            IsEnabled="False"
+                            Click="IgnoreFindingButton_OnClick" />
+
+                        <Button
+                            Grid.Column="3"
+                            x:Name="FindingThresholdButton"
+                            Content="Thresholds..."
+                            IsEnabled="False"
+                            Click="FindingThresholdButton_OnClick" />
+
+                        <TextBlock
+                            Grid.Column="4"
+                            x:Name="DashboardPolicyStatusText"
+                            Text="Select a finding to manage it."
+                            Classes="dim"
+                            VerticalAlignment="Center"
+                            TextTrimming="CharacterEllipsis" />
+                      </Grid>
+
+                      <Border
+                          x:Name="MutedFindingsPanel"
+                          Classes="inset"
+                          IsVisible="False">
+                        <StackPanel Spacing="10">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel>
+                              <TextBlock
+                                  Text="Muted findings"
+                                  Classes="sectionTitle" />
+                              <TextBlock
+                                  Text="Acknowledged, snoozed and exact-resource ignore rules remain visible here. Critical findings always reactivate."
+                                  Classes="pageSubtitle"
+                                  Margin="0,3,0,0"
+                                  TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <TextBlock
+                                Grid.Column="1"
+                                x:Name="MutedFindingsSummaryText"
+                                Text="0 muted"
+                                Classes="muted"
+                                VerticalAlignment="Center" />
+                          </Grid>
+
+                          <ListBox
+                              x:Name="MutedFindingsList"
+                              Classes="dataList"
+                              MaxHeight="190"
+                              SelectionChanged="MutedFindingsList_OnSelectionChanged">
+                            <ListBox.ItemTemplate>
+                              <DataTemplate x:CompileBindings="False">
+                                <Grid ColumnDefinitions="85,170,1.1*,160,1.1*" ColumnSpacing="10">
+                                  <TextBlock
+                                      Text="{ReflectionBinding Severity}"
+                                      FontWeight="SemiBold"
+                                      Foreground="{DynamicResource AccentBrush}" />
+
+                                  <StackPanel Grid.Column="1" Spacing="2">
+                                    <TextBlock
+                                        Text="{ReflectionBinding Component}"
+                                        FontWeight="SemiBold"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <TextBlock
+                                        Text="{ReflectionBinding Resource}"
+                                        Classes="dim"
+                                        TextTrimming="CharacterEllipsis"
+                                        ToolTip.Tip="{ReflectionBinding Resource}" />
+                                  </StackPanel>
+
+                                  <TextBlock
+                                      Grid.Column="2"
+                                      Text="{ReflectionBinding Reason}"
+                                      TextWrapping="Wrap" />
+
+                                  <TextBlock
+                                      Grid.Column="3"
+                                      Text="{ReflectionBinding UntilText}"
+                                      Classes="muted"
+                                      TextWrapping="Wrap" />
+
+                                  <TextBlock
+                                      Grid.Column="4"
+                                      Text="{ReflectionBinding CurrentState}"
+                                      Classes="muted"
+                                      TextWrapping="Wrap" />
+                                </Grid>
+                              </DataTemplate>
+                            </ListBox.ItemTemplate>
+                          </ListBox>
+
+                          <Button
+                              x:Name="RestoreMutedFindingButton"
+                              Content="Restore selected"
+                              HorizontalAlignment="Left"
+                              IsEnabled="False"
+                              Click="RestoreMutedFindingButton_OnClick" />
+                        </StackPanel>
+                      </Border>
                     </StackPanel>
                   </Border>
                 </Grid>
@@ -929,12 +1047,17 @@
                     <Grid ColumnDefinitions="*,320">
                       <StackPanel>
                         <TextBlock Text="Local storage" Classes="sectionTitle" />
-                        <TextBlock Text="Warning at 85%, error at 90%, critical at 95%. efivarfs is removed from the operational view." Classes="pageSubtitle" Margin="0,4,0,0" />
+                        <TextBlock Text="Default capacity policy is 85/90/95%. Exact-mount percentage and remaining-space thresholds can override it." Classes="pageSubtitle" Margin="0,4,0,0" TextWrapping="Wrap" />
                       </StackPanel>
                       <TextBox Grid.Column="1" x:Name="StorageFilterText" Classes="filter" PlaceholderText="Filter mounts" TextChanged="StorageFilterText_OnTextChanged" />
                     </Grid>
-                    <TextBlock x:Name="StorageSummaryText" Text="--" Classes="muted" />
-                    <ListBox x:Name="StorageList" Classes="dataList" MinHeight="450">
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                      <TextBlock x:Name="StorageSummaryText" Text="--" Classes="muted" VerticalAlignment="Center" />
+                      <Button Grid.Column="1" x:Name="StorageThresholdButton" Content="Thresholds..." IsEnabled="False" Click="StorageThresholdButton_OnClick" />
+                      <Button Grid.Column="2" x:Name="RestoreStorageThresholdButton" Content="Restore defaults" IsEnabled="False" Click="RestoreStorageThresholdButton_OnClick" />
+                    </Grid>
+                    <TextBlock x:Name="StoragePolicyStatusText" Text="Select a mount to inspect or customize its policy." Classes="dim" />
+                    <ListBox x:Name="StorageList" Classes="dataList" MinHeight="430" SelectionChanged="StorageList_OnSelectionChanged">
                       <ListBox.ItemTemplate>
                         <DataTemplate x:CompileBindings="False">
                           <Grid ColumnDefinitions="200,90,90,90,90,90,*" ColumnSpacing="12">

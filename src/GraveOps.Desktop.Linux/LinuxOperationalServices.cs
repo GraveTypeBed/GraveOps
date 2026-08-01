@@ -1085,7 +1085,8 @@ public sealed class LinuxHistoryStore
         HostSnapshot snapshot,
         OpsAnalysis analysis,
         IReadOnlyList<OpsLifecycleStage> lifecycle,
-        OpsBackupSnapshot backup)
+        OpsBackupSnapshot backup,
+        Func<StorageVolumeSnapshot, OpsSeverity>? storageSeverity = null)
     {
         var states = new Dictionary<string, StateValue>(StringComparer.OrdinalIgnoreCase)
         {
@@ -1095,10 +1096,14 @@ public sealed class LinuxHistoryStore
 
         foreach (var volume in LinuxOpsAnalyzer.OperationalStorage(snapshot))
         {
-            var severity = LinuxOpsAnalyzer.StorageSeverity(LinuxOpsAnalyzer.UsePercent(volume.PercentUsed));
+            var severity = storageSeverity?.Invoke(volume) ??
+                LinuxOpsAnalyzer.StorageSeverity(
+                    LinuxOpsAnalyzer.UsePercent(volume.PercentUsed));
             states[$"storage:{volume.MountPoint}"] = new StateValue(
-                $"Storage {volume.MountPoint}", severity >= OpsSeverity.Error ? "CRITICAL" : severity == OpsSeverity.Warning ? "ATTENTION" : "HEALTHY",
-                severity, $"{volume.PercentUsed} used; {volume.Available} free.");
+                $"Storage {volume.MountPoint}",
+                LinuxOpsAnalyzer.SeverityLabel(severity),
+                severity,
+                $"{volume.PercentUsed} used; {volume.Available} free.");
         }
 
         foreach (var service in LinuxOpsAnalyzer.UniqueServices(snapshot))
@@ -1140,6 +1145,20 @@ public sealed class LinuxHistoryStore
     {
         Add(result.Success ? OpsSeverity.Info : OpsSeverity.Error, component, "ACTION",
             result.Success ? "COMPLETED" : "FAILED", $"{action}: {result.Summary} {result.Output}".Trim());
+        Save();
+    }
+
+    public void RecordPolicy(
+        string component,
+        string policyState,
+        string detail)
+    {
+        Add(
+            OpsSeverity.Info,
+            component,
+            "POLICY",
+            policyState,
+            detail);
         Save();
     }
 
