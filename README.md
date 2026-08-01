@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/branding/graveops-hexagonal-g-emblem.png" alt="GraveOps logo" width="420">
+  <img src="assets/branding/graveops-logo.png" alt="GraveOps logo" width="620">
 </p>
 # GraveOps
 
