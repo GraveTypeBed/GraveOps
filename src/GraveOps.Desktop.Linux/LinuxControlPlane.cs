@@ -1776,16 +1776,19 @@ internal static class LinuxSshTransport
             knownHostsPath,
             scan.KeyLine + Environment.NewLine);
 
-        try
+        if (OperatingSystem.IsLinux())
         {
-            File.SetUnixFileMode(
-                knownHostsPath,
-                UnixFileMode.UserRead |
-                UnixFileMode.UserWrite);
-        }
-        catch
-        {
-            // Permission tightening is best effort on non-POSIX filesystems.
+            try
+            {
+                File.SetUnixFileMode(
+                    knownHostsPath,
+                    UnixFileMode.UserRead |
+                    UnixFileMode.UserWrite);
+            }
+            catch
+            {
+                // Permission tightening is best effort on non-POSIX filesystems.
+            }
         }
 
         var secretKind =
@@ -1914,17 +1917,20 @@ internal static class LinuxSshTransport
                     """,
                     cancellationToken);
 
-                try
+                if (OperatingSystem.IsLinux())
                 {
-                    File.SetUnixFileMode(
-                        askPassPath,
-                        UnixFileMode.UserRead |
-                        UnixFileMode.UserWrite |
-                        UnixFileMode.UserExecute);
-                }
-                catch
-                {
-                    // Permission tightening is best effort.
+                    try
+                    {
+                        File.SetUnixFileMode(
+                            askPassPath,
+                            UnixFileMode.UserRead |
+                            UnixFileMode.UserWrite |
+                            UnixFileMode.UserExecute);
+                    }
+                    catch
+                    {
+                        // Permission tightening is best effort.
+                    }
                 }
 
                 var environment =

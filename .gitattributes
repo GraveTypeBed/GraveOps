@@ -25,3 +25,12 @@
 *.jpeg binary
 *.gif binary
 *.exe binary
+
+# Linux-specific source trees use native LF endings.
+src/GraveOps.Desktop.Linux/*.cs text eol=lf
+src/GraveOps.Desktop.Linux/*.axaml text eol=lf
+src/GraveOps.Desktop.Linux/*.csproj text eol=lf
+src/GraveOps.Desktop.Linux/*.xml text eol=lf
+src/GraveOps.Platform.Linux/*.cs text eol=lf
+src/GraveOps.Platform.Linux/*.csproj text eol=lf
+src/GraveOps.Platform.Linux/*.xml text eol=lf
