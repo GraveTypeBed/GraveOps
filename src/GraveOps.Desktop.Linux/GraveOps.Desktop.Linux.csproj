@@ -18,6 +18,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\GraveOps.Core\GraveOps.Core.csproj" />
     <ProjectReference Include="..\GraveOps.Platform.Linux\GraveOps.Platform.Linux.csproj" />
   </ItemGroup>
