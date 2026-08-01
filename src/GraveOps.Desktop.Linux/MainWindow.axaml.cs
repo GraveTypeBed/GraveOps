@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -21,6 +23,25 @@ public partial class MainWindow : Window
     private readonly LinuxHostActionService _actions = new();
     private readonly LinuxHistoryStore _history = new();
     private readonly LinuxFindingPolicyStore _findingPolicies = new();
+
+    private static readonly IReadOnlyDictionary<string, int[]> KnownIntegrationPorts =
+        new Dictionary<string, int[]>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["DUMB"] = new[] { 3005 },
+            ["Plex"] = new[] { 32400 },
+            ["Sonarr"] = new[] { 8989, 8990 },
+            ["Radarr"] = new[] { 7878, 7879 },
+            ["Lidarr"] = new[] { 8686 },
+            ["Prowlarr"] = new[] { 9696 },
+            ["SABnzbd"] = new[] { 8080 },
+            ["qBittorrent"] = new[] { 8081 },
+            ["Decypharr"] = new[] { 8282 },
+            ["Zurg"] = new[] { 18080 },
+            ["Tautulli"] = new[] { 8181 },
+            ["Bazarr"] = new[] { 6767 },
+            ["Seerr"] = new[] { 5055 },
+            ["FlareSolverr"] = new[] { 8191 }
+        };
 
     private readonly IReadOnlyDictionary<string, NavigationTarget> _navigation =
         new Dictionary<string, NavigationTarget>(StringComparer.Ordinal)
@@ -233,10 +254,20 @@ public partial class MainWindow : Window
         var warnings = findings.Count(item =>
             item.Severity == OpsSeverity.Warning);
 
+        var customPolicies = storage.Count(item =>
+            _findingPolicies.HasCustomStorageThreshold(
+                item.MountPoint));
+
         Get<TextBlock>("DashboardFindingsSummaryText").Text =
             findings.Length == 0 && muted.Count == 0
                 ? "No active findings"
                 : $"{errors} error · {warnings} warning · {muted.Count} muted";
+
+        Get<TextBlock>("DashboardPolicySummaryText").Text =
+            customPolicies == 0
+                ? "Default monitoring"
+                : $"{customPolicies} custom storage " +
+                  $"{(customPolicies == 1 ? "policy" : "policies")} active";
 
         Get<ListBox>("DashboardAttentionList").ItemsSource =
             findings.Length == 0
@@ -343,10 +374,34 @@ public partial class MainWindow : Window
 
     private void ApplyMediaFilter()
     {
+        var list = Get<ListBox>("IntegrationsList");
+        var selectedName =
+            (list.SelectedItem as OpsIntegration)?.Name;
         var filter = Get<TextBox>("MediaFilterText").Text?.Trim();
-        Get<ListBox>("IntegrationsList").ItemsSource = _integrations
-            .Where(item => Matches(filter, item.Name, item.Kind, item.State, item.Evidence, item.Endpoint))
+
+        var rows = _integrations
+            .Where(item => Matches(
+                filter,
+                item.Name,
+                item.Kind,
+                item.State,
+                item.Evidence,
+                item.Endpoint))
             .ToArray();
+
+        list.ItemsSource = rows;
+        list.SelectedItem = rows.FirstOrDefault(item =>
+            item.Name.Equals(
+                selectedName,
+                StringComparison.OrdinalIgnoreCase));
+
+        if (list.SelectedItem is null && rows.Length > 0)
+            list.SelectedIndex = 0;
+
+        Get<TextBlock>("MediaHubSummaryText").Text =
+            $"{rows.Length} shown · {_integrations.Count} detected";
+
+        PopulateIntegrationWorkspace();
     }
 
     private void ApplyServicesFilter()
@@ -375,7 +430,12 @@ public partial class MainWindow : Window
     private void ApplyStorageFilter()
     {
         if (_snapshot is null) return;
+
+        var list = Get<ListBox>("StorageList");
+        var selectedMount =
+            (list.SelectedItem as StorageVolumeSnapshot)?.MountPoint;
         var filter = Get<TextBox>("StorageFilterText").Text?.Trim();
+
         var rows = LinuxOpsAnalyzer.OperationalStorage(_snapshot)
             .Where(item => Matches(
                 filter,
@@ -384,14 +444,23 @@ public partial class MainWindow : Window
                 item.MountPoint,
                 item.PercentUsed))
             .ToArray();
-        Get<ListBox>("StorageList").ItemsSource = rows;
+
+        list.ItemsSource = rows;
+        list.SelectedItem = rows.FirstOrDefault(item =>
+            item.MountPoint.Equals(
+                selectedMount,
+                StringComparison.OrdinalIgnoreCase));
+
         var attention = rows.Count(item =>
             _findingPolicies.EvaluateStorageSeverity(item) >=
             OpsSeverity.Warning);
         var custom = rows.Count(item =>
             _findingPolicies.HasCustomStorageThreshold(item.MountPoint));
+
         Get<TextBlock>("StorageSummaryText").Text =
-            $"{rows.Length} shown · {attention} active capacity finding(s) · {custom} custom policy";
+            $"{rows.Length} shown · {attention} active capacity finding(s) · " +
+            $"{custom} custom {(custom == 1 ? "policy" : "policies")}";
+
         UpdateStoragePolicyButtons();
     }
 
@@ -437,12 +506,42 @@ public partial class MainWindow : Window
     {
         var selected = Get<ListBox>("StorageList").SelectedItem
             as StorageVolumeSnapshot;
+
         Get<Button>("StorageThresholdButton").IsEnabled =
             selected is not null;
         Get<Button>("RestoreStorageThresholdButton").IsEnabled =
             selected is not null &&
             _findingPolicies.HasCustomStorageThreshold(
                 selected.MountPoint);
+
+        var title = Get<TextBlock>("StorageSelectedPolicyTitleText");
+        var status = Get<TextBlock>("StoragePolicyStatusText");
+
+        if (selected is null)
+        {
+            title.Text = "No mount selected";
+            status.Text =
+                "Select a mount to inspect or customize its policy.";
+            return;
+        }
+
+        var policy = _findingPolicies.GetStorageThreshold(
+            selected.MountPoint);
+        var custom = _findingPolicies.HasCustomStorageThreshold(
+            selected.MountPoint);
+        var severity = _findingPolicies.EvaluateStorageSeverity(
+            selected);
+
+        title.Text =
+            $"{selected.MountPoint} · " +
+            $"{(custom ? "Custom policy active" : "Default policy")}";
+
+        status.Text =
+            $"Current: {selected.PercentUsed} used · {selected.Available} free · " +
+            $"Status: {LinuxOpsAnalyzer.SeverityLabel(severity)} · " +
+            $"Warning {policy.WarningPercent}% or < {FormatPolicyFree(policy.WarningFreeGiB)} · " +
+            $"Error {policy.ErrorPercent}% or < {FormatPolicyFree(policy.ErrorFreeGiB)} · " +
+            $"Critical {policy.CriticalPercent}% or < {FormatPolicyFree(policy.CriticalFreeGiB)}";
     }
 
     private void AcknowledgeFindingButton_OnClick(
@@ -610,7 +709,9 @@ public partial class MainWindow : Window
             "DEFAULT THRESHOLDS RESTORED",
             $"{volume.MountPoint} · 85/90/95% · free-space thresholds disabled");
         Get<TextBlock>("StoragePolicyStatusText").Text =
-            "Default policy restored.";
+            $"Default policy restored for {volume.MountPoint}.";
+        Get<TextBlock>("DashboardPolicyStatusText").Text =
+            $"Default storage monitoring restored for {volume.MountPoint}.";
         RefreshPolicyProjection();
     }
 
@@ -628,7 +729,9 @@ public partial class MainWindow : Window
                 "DEFAULT THRESHOLDS RESTORED",
                 $"{mountPoint} · 85/90/95% · free-space thresholds disabled");
             Get<TextBlock>("StoragePolicyStatusText").Text =
-                "Default policy restored.";
+                $"Default policy restored for {mountPoint}.";
+            Get<TextBlock>("DashboardPolicyStatusText").Text =
+                $"Default storage monitoring restored for {mountPoint}.";
         }
         else if (result.Policy is not null)
         {
@@ -646,11 +749,246 @@ public partial class MainWindow : Window
                 $"{result.Policy.ErrorFreeGiB:0.##}/" +
                 $"{result.Policy.CriticalFreeGiB:0.##}");
             Get<TextBlock>("StoragePolicyStatusText").Text =
-                "Custom policy saved.";
+                $"Custom policy saved for {mountPoint}.";
+            Get<TextBlock>("DashboardPolicyStatusText").Text =
+                $"Custom storage policy active for {mountPoint}.";
         }
 
         RefreshPolicyProjection();
     }
+
+    private void IntegrationsList_OnSelectionChanged(
+        object? sender,
+        SelectionChangedEventArgs e) =>
+        PopulateIntegrationWorkspace();
+
+    private void PopulateIntegrationWorkspace()
+    {
+        var selected =
+            Get<ListBox>("IntegrationsList").SelectedItem
+            as OpsIntegration;
+
+        var name = Get<TextBlock>("IntegrationNameText");
+        var state = Get<TextBlock>("IntegrationStateText");
+        var stateBorder = Get<Border>("IntegrationStateBorder");
+        var kind = Get<TextBlock>("IntegrationKindText");
+        var endpoint = Get<TextBlock>("IntegrationEndpointText");
+        var role = Get<TextBlock>("IntegrationRoleText");
+        var evidence = Get<TextBlock>("IntegrationEvidenceText");
+        var findingsSummary =
+            Get<TextBlock>("IntegrationFindingsSummaryText");
+        var findingsText =
+            Get<TextBlock>("IntegrationFindingsText");
+        var open = Get<Button>("OpenIntegrationButton");
+        var intelligence =
+            Get<Button>("IntegrationFindingsButton");
+        var actionStatus =
+            Get<TextBlock>("IntegrationActionStatusText");
+
+        if (selected is null)
+        {
+            name.Text = "Select an application";
+            state.Text = "WAITING";
+            state.Foreground =
+                OpsPalette.Foreground(OpsSeverity.Info);
+            stateBorder.Background =
+                OpsPalette.Background(OpsSeverity.Info);
+            kind.Text = "--";
+            endpoint.Text = "--";
+            role.Text = "--";
+            evidence.Text =
+                "Select a detected application to inspect its evidence.";
+            findingsSummary.Text = "--";
+            findingsText.Text = "No application selected.";
+            open.IsEnabled = false;
+            intelligence.IsEnabled = false;
+            actionStatus.Text = "Select an application.";
+            return;
+        }
+
+        var related = _policyEvaluation?.Active
+            .Where(item =>
+                MatchesIntegration(item, selected.Name))
+            .ToArray() ??
+            Array.Empty<OpsPolicyFinding>();
+
+        var url = ResolveIntegrationUrl(selected);
+        name.Text = selected.Name;
+        state.Text = selected.State;
+        state.Foreground =
+            OpsPalette.Foreground(selected.Severity);
+        stateBorder.Background =
+            OpsPalette.Background(selected.Severity);
+        kind.Text = selected.Kind;
+        endpoint.Text = url ??
+            (string.IsNullOrWhiteSpace(selected.Endpoint)
+                ? "No verified web endpoint"
+                : selected.Endpoint);
+        role.Text = IntegrationRole(selected.Name);
+        evidence.Text = string.IsNullOrWhiteSpace(selected.Evidence)
+            ? "Detected without additional provider evidence."
+            : selected.Evidence;
+        findingsSummary.Text = related.Length == 0
+            ? "No active findings"
+            : $"{related.Length} active";
+        findingsText.Text = related.Length == 0
+            ? "No active operational finding is associated with this application."
+            : string.Join(
+                Environment.NewLine + Environment.NewLine,
+                related.Select(item =>
+                    $"{item.Severity} · {item.Problem}" +
+                    (string.IsNullOrWhiteSpace(item.NextStep)
+                        ? string.Empty
+                        : Environment.NewLine + item.NextStep)));
+        open.IsEnabled = url is not null;
+        intelligence.IsEnabled = related.Length > 0;
+        actionStatus.Text = url is null
+            ? "No verified local web interface is available."
+            : "Ready to open the local interface.";
+    }
+
+    private async void OpenIntegrationButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        if (Get<ListBox>("IntegrationsList").SelectedItem
+            is not OpsIntegration selected)
+        {
+            return;
+        }
+
+        var url = ResolveIntegrationUrl(selected);
+        if (url is null)
+            return;
+
+        try
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "xdg-open",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+            process.StartInfo.ArgumentList.Add(url);
+            process.Start();
+
+            Get<TextBlock>("IntegrationActionStatusText").Text =
+                $"Opened {url}";
+            await Task.CompletedTask;
+        }
+        catch (Exception exception)
+        {
+            Get<TextBlock>("IntegrationActionStatusText").Text =
+                $"Could not open interface: {exception.Message}";
+        }
+    }
+
+    private void IntegrationFindingsButton_OnClick(
+        object? sender,
+        RoutedEventArgs e) =>
+        Navigate("IntelligenceNav");
+
+    private static bool MatchesIntegration(
+        OpsPolicyFinding finding,
+        string integrationName)
+    {
+        return new[]
+        {
+            finding.Component,
+            finding.Resource,
+            finding.Problem,
+            finding.Evidence
+        }.Any(value =>
+            value?.Contains(
+                integrationName,
+                StringComparison.OrdinalIgnoreCase) == true);
+    }
+
+    private static string IntegrationRole(string name)
+    {
+        if (name.Equals("Plex", StringComparison.OrdinalIgnoreCase) ||
+            name.Equals("Jellyfin", StringComparison.OrdinalIgnoreCase) ||
+            name.Equals("Emby", StringComparison.OrdinalIgnoreCase) ||
+            name.Equals("Tautulli", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Library and playback";
+        }
+
+        if (name.Equals("Sonarr", StringComparison.OrdinalIgnoreCase) ||
+            name.Equals("Radarr", StringComparison.OrdinalIgnoreCase) ||
+            name.Equals("Lidarr", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Acquisition and import";
+        }
+
+        if (name.Equals("Prowlarr", StringComparison.OrdinalIgnoreCase))
+            return "Discovery and indexers";
+
+        if (name.Equals("SABnzbd", StringComparison.OrdinalIgnoreCase) ||
+            name.Equals("qBittorrent", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Downloads";
+        }
+
+        if (name.Equals("Decypharr", StringComparison.OrdinalIgnoreCase) ||
+            name.Equals("Zurg", StringComparison.OrdinalIgnoreCase) ||
+            name.Equals("Recyclarr", StringComparison.OrdinalIgnoreCase) ||
+            name.Equals("Bazarr", StringComparison.OrdinalIgnoreCase) ||
+            name.Equals("Tdarr", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Processing and supporting services";
+        }
+
+        if (name.Equals("DUMB", StringComparison.OrdinalIgnoreCase))
+            return "Stack orchestration";
+
+        return "Detected integration";
+    }
+
+    private static string? ResolveIntegrationUrl(
+        OpsIntegration integration)
+    {
+        var detectedPorts = Regex.Matches(
+                integration.Endpoint ?? string.Empty,
+                @"(?<!\d)\d{2,5}(?!\d)")
+            .Select(match => int.TryParse(
+                    match.Value,
+                    out var port)
+                ? port
+                : 0)
+            .Where(port => port is > 0 and <= 65535)
+            .ToArray();
+
+        var candidates = detectedPorts.Length > 0
+            ? detectedPorts
+            : KnownIntegrationPorts.TryGetValue(
+                integration.Name,
+                out var known)
+                ? known
+                : Array.Empty<int>();
+
+        if (candidates.Length == 0)
+            return null;
+
+        var port = candidates[0];
+        var suffix = integration.Name.Equals(
+            "Plex",
+            StringComparison.OrdinalIgnoreCase)
+            ? "/web"
+            : string.Empty;
+
+        return $"http://127.0.0.1:{port}{suffix}";
+    }
+
+    private static string FormatPolicyFree(double value) =>
+        value <= 0
+            ? "disabled"
+            : value >= 1024
+                ? $"{value / 1024:0.##} TiB"
+                : $"{value:0.##} GiB";
 
     private void ServicesList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e) => UpdateActionButtons();
     private void DockerList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e) => UpdateActionButtons();

@@ -652,12 +652,25 @@
                               TextWrapping="Wrap" />
                         </StackPanel>
 
-                        <TextBlock
+                        <StackPanel
                             Grid.Column="1"
-                            x:Name="DashboardFindingsSummaryText"
-                            Text="0 active"
-                            Classes="muted"
-                            VerticalAlignment="Center" />
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center">
+
+                          <TextBlock
+                              x:Name="DashboardFindingsSummaryText"
+                              Text="0 active"
+                              Classes="muted"
+                              HorizontalAlignment="Right" />
+
+                          <TextBlock
+                              x:Name="DashboardPolicySummaryText"
+                              Text="Default monitoring"
+                              Classes="dim"
+                              FontSize="10"
+                              Margin="0,3,0,0"
+                              HorizontalAlignment="Right" />
+                        </StackPanel>
                       </Grid>
 
                       <ListBox
@@ -935,31 +948,196 @@
 <!-- Media Hub -->
             <ScrollViewer x:Name="MediaHubPage" IsVisible="False">
               <StackPanel Spacing="18">
-                <Border Classes="card">
-                  <StackPanel Spacing="12">
-                    <Grid ColumnDefinitions="*,320">
-                      <StackPanel>
-                        <TextBlock Text="Verified integrations" Classes="sectionTitle" />
-                        <TextBlock Text="Docker identity, systemd units and DUMB published ports are correlated." Classes="pageSubtitle" Margin="0,4,0,0" />
-                      </StackPanel>
-                      <TextBox Grid.Column="1" x:Name="MediaFilterText" Classes="filter" PlaceholderText="Filter integrations" TextChanged="MediaFilterText_OnTextChanged" />
-                    </Grid>
-                    <ListBox x:Name="IntegrationsList" Classes="dataList" MinHeight="460">
-                      <ListBox.ItemTemplate>
-                        <DataTemplate x:CompileBindings="False">
-                          <Grid ColumnDefinitions="160,150,180,220,*,90" ColumnSpacing="12">
-                            <TextBlock Text="{ReflectionBinding Name}" FontWeight="SemiBold" />
-                            <TextBlock Grid.Column="1" Text="{ReflectionBinding Kind}" Classes="muted" />
-                            <TextBlock Grid.Column="2" Text="{ReflectionBinding State}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding State}" />
-                            <TextBlock Grid.Column="3" Text="{ReflectionBinding Evidence}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Evidence}" />
-                            <TextBlock Grid.Column="4" Text="{ReflectionBinding Endpoint}" Classes="dim" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Grid.Column="5" Text="{ReflectionBinding Severity}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
-                          </Grid>
-                        </DataTemplate>
-                      </ListBox.ItemTemplate>
-                    </ListBox>
-                  </StackPanel>
-                </Border>
+                <Grid ColumnDefinitions="0.92*,1.08*" ColumnSpacing="14">
+                  <Border Classes="card">
+                    <StackPanel Spacing="12">
+                      <Grid ColumnDefinitions="*,260">
+                        <StackPanel>
+                          <TextBlock
+                              Text="Detected applications"
+                              Classes="sectionTitle" />
+                          <TextBlock
+                              Text="Only applications verified through systemd, Docker identity or published ports are shown."
+                              Classes="pageSubtitle"
+                              Margin="0,4,0,0"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <TextBox
+                            Grid.Column="1"
+                            x:Name="MediaFilterText"
+                            Classes="filter"
+                            PlaceholderText="Filter applications"
+                            TextChanged="MediaFilterText_OnTextChanged" />
+                      </Grid>
+
+                      <TextBlock
+                          x:Name="MediaHubSummaryText"
+                          Text="Waiting for capture"
+                          Classes="muted" />
+
+                      <ListBox
+                          x:Name="IntegrationsList"
+                          Classes="dataList"
+                          MinHeight="510"
+                          SelectionChanged="IntegrationsList_OnSelectionChanged">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <Grid ColumnDefinitions="150,150,*,90" ColumnSpacing="12">
+                              <TextBlock
+                                  Text="{ReflectionBinding Name}"
+                                  FontWeight="SemiBold" />
+
+                              <TextBlock
+                                  Grid.Column="1"
+                                  Text="{ReflectionBinding Kind}"
+                                  Classes="muted"
+                                  TextTrimming="CharacterEllipsis"
+                                  ToolTip.Tip="{ReflectionBinding Kind}" />
+
+                              <TextBlock
+                                  Grid.Column="2"
+                                  Text="{ReflectionBinding State}"
+                                  TextTrimming="CharacterEllipsis"
+                                  ToolTip.Tip="{ReflectionBinding State}" />
+
+                              <TextBlock
+                                  Grid.Column="3"
+                                  Text="{ReflectionBinding Severity}"
+                                  FontWeight="SemiBold"
+                                  Foreground="{DynamicResource AccentBrush}" />
+                            </Grid>
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="1" Classes="card">
+                    <StackPanel Spacing="14">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock
+                              Text="Application workspace"
+                              Classes="eyebrow" />
+
+                          <TextBlock
+                              x:Name="IntegrationNameText"
+                              Text="Select an application"
+                              FontSize="24"
+                              FontWeight="SemiBold"
+                              Margin="0,6,0,0"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <Border
+                            x:Name="IntegrationStateBorder"
+                            Grid.Column="1"
+                            Classes="badge"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top">
+
+                          <TextBlock
+                              x:Name="IntegrationStateText"
+                              Text="WAITING"
+                              Classes="eyebrow" />
+                        </Border>
+                      </Grid>
+
+                      <Grid
+                          ColumnDefinitions="*,*"
+                          RowDefinitions="Auto,Auto"
+                          ColumnSpacing="12"
+                          RowSpacing="12">
+
+                        <Border Classes="inset">
+                          <StackPanel Spacing="5">
+                            <TextBlock Text="DETECTION" Classes="eyebrow" />
+                            <TextBlock
+                                x:Name="IntegrationKindText"
+                                Text="--"
+                                TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="1" Classes="inset">
+                          <StackPanel Spacing="5">
+                            <TextBlock Text="ENDPOINT" Classes="eyebrow" />
+                            <TextBlock
+                                x:Name="IntegrationEndpointText"
+                                Text="--"
+                                TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Border>
+
+                        <Border Grid.Row="1" Classes="inset">
+                          <StackPanel Spacing="5">
+                            <TextBlock Text="LIFECYCLE ROLE" Classes="eyebrow" />
+                            <TextBlock
+                                x:Name="IntegrationRoleText"
+                                Text="--"
+                                TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Border>
+
+                        <Border Grid.Row="1" Grid.Column="1" Classes="inset">
+                          <StackPanel Spacing="5">
+                            <TextBlock Text="ACTIVE FINDINGS" Classes="eyebrow" />
+                            <TextBlock
+                                x:Name="IntegrationFindingsSummaryText"
+                                Text="--"
+                                TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Border>
+                      </Grid>
+
+                      <Border Classes="inset">
+                        <StackPanel Spacing="7">
+                          <TextBlock Text="Evidence" Classes="sectionTitle" />
+                          <TextBlock
+                              x:Name="IntegrationEvidenceText"
+                              Text="Select a detected application to inspect its evidence."
+                              Classes="muted"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+
+                      <Border Classes="inset">
+                        <StackPanel Spacing="7">
+                          <TextBlock Text="Related operational context" Classes="sectionTitle" />
+                          <TextBlock
+                              x:Name="IntegrationFindingsText"
+                              Text="No application selected."
+                              Classes="muted"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+
+                      <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
+                        <Button
+                            x:Name="OpenIntegrationButton"
+                            Content="Open web interface"
+                            IsEnabled="False"
+                            Click="OpenIntegrationButton_OnClick" />
+
+                        <Button
+                            Grid.Column="1"
+                            x:Name="IntegrationFindingsButton"
+                            Content="View Intelligence"
+                            IsEnabled="False"
+                            Click="IntegrationFindingsButton_OnClick" />
+
+                        <TextBlock
+                            Grid.Column="2"
+                            x:Name="IntegrationActionStatusText"
+                            Text="Select an application."
+                            Classes="dim"
+                            VerticalAlignment="Center"
+                            TextWrapping="Wrap" />
+                      </Grid>
+                    </StackPanel>
+                  </Border>
+                </Grid>
               </StackPanel>
             </ScrollViewer>
 
@@ -1056,8 +1234,22 @@
                       <Button Grid.Column="1" x:Name="StorageThresholdButton" Content="Thresholds..." IsEnabled="False" Click="StorageThresholdButton_OnClick" />
                       <Button Grid.Column="2" x:Name="RestoreStorageThresholdButton" Content="Restore defaults" IsEnabled="False" Click="RestoreStorageThresholdButton_OnClick" />
                     </Grid>
-                    <TextBlock x:Name="StoragePolicyStatusText" Text="Select a mount to inspect or customize its policy." Classes="dim" />
-                    <ListBox x:Name="StorageList" Classes="dataList" MinHeight="430" SelectionChanged="StorageList_OnSelectionChanged">
+                    <Border Classes="inset">
+                      <StackPanel Spacing="5">
+                        <TextBlock
+                            x:Name="StorageSelectedPolicyTitleText"
+                            Text="No mount selected"
+                            FontWeight="SemiBold" />
+
+                        <TextBlock
+                            x:Name="StoragePolicyStatusText"
+                            Text="Select a mount to inspect or customize its policy."
+                            Classes="dim"
+                            TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+
+                    <ListBox x:Name="StorageList" Classes="dataList" MinHeight="390" SelectionChanged="StorageList_OnSelectionChanged">
                       <ListBox.ItemTemplate>
                         <DataTemplate x:CompileBindings="False">
                           <Grid ColumnDefinitions="200,90,90,90,90,90,*" ColumnSpacing="12">
