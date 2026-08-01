@@ -5,24 +5,24 @@
     RequestedThemeVariant="Dark">
 
   <Application.Resources>
-    <!-- Matches the graphite/mauve GraveOps Windows reference palette. -->
-    <SolidColorBrush x:Key="BackdropBrush" Color="#0B0B0D" />
-    <SolidColorBrush x:Key="BackgroundBrush" Color="#111113" />
-    <SolidColorBrush x:Key="SidebarBrush" Color="#0D0D0F" />
-    <SolidColorBrush x:Key="HeaderBrush" Color="#101012" />
-    <SolidColorBrush x:Key="SurfaceBrush" Color="#18181B" />
-    <SolidColorBrush x:Key="Surface2Brush" Color="#1F1F23" />
-    <SolidColorBrush x:Key="Surface3Brush" Color="#29292E" />
-    <SolidColorBrush x:Key="InputBrush" Color="#141417" />
-    <SolidColorBrush x:Key="ConsoleBrush" Color="#0D0D10" />
-    <SolidColorBrush x:Key="BorderBrush" Color="#303036" />
-    <SolidColorBrush x:Key="BorderStrongBrush" Color="#44444C" />
-    <SolidColorBrush x:Key="TextBrush" Color="#F3F1F3" />
-    <SolidColorBrush x:Key="MutedBrush" Color="#A7A1A7" />
-    <SolidColorBrush x:Key="DimBrush" Color="#736E73" />
-    <SolidColorBrush x:Key="AccentBrush" Color="#B98BA8" />
-    <SolidColorBrush x:Key="AccentHoverBrush" Color="#C99AB9" />
-    <SolidColorBrush x:Key="AccentTintBrush" Color="#2B222A" />
+    <!-- Exact color tokens from the uploaded Windows Control Center source. -->
+    <SolidColorBrush x:Key="BackdropBrush" Color="#090A0C" />
+    <SolidColorBrush x:Key="BackgroundBrush" Color="#101214" />
+    <SolidColorBrush x:Key="SidebarBrush" Color="#0C0E10" />
+    <SolidColorBrush x:Key="HeaderBrush" Color="#0F1113" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#171A1E" />
+    <SolidColorBrush x:Key="Surface2Brush" Color="#1C2025" />
+    <SolidColorBrush x:Key="Surface3Brush" Color="#242930" />
+    <SolidColorBrush x:Key="InputBrush" Color="#121519" />
+    <SolidColorBrush x:Key="ConsoleBrush" Color="#0C0F12" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#292E35" />
+    <SolidColorBrush x:Key="BorderStrongBrush" Color="#3A414A" />
+    <SolidColorBrush x:Key="TextBrush" Color="#F2F1EE" />
+    <SolidColorBrush x:Key="MutedBrush" Color="#9AA1A9" />
+    <SolidColorBrush x:Key="DimBrush" Color="#69717A" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#D4AA5C" />
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="#E3B967" />
+    <SolidColorBrush x:Key="AccentTintBrush" Color="#2B2418" />
     <SolidColorBrush x:Key="SuccessBrush" Color="#63CC8B" />
     <SolidColorBrush x:Key="WarnBrush" Color="#E0B24F" />
     <SolidColorBrush x:Key="DangerBrush" Color="#E16B75" />
@@ -37,7 +37,7 @@
     <Style Selector="Window">
       <Setter Property="Background" Value="{DynamicResource BackdropBrush}" />
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-      <Setter Property="FontFamily" Value="Inter, DejaVu Sans, sans-serif" />
+      <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI, Inter, Ubuntu, DejaVu Sans, sans-serif" />
     </Style>
 
     <Style Selector="TextBlock">
@@ -50,7 +50,7 @@
     </Style>
 
     <Style Selector="TextBlock.pageSubtitle">
-      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontSize" Value="11" />
       <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
     </Style>
 
@@ -78,7 +78,21 @@
       <Setter Property="Foreground" Value="{DynamicResource DimBrush}" />
     </Style>
 
+    <Style Selector="TextBlock.mono">
+      <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, DejaVu Sans Mono, monospace" />
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    </Style>
+
     <Style Selector="Border.card">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Padding" Value="18" />
+    </Style>
+
+    <Style Selector="Border.flatCard">
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
       <Setter Property="BorderThickness" Value="1" />
@@ -100,7 +114,7 @@
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="14" />
       <Setter Property="Padding" Value="18" />
-      <Setter Property="MinHeight" Value="82" />
+      <Setter Property="MinHeight" Value="94" />
     </Style>
 
     <Style Selector="Border.inset">
@@ -111,11 +125,37 @@
       <Setter Property="Padding" Value="14" />
     </Style>
 
+    <Style Selector="Border.healthPass">
+      <Setter Property="Background" Value="{DynamicResource SuccessTintBrush}" />
+      <Setter Property="BorderBrush" Value="#1C5A32" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="13" />
+    </Style>
+
+    <Style Selector="Border.healthWarn">
+      <Setter Property="Background" Value="{DynamicResource WarnTintBrush}" />
+      <Setter Property="BorderBrush" Value="#5B4A18" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="13" />
+    </Style>
+
+    <Style Selector="Border.healthFail">
+      <Setter Property="Background" Value="{DynamicResource DangerTintBrush}" />
+      <Setter Property="BorderBrush" Value="#65232B" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="13" />
+    </Style>
+
     <Style Selector="Button">
       <Setter Property="MinHeight" Value="34" />
       <Setter Property="Padding" Value="14,8" />
       <Setter Property="FontSize" Value="12" />
       <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
@@ -128,8 +168,16 @@
       <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
     </Style>
 
+    <Style Selector="Button:pressed">
+      <Setter Property="Opacity" Value="0.78" />
+    </Style>
+
+    <Style Selector="Button:disabled">
+      <Setter Property="Opacity" Value="0.38" />
+    </Style>
+
     <Style Selector="Button.primary">
-      <Setter Property="Foreground" Value="#1A1519" />
+      <Setter Property="Foreground" Value="#15120D" />
       <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
     </Style>
@@ -137,6 +185,18 @@
     <Style Selector="Button.primary:pointerover">
       <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
+    </Style>
+
+    <Style Selector="Button.compact">
+      <Setter Property="MinHeight" Value="32" />
+      <Setter Property="Padding" Value="10,6" />
+    </Style>
+
+    <Style Selector="Button.quickModule">
+      <Setter Property="MinHeight" Value="82" />
+      <Setter Property="Padding" Value="12,10" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Stretch" />
     </Style>
 
     <Style Selector="Button.ghost">
@@ -173,67 +233,6 @@
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
     </Style>
 
-    <Style Selector="Button.titlebar">
-      <Setter Property="Width" Value="46" />
-      <Setter Property="Height" Value="37" />
-      <Setter Property="MinHeight" Value="37" />
-      <Setter Property="Padding" Value="0" />
-      <Setter Property="FontSize" Value="14" />
-      <Setter Property="FontWeight" Value="Normal" />
-      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Cursor" Value="Arrow" />
-    </Style>
-
-    <Style Selector="Button.titlebar:pointerover">
-      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
-    </Style>
-
-    <Style Selector="Button.titlebar.close:pointerover">
-      <Setter Property="Foreground" Value="White" />
-      <Setter Property="Background" Value="#B8343E" />
-    </Style>
-
-    <Style Selector="ListBox.dataList">
-      <Setter Property="Background" Value="{DynamicResource ConsoleBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="Padding" Value="8" />
-      <Setter Property="FontFamily" Value="Inter, DejaVu Sans, sans-serif" />
-      <Setter Property="FontSize" Value="12" />
-    </Style>
-
-    <Style Selector="ListBox.dataList ListBoxItem">
-      <Setter Property="Padding" Value="8,6" />
-      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-    </Style>
-
-    <Style Selector="ListBox.dataList ListBoxItem:pointerover">
-      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
-    </Style>
-
-    <Style Selector="ListBox.dataList ListBoxItem:selected">
-      <Setter Property="Background" Value="{DynamicResource AccentTintBrush}" />
-      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-    </Style>
-
-    <Style Selector="ListBox.dataList.passive ListBoxItem">
-      <Setter Property="Focusable" Value="False" />
-    </Style>
-
-    <Style Selector="ListBox.dataList.passive ListBoxItem:pointerover">
-      <Setter Property="Background" Value="Transparent" />
-    </Style>
-
-    <Style Selector="ListBox.dataList.passive ListBoxItem:selected">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-    </Style>
-
     <Style Selector="Button.nav.sub">
       <Setter Property="Height" Value="34" />
       <Setter Property="MinHeight" Value="34" />
@@ -261,10 +260,27 @@
       <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
     </Style>
 
-    <Style Selector="Border.badge">
-      <Setter Property="CornerRadius" Value="7" />
-      <Setter Property="Padding" Value="9,4" />
-      <Setter Property="Background" Value="{DynamicResource AccentTintBrush}" />
+    <Style Selector="Button.titlebar">
+      <Setter Property="Width" Value="46" />
+      <Setter Property="Height" Value="37" />
+      <Setter Property="MinHeight" Value="37" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="FontWeight" Value="Normal" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Cursor" Value="Arrow" />
+    </Style>
+
+    <Style Selector="Button.titlebar:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
+    </Style>
+
+    <Style Selector="Button.titlebar.close:pointerover">
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="Background" Value="#B8343E" />
     </Style>
 
     <Style Selector="Button.danger">
@@ -273,22 +289,82 @@
       <Setter Property="BorderBrush" Value="#5A2B31" />
     </Style>
 
-    <Style Selector="TextBox.filter">
+    <Style Selector="Border.badge">
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="Padding" Value="9,4" />
+      <Setter Property="Background" Value="{DynamicResource AccentTintBrush}" />
+    </Style>
+
+    <Style Selector="TextBox">
       <Setter Property="MinHeight" Value="34" />
-      <Setter Property="Padding" Value="11,7" />
+      <Setter Property="Padding" Value="10,8" />
       <Setter Property="Background" Value="{DynamicResource InputBrush}" />
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
       <Setter Property="BorderThickness" Value="1" />
     </Style>
 
+    <Style Selector="ComboBox">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="10,6" />
+      <Setter Property="Background" Value="{DynamicResource InputBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="TextBox.filter">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="11,7" />
+    </Style>
+
     <Style Selector="TextBox.console">
       <Setter Property="Background" Value="{DynamicResource ConsoleBrush}" />
       <Setter Property="Foreground" Value="#D7D3D7" />
-      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-      <Setter Property="FontFamily" Value="DejaVu Sans Mono, monospace" />
+      <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, DejaVu Sans Mono, monospace" />
       <Setter Property="FontSize" Value="12" />
       <Setter Property="Padding" Value="12" />
+    </Style>
+
+    <Style Selector="ListBox.dataList">
+      <Setter Property="Background" Value="{DynamicResource ConsoleBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="6" />
+      <Setter Property="FontSize" Value="11" />
+    </Style>
+
+    <Style Selector="ListBox.dataList ListBoxItem">
+      <Setter Property="Padding" Value="8,6" />
+      <Setter Property="Margin" Value="0,0,0,2" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1,0" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+
+    <Style Selector="ListBox.dataList ListBoxItem:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+    </Style>
+
+    <Style Selector="ListBox.dataList ListBoxItem:selected">
+      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+
+    <Style Selector="ListBox.dataList.passive ListBoxItem">
+      <Setter Property="Focusable" Value="False" />
+    </Style>
+
+    <Style Selector="ListBox.dataList.passive ListBoxItem:pointerover">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.dataList.passive ListBoxItem:selected">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
     </Style>
   </Application.Styles>
 </Application>

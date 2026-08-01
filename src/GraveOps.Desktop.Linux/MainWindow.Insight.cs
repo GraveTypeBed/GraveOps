@@ -132,6 +132,47 @@ public partial class MainWindow
             _dashboardFleetAttention.Count.ToString(
                 CultureInfo.InvariantCulture);
 
+        Get<TextBlock>("DashboardLiveApplicationCountText").Text =
+            _dashboardApplications.Count.ToString(
+                CultureInfo.InvariantCulture);
+
+        Get<TextBlock>("DashboardLiveAttentionCountText").Text =
+            _dashboardFleetAttention.Count.ToString(
+                CultureInfo.InvariantCulture);
+
+        var dashboardFailures =
+            _analysis.Findings.Count(item =>
+                item.Severity >= OpsSeverity.Error);
+
+        var dashboardWarnings =
+            _analysis.Findings.Count(item =>
+                item.Severity == OpsSeverity.Warning);
+
+        var dashboardHealthy =
+            Math.Max(
+                0,
+                _integrations.Count(item =>
+                    item.Severity < OpsSeverity.Warning) +
+                _lifecycle.Count(item =>
+                    item.Severity < OpsSeverity.Warning));
+
+        Get<TextBlock>("DashboardHealthPassText").Text =
+            dashboardHealthy.ToString(
+                CultureInfo.InvariantCulture);
+
+        Get<TextBlock>("DashboardHealthWarnText").Text =
+            dashboardWarnings.ToString(
+                CultureInfo.InvariantCulture);
+
+        Get<TextBlock>("DashboardHealthFailText").Text =
+            dashboardFailures.ToString(
+                CultureInfo.InvariantCulture);
+
+        Get<ListBox>("DashboardRecentActivityList").ItemsSource =
+            _controlPlane.State.Activities
+                .Take(7)
+                .ToArray();
+
         Get<TextBlock>("DashboardEnvironmentSummaryText").Text =
             $"{_dashboardFleetHosts.Count(item => item.CapturedAt.HasValue)} captured · " +
             $"{_dashboardFleetHosts.Count(item => !item.CapturedAt.HasValue)} awaiting first capture";
@@ -196,6 +237,12 @@ public partial class MainWindow
                 "--";
             Get<TextBlock>("DashboardSelectedDockerText").Text =
                 "--";
+            Get<TextBlock>("DashboardSummaryDockerText").Text =
+                "--";
+            Get<TextBlock>("DashboardLiveQueueText").Text =
+                "--";
+            Get<TextBlock>("DashboardLiveDockerText").Text =
+                "--";
             Get<TextBlock>("DashboardSelectedCapturedText").Text =
                 "--";
 
@@ -222,6 +269,12 @@ public partial class MainWindow
         Get<TextBlock>("DashboardSelectedQueueText").Text =
             selected.QueueSummary;
         Get<TextBlock>("DashboardSelectedDockerText").Text =
+            selected.Docker;
+        Get<TextBlock>("DashboardSummaryDockerText").Text =
+            selected.Docker;
+        Get<TextBlock>("DashboardLiveQueueText").Text =
+            selected.QueueSummary;
+        Get<TextBlock>("DashboardLiveDockerText").Text =
             selected.Docker;
         Get<TextBlock>("DashboardSelectedCapturedText").Text =
             selected.CapturedText;
