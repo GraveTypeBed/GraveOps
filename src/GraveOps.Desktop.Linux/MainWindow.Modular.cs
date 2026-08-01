@@ -68,9 +68,9 @@ public partial class MainWindow
                 "0";
             Get<TextBlock>("DirectIntegrationOwnerText").Text =
                 _controlPlane.ActiveProfile.DisplayName;
-            Get<TextBlock>("DirectIntegrationEvidenceText").Text =
+            Get<TextBox>("DirectIntegrationEvidenceText").Text =
                 "No verified runtime, service, container or published port was returned.";
-            Get<TextBlock>("DirectIntegrationRelatedText").Text =
+            Get<TextBox>("DirectIntegrationRelatedText").Text =
                 "No operational context is available because this application was not detected.";
             Get<TextBlock>("DirectIntegrationOperationsText").Text =
                 "Refresh the active target or review integration discovery.";
@@ -130,11 +130,11 @@ public partial class MainWindow
         Get<TextBlock>("DirectIntegrationOwnerText").Text =
             _controlPlane.ActiveProfile.DisplayName;
 
-        Get<TextBlock>("DirectIntegrationEvidenceText").Text =
+        Get<TextBox>("DirectIntegrationEvidenceText").Text =
             IntegrationEvidenceSummary(
                 integration);
 
-        Get<TextBlock>("DirectIntegrationRelatedText").Text =
+        Get<TextBox>("DirectIntegrationRelatedText").Text =
             related.Length == 0
                 ? "No active operational finding is associated with this application."
                 : string.Join(

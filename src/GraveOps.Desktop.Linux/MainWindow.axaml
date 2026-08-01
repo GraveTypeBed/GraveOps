@@ -1049,7 +1049,7 @@
                   <TextBlock Text="Media operations" Classes="sectionTitle" />
                   <TextBlock Text="Live application health, launch ownership and media-stack context from one surface." Classes="pageSubtitle" />
                 </StackPanel>
-                <TextBox Grid.Column="1" x:Name="MediaFilterText" Classes="filter" Width="210" Watermark="Filter applications" TextChanged="MediaFilterText_OnTextChanged" />
+                <TextBox Grid.Column="1" x:Name="MediaFilterText" Classes="filter" Width="210" PlaceholderText="Filter applications" TextChanged="MediaFilterText_OnTextChanged" />
                 <TextBlock Grid.Column="2" x:Name="MediaHubSummaryText" Text="0 detected" Classes="dim" VerticalAlignment="Center" />
               </Grid>
 
@@ -1358,7 +1358,7 @@
                   <TextBlock Text="Operations &amp; troubleshooting" Classes="sectionTitle" FontSize="18" />
                   <TextBlock Text="Native services, guarded actions and selected-state comparison." Classes="pageSubtitle" />
                 </StackPanel>
-                <TextBox Grid.Column="1" x:Name="ServicesFilterText" Classes="filter" Watermark="Filter services" TextChanged="ServicesFilterText_OnTextChanged" />
+                <TextBox Grid.Column="1" x:Name="ServicesFilterText" Classes="filter" PlaceholderText="Filter services" TextChanged="ServicesFilterText_OnTextChanged" />
                 <Button Grid.Column="2" x:Name="ServiceStartButton" Content="Start" Click="ServiceStartButton_OnClick" />
                 <Button Grid.Column="3" x:Name="ServiceStopButton" Content="Stop" Classes="danger" Click="ServiceStopButton_OnClick" />
                 <Button Grid.Column="4" x:Name="ServiceRestartButton" Content="Restart" Classes="primary" Click="ServiceRestartButton_OnClick" />
@@ -1425,7 +1425,7 @@
                   <TextBlock Text="Docker" Classes="sectionTitle" FontSize="18" />
                   <TextBlock Text="Container state, images, ports, guarded actions and recent context." Classes="pageSubtitle" />
                 </StackPanel>
-                <TextBox Grid.Column="1" x:Name="DockerFilterText" Classes="filter" Watermark="Filter containers" TextChanged="DockerFilterText_OnTextChanged" />
+                <TextBox Grid.Column="1" x:Name="DockerFilterText" Classes="filter" PlaceholderText="Filter containers" TextChanged="DockerFilterText_OnTextChanged" />
                 <CheckBox Grid.Column="2" x:Name="ShowInformationalContainersCheckBox" Content="Show exited" VerticalAlignment="Center" Click="ShowInformationalContainersCheckBox_OnClick" />
                 <TextBlock Grid.Column="3" x:Name="DockerSummaryText" Text="0 containers" Classes="dim" VerticalAlignment="Center" />
               </Grid>
@@ -1482,7 +1482,7 @@
                   <TextBlock Text="Storage &amp; capacity" Classes="sectionTitle" FontSize="18" />
                   <TextBlock Text="Mount identity, free space, capacity policy and dependency ownership." Classes="pageSubtitle" />
                 </StackPanel>
-                <TextBox Grid.Column="1" x:Name="StorageFilterText" Classes="filter" Watermark="Filter mounts" TextChanged="StorageFilterText_OnTextChanged" />
+                <TextBox Grid.Column="1" x:Name="StorageFilterText" Classes="filter" PlaceholderText="Filter mounts" TextChanged="StorageFilterText_OnTextChanged" />
                 <Button Grid.Column="2" x:Name="StorageThresholdButton" Content="Thresholds..." Click="StorageThresholdButton_OnClick" />
                 <Button Grid.Column="3" x:Name="RestoreStorageThresholdButton" Content="Restore defaults" Click="RestoreStorageThresholdButton_OnClick" />
               </Grid>
