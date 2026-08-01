@@ -1,0 +1,46 @@
+name: linux-build
+
+on:
+  push:
+    branches:
+      - linux-client
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore Linux desktop
+        run: dotnet restore src/GraveOps.Desktop.Linux/GraveOps.Desktop.Linux.csproj
+
+      - name: Build Linux desktop
+        run: dotnet build src/GraveOps.Desktop.Linux/GraveOps.Desktop.Linux.csproj -c Release --no-restore
+
+      - name: Publish linux-x64 smoke artifact
+        run: >
+          dotnet publish
+          src/GraveOps.Desktop.Linux/GraveOps.Desktop.Linux.csproj
+          -c Release
+          -r linux-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:DebugType=None
+          -p:DebugSymbols=false
+          -o artifacts/linux-x64
+
+      - name: Upload Linux smoke artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: graveops-linux-x64
+          path: artifacts/linux-x64

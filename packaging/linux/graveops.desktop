@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=GraveOps
+Comment=Control center for self-hosted infrastructure
+Exec=/opt/graveops/GraveOps.Desktop.Linux
+Icon=graveops
+Terminal=false
+Categories=System;Monitor;Utility;
+StartupNotify=true

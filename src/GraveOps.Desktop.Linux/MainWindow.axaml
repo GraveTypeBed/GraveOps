@@ -1,0 +1,298 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Class="GraveOps.Desktop.Linux.MainWindow"
+    Title="GraveOps Linux"
+    Width="1420"
+    Height="900"
+    MinWidth="1120"
+    MinHeight="700"
+    Background="#090B0F"
+    Icon="/Assets/graveops-brandmark.png">
+
+  <Grid ColumnDefinitions="250,*">
+    <Border
+        Grid.Column="0"
+        Background="#0D1015"
+        BorderBrush="#252A35"
+        BorderThickness="0,0,1,0">
+
+      <Grid RowDefinitions="Auto,*,Auto" Margin="18">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Image
+                Width="34"
+                Height="34"
+                Source="/Assets/graveops-brandmark.png"
+                Stretch="Uniform" />
+            <StackPanel VerticalAlignment="Center">
+              <TextBlock
+                  Text="GraveOps"
+                  FontSize="17"
+                  FontWeight="SemiBold"
+                  Foreground="#F5F1FF" />
+              <TextBlock
+                  Text="LINUX FOUNDATION"
+                  FontSize="9"
+                  FontWeight="SemiBold"
+                  Foreground="#A788FF" />
+            </StackPanel>
+          </StackPanel>
+
+          <Border
+              Background="#151923"
+              CornerRadius="12"
+              Padding="14"
+              BorderBrush="#2A3040"
+              BorderThickness="1">
+            <StackPanel Spacing="6">
+              <TextBlock
+                  Text="LOCAL LINUX HOST"
+                  FontSize="10"
+                  Foreground="#A8B0C2" />
+              <TextBlock
+                  x:Name="SidebarHostname"
+                  Text="Loading..."
+                  FontSize="14"
+                  FontWeight="SemiBold"
+                  Foreground="White" />
+              <TextBlock
+                  Text="Native systemd • Docker • storage"
+                  FontSize="11"
+                  Foreground="#7F899C" />
+            </StackPanel>
+          </Border>
+
+          <TextBlock
+              Text="OVERVIEW"
+              FontSize="10"
+              Foreground="#A788FF"
+              Margin="4,10,0,0" />
+
+          <Button
+              Content="Dashboard"
+              HorizontalContentAlignment="Left"
+              Padding="14,10"
+              Background="#262B37"
+              Foreground="White" />
+
+          <Button
+              Content="Servers"
+              HorizontalContentAlignment="Left"
+              Padding="14,10"
+              Background="Transparent"
+              Foreground="#BEC5D3" />
+
+          <Button
+              Content="Media Hub"
+              HorizontalContentAlignment="Left"
+              Padding="14,10"
+              Background="Transparent"
+              Foreground="#BEC5D3" />
+
+          <Button
+              Content="Services &amp; Actions"
+              HorizontalContentAlignment="Left"
+              Padding="14,10"
+              Background="Transparent"
+              Foreground="#BEC5D3" />
+
+          <Button
+              Content="Docker"
+              HorizontalContentAlignment="Left"
+              Padding="14,10"
+              Background="Transparent"
+              Foreground="#BEC5D3" />
+
+          <Button
+              Content="Storage"
+              HorizontalContentAlignment="Left"
+              Padding="14,10"
+              Background="Transparent"
+              Foreground="#BEC5D3" />
+
+          <Button
+              Content="Logs"
+              HorizontalContentAlignment="Left"
+              Padding="14,10"
+              Background="Transparent"
+              Foreground="#BEC5D3" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Spacing="4">
+          <TextBlock
+              Text="GRAVEOPS LINUX"
+              FontSize="9"
+              FontWeight="SemiBold"
+              Foreground="#A788FF" />
+          <TextBlock
+              Text="Phase 1 native host foundation"
+              FontSize="10"
+              Foreground="#70798C" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <ScrollViewer Grid.Column="1">
+      <StackPanel Margin="34" Spacing="22">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel>
+            <TextBlock
+                Text="Linux Control Center"
+                FontSize="29"
+                FontWeight="SemiBold"
+                Foreground="#F5F1FF" />
+            <TextBlock
+                Text="Native Linux Mint telemetry without an SSH hop"
+                FontSize="14"
+                Foreground="#9099AC"
+                Margin="0,6,0,0" />
+          </StackPanel>
+
+          <Button
+              Grid.Column="1"
+              x:Name="RefreshButton"
+              Content="Refresh host"
+              Padding="18,10"
+              Background="#7047D8"
+              Foreground="White"
+              Click="RefreshButton_OnClick" />
+        </Grid>
+
+        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
+          <Border
+              Background="#141822"
+              CornerRadius="13"
+              Padding="18"
+              BorderBrush="#292F3D"
+              BorderThickness="1">
+            <StackPanel Spacing="8">
+              <TextBlock Text="HOST" FontSize="10" Foreground="#A788FF" />
+              <TextBlock
+                  x:Name="HostnameText"
+                  Text="Loading..."
+                  FontSize="19"
+                  FontWeight="SemiBold"
+                  Foreground="White" />
+              <TextBlock
+                  x:Name="OperatingSystemText"
+                  Text="--"
+                  Foreground="#98A2B6"
+                  TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+
+          <Border
+              Grid.Column="1"
+              Background="#141822"
+              CornerRadius="13"
+              Padding="18"
+              BorderBrush="#292F3D"
+              BorderThickness="1">
+            <StackPanel Spacing="8">
+              <TextBlock Text="SYSTEM" FontSize="10" Foreground="#A788FF" />
+              <TextBlock
+                  x:Name="SystemStateText"
+                  Text="Loading..."
+                  FontSize="19"
+                  FontWeight="SemiBold"
+                  Foreground="White" />
+              <TextBlock
+                  x:Name="KernelText"
+                  Text="--"
+                  Foreground="#98A2B6" />
+            </StackPanel>
+          </Border>
+
+          <Border
+              Grid.Column="2"
+              Background="#141822"
+              CornerRadius="13"
+              Padding="18"
+              BorderBrush="#292F3D"
+              BorderThickness="1">
+            <StackPanel Spacing="8">
+              <TextBlock Text="DOCKER" FontSize="10" Foreground="#A788FF" />
+              <TextBlock
+                  x:Name="DockerText"
+                  Text="Loading..."
+                  FontSize="19"
+                  FontWeight="SemiBold"
+                  Foreground="White"
+                  TextWrapping="Wrap" />
+              <TextBlock
+                  x:Name="UptimeText"
+                  Text="--"
+                  Foreground="#98A2B6" />
+            </StackPanel>
+          </Border>
+        </Grid>
+
+        <Border
+            Background="#141822"
+            CornerRadius="13"
+            Padding="20"
+            BorderBrush="#292F3D"
+            BorderThickness="1">
+          <StackPanel Spacing="14">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel>
+                <TextBlock
+                    Text="Local storage"
+                    FontSize="18"
+                    FontWeight="SemiBold"
+                    Foreground="White" />
+                <TextBlock
+                    Text="Pseudo filesystems are filtered from the normal operational view."
+                    FontSize="12"
+                    Foreground="#8E98AB"
+                    Margin="0,4,0,0" />
+              </StackPanel>
+              <TextBlock
+                  Grid.Column="1"
+                  x:Name="CapturedAtText"
+                  Text="--"
+                  FontSize="11"
+                  Foreground="#70798C"
+                  VerticalAlignment="Center" />
+            </Grid>
+
+            <TextBox
+                x:Name="StorageText"
+                IsReadOnly="True"
+                AcceptsReturn="True"
+                MinHeight="230"
+                FontFamily="Cascadia Mono, DejaVu Sans Mono, monospace"
+                FontSize="12"
+                Background="#0B0E14"
+                Foreground="#D4DAE5"
+                BorderBrush="#2A3040"
+                TextWrapping="NoWrap"
+                ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                ScrollViewer.VerticalScrollBarVisibility="Auto" />
+          </StackPanel>
+        </Border>
+
+        <Border
+            Background="#141822"
+            CornerRadius="13"
+            Padding="20"
+            BorderBrush="#292F3D"
+            BorderThickness="1">
+          <StackPanel Spacing="10">
+            <TextBlock
+                Text="Probe warnings"
+                FontSize="18"
+                FontWeight="SemiBold"
+                Foreground="White" />
+            <TextBlock
+                x:Name="WarningsText"
+                Text="None"
+                Foreground="#C3CAD6"
+                TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</Window>
