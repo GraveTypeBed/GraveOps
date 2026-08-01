@@ -9,9 +9,13 @@
     <AssemblyName>GraveOps</AssemblyName>
     <RootNamespace>GraveOps.App</RootNamespace>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    <ApplicationIcon>Assets\graveops-drive.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\graveops-app.ico</ApplicationIcon>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Resource Include="Assets\graveops-brandmark.png" />
+    <Resource Include="Assets\graveops-app.ico" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="SSH.NET" Version="2025.1.0" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4078.44" />
