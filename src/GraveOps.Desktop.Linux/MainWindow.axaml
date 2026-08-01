@@ -2,297 +2,1056 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     x:Class="GraveOps.Desktop.Linux.MainWindow"
-    Title="GraveOps Linux"
-    Width="1420"
-    Height="900"
-    MinWidth="1120"
-    MinHeight="700"
-    Background="#090B0F"
-    Icon="/Assets/graveops-brandmark.png">
+    Title="GraveOps"
+    Icon="/Assets/graveops-brandmark.png"
+    Width="1500"
+    Height="920"
+    MinWidth="1180"
+    MinHeight="760"
+    WindowStartupLocation="CenterScreen"
+    WindowDecorations="None"
+    ExtendClientAreaToDecorationsHint="True"
+    ExtendClientAreaTitleBarHeightHint="38"
+    Background="{DynamicResource BackdropBrush}">
 
-  <Grid ColumnDefinitions="250,*">
-    <Border
-        Grid.Column="0"
-        Background="#0D1015"
-        BorderBrush="#252A35"
-        BorderThickness="0,0,1,0">
+  <Border
+      Background="{DynamicResource BackgroundBrush}"
+      BorderBrush="{DynamicResource BorderBrush}"
+      BorderThickness="1">
 
-      <Grid RowDefinitions="Auto,*,Auto" Margin="18">
-        <StackPanel Spacing="16">
-          <StackPanel Orientation="Horizontal" Spacing="10">
+    <Grid RowDefinitions="38,*">
+      <!-- Custom GraveOps title bar -->
+      <Border
+          Grid.Row="0"
+          Background="{DynamicResource HeaderBrush}"
+          BorderBrush="{DynamicResource BorderBrush}"
+          BorderThickness="0,0,0,1">
+
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <StackPanel
+              Orientation="Horizontal"
+              VerticalAlignment="Center"
+              Margin="14,0,0,0"
+              Spacing="9">
+
             <Image
-                Width="34"
-                Height="34"
+                Width="24"
+                Height="24"
                 Source="/Assets/graveops-brandmark.png"
                 Stretch="Uniform" />
-            <StackPanel VerticalAlignment="Center">
-              <TextBlock
-                  Text="GraveOps"
-                  FontSize="17"
-                  FontWeight="SemiBold"
-                  Foreground="#F5F1FF" />
-              <TextBlock
-                  Text="LINUX FOUNDATION"
-                  FontSize="9"
-                  FontWeight="SemiBold"
-                  Foreground="#A788FF" />
-            </StackPanel>
-          </StackPanel>
 
-          <Border
-              Background="#151923"
-              CornerRadius="12"
-              Padding="14"
-              BorderBrush="#2A3040"
-              BorderThickness="1">
-            <StackPanel Spacing="6">
-              <TextBlock
-                  Text="LOCAL LINUX HOST"
-                  FontSize="10"
-                  Foreground="#A8B0C2" />
-              <TextBlock
-                  x:Name="SidebarHostname"
-                  Text="Loading..."
-                  FontSize="14"
-                  FontWeight="SemiBold"
-                  Foreground="White" />
-              <TextBlock
-                  Text="Native systemd • Docker • storage"
-                  FontSize="11"
-                  Foreground="#7F899C" />
-            </StackPanel>
-          </Border>
-
-          <TextBlock
-              Text="OVERVIEW"
-              FontSize="10"
-              Foreground="#A788FF"
-              Margin="4,10,0,0" />
-
-          <Button
-              Content="Dashboard"
-              HorizontalContentAlignment="Left"
-              Padding="14,10"
-              Background="#262B37"
-              Foreground="White" />
-
-          <Button
-              Content="Servers"
-              HorizontalContentAlignment="Left"
-              Padding="14,10"
-              Background="Transparent"
-              Foreground="#BEC5D3" />
-
-          <Button
-              Content="Media Hub"
-              HorizontalContentAlignment="Left"
-              Padding="14,10"
-              Background="Transparent"
-              Foreground="#BEC5D3" />
-
-          <Button
-              Content="Services &amp; Actions"
-              HorizontalContentAlignment="Left"
-              Padding="14,10"
-              Background="Transparent"
-              Foreground="#BEC5D3" />
-
-          <Button
-              Content="Docker"
-              HorizontalContentAlignment="Left"
-              Padding="14,10"
-              Background="Transparent"
-              Foreground="#BEC5D3" />
-
-          <Button
-              Content="Storage"
-              HorizontalContentAlignment="Left"
-              Padding="14,10"
-              Background="Transparent"
-              Foreground="#BEC5D3" />
-
-          <Button
-              Content="Logs"
-              HorizontalContentAlignment="Left"
-              Padding="14,10"
-              Background="Transparent"
-              Foreground="#BEC5D3" />
-        </StackPanel>
-
-        <StackPanel Grid.Row="2" Spacing="4">
-          <TextBlock
-              Text="GRAVEOPS LINUX"
-              FontSize="9"
-              FontWeight="SemiBold"
-              Foreground="#A788FF" />
-          <TextBlock
-              Text="Phase 1 native host foundation"
-              FontSize="10"
-              Foreground="#70798C" />
-        </StackPanel>
-      </Grid>
-    </Border>
-
-    <ScrollViewer Grid.Column="1">
-      <StackPanel Margin="34" Spacing="22">
-        <Grid ColumnDefinitions="*,Auto">
-          <StackPanel>
             <TextBlock
-                Text="Linux Control Center"
-                FontSize="29"
+                Text="GraveOps"
+                FontSize="12"
                 FontWeight="SemiBold"
-                Foreground="#F5F1FF" />
-            <TextBlock
-                Text="Native Linux Mint telemetry without an SSH hop"
-                FontSize="14"
-                Foreground="#9099AC"
-                Margin="0,6,0,0" />
+                VerticalAlignment="Center" />
+
+            <Border
+                Background="{DynamicResource AccentTintBrush}"
+                CornerRadius="5"
+                Padding="7,2"
+                Margin="4,0,0,0">
+
+              <TextBlock
+                  Text="LINUX"
+                  Classes="eyebrow"
+                  Foreground="{DynamicResource AccentBrush}" />
+            </Border>
           </StackPanel>
 
-          <Button
-              Grid.Column="1"
-              x:Name="RefreshButton"
-              Content="Refresh host"
-              Padding="18,10"
-              Background="#7047D8"
-              Foreground="White"
-              Click="RefreshButton_OnClick" />
-        </Grid>
-
-        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
-          <Border
-              Background="#141822"
-              CornerRadius="13"
-              Padding="18"
-              BorderBrush="#292F3D"
-              BorderThickness="1">
-            <StackPanel Spacing="8">
-              <TextBlock Text="HOST" FontSize="10" Foreground="#A788FF" />
-              <TextBlock
-                  x:Name="HostnameText"
-                  Text="Loading..."
-                  FontSize="19"
-                  FontWeight="SemiBold"
-                  Foreground="White" />
-              <TextBlock
-                  x:Name="OperatingSystemText"
-                  Text="--"
-                  Foreground="#98A2B6"
-                  TextWrapping="Wrap" />
-            </StackPanel>
-          </Border>
-
           <Border
               Grid.Column="1"
-              Background="#141822"
-              CornerRadius="13"
-              Padding="18"
-              BorderBrush="#292F3D"
-              BorderThickness="1">
-            <StackPanel Spacing="8">
-              <TextBlock Text="SYSTEM" FontSize="10" Foreground="#A788FF" />
-              <TextBlock
-                  x:Name="SystemStateText"
-                  Text="Loading..."
-                  FontSize="19"
-                  FontWeight="SemiBold"
-                  Foreground="White" />
-              <TextBlock
-                  x:Name="KernelText"
-                  Text="--"
-                  Foreground="#98A2B6" />
-            </StackPanel>
-          </Border>
+              Background="Transparent"
+              PointerPressed="TitleDragRegion_OnPointerPressed"
+              DoubleTapped="TitleDragRegion_OnDoubleTapped" />
 
-          <Border
+          <StackPanel
               Grid.Column="2"
-              Background="#141822"
-              CornerRadius="13"
-              Padding="18"
-              BorderBrush="#292F3D"
-              BorderThickness="1">
-            <StackPanel Spacing="8">
-              <TextBlock Text="DOCKER" FontSize="10" Foreground="#A788FF" />
-              <TextBlock
-                  x:Name="DockerText"
-                  Text="Loading..."
-                  FontSize="19"
-                  FontWeight="SemiBold"
-                  Foreground="White"
-                  TextWrapping="Wrap" />
-              <TextBlock
-                  x:Name="UptimeText"
-                  Text="--"
-                  Foreground="#98A2B6" />
-            </StackPanel>
-          </Border>
-        </Grid>
+              Orientation="Horizontal">
 
+            <Button
+                Classes="titlebar"
+                Content="—"
+                Click="Minimize_Click" />
+
+            <Button
+                Classes="titlebar"
+                Content="□"
+                Click="Maximize_Click" />
+
+            <Button
+                Classes="titlebar close"
+                Content="×"
+                Click="Close_Click" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <Grid
+          Grid.Row="1"
+          ColumnDefinitions="260,*">
+
+        <!-- Navigation rail -->
         <Border
-            Background="#141822"
-            CornerRadius="13"
-            Padding="20"
-            BorderBrush="#292F3D"
-            BorderThickness="1">
-          <StackPanel Spacing="14">
-            <Grid ColumnDefinitions="*,Auto">
+            Grid.Column="0"
+            Background="{DynamicResource SidebarBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="0,0,1,0">
+
+          <Grid
+              RowDefinitions="Auto,*,Auto"
+              Margin="14,15,14,14">
+
+            <Border
+                Classes="card"
+                Padding="13"
+                Margin="0,0,0,17">
+
+              <StackPanel>
+                <Grid ColumnDefinitions="Auto,*">
+                  <Border
+                      Width="34"
+                      Height="34"
+                      CornerRadius="9"
+                      Background="{DynamicResource AccentTintBrush}">
+
+                    <Path
+                        Data="M7,8 L19,8 M7,12 L19,12 M7,16 L15,16"
+                        Stroke="{DynamicResource AccentBrush}"
+                        StrokeThickness="1.6"
+                        StrokeLineCap="Round"
+                        Stretch="None"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center" />
+                  </Border>
+
+                  <StackPanel
+                      Grid.Column="1"
+                      Margin="11,0,0,0"
+                      VerticalAlignment="Center">
+
+                    <TextBlock
+                        Text="CONTROL PLANE"
+                        Classes="eyebrow" />
+
+                    <StackPanel
+                        Orientation="Horizontal"
+                        Margin="0,5,0,0"
+                        Spacing="7">
+
+                      <TextBlock
+                          Text="●"
+                          FontSize="10"
+                          Foreground="{DynamicResource SuccessBrush}" />
+
+                      <TextBlock
+                          x:Name="ConnectionText"
+                          Text="Ready"
+                          FontSize="12"
+                          Foreground="{DynamicResource SuccessBrush}" />
+                    </StackPanel>
+                  </StackPanel>
+                </Grid>
+
+                <TextBlock
+                    Text="ACTIVE TARGET"
+                    Classes="eyebrow"
+                    Margin="0,13,0,5" />
+
+                <Border
+                    Classes="inset"
+                    Padding="10,8">
+
+                  <StackPanel>
+                    <TextBlock
+                        x:Name="SidebarHostname"
+                        Text="Loading..."
+                        FontSize="12"
+                        FontWeight="SemiBold"
+                        TextTrimming="CharacterEllipsis" />
+
+                    <TextBlock
+                        x:Name="SidebarOperatingSystem"
+                        Text="Linux"
+                        Classes="dim"
+                        FontSize="10"
+                        Margin="0,3,0,0"
+                        TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </Border>
+
+            <ScrollViewer
+                Grid.Row="1"
+                VerticalScrollBarVisibility="Auto"
+                HorizontalScrollBarVisibility="Disabled">
+
               <StackPanel>
                 <TextBlock
-                    Text="Local storage"
-                    FontSize="18"
-                    FontWeight="SemiBold"
-                    Foreground="White" />
+                    Text="OVERVIEW"
+                    Classes="eyebrow"
+                    Margin="10,0,0,6" />
+
+                <Button
+                    x:Name="DashboardNav"
+                    Classes="nav selected"
+                    Click="NavigationButton_OnClick">
+                  <Grid ColumnDefinitions="24,*">
+                    <Path
+                        Width="16"
+                        Height="16"
+                        Data="M1,1 L7,1 L7,7 L1,7 Z M9,1 L15,1 L15,7 L9,7 Z M1,9 L7,9 L7,15 L1,15 Z M9,9 L15,9 L15,15 L9,15 Z"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.2" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="Dashboard"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                  </Grid>
+                </Button>
+
+                <Button
+                    x:Name="IntelligenceNav"
+                    Classes="nav"
+                    Click="NavigationButton_OnClick">
+                  <Grid ColumnDefinitions="24,*">
+                    <Path
+                        Width="16"
+                        Height="16"
+                        Data="M8,1 L10,5 L15,6 L11.5,9.5 L12,15 L8,12.5 L4,15 L4.5,9.5 L1,6 L6,5 Z"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.2" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="Intelligence"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                  </Grid>
+                </Button>
+
+                <Button
+                    x:Name="LifecycleNav"
+                    Classes="nav"
+                    Click="NavigationButton_OnClick">
+                  <Grid ColumnDefinitions="24,*">
+                    <Path
+                        Width="16"
+                        Height="16"
+                        Data="M2,8 L5,8 M6,8 L9,8 M10,8 L14,8 M4,5 L6,8 L4,11 M8,5 L10,8 L8,11"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.2" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="Lifecycle"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                  </Grid>
+                </Button>
+
+                <Button
+                    x:Name="HistoryNav"
+                    Classes="nav"
+                    Click="NavigationButton_OnClick">
+                  <Grid ColumnDefinitions="24,*">
+                    <Path
+                        Width="16"
+                        Height="16"
+                        Data="M8,2 A6,6 0 1 1 3,5 M3,2 L3,6 L7,6 M8,5 L8,8 L11,10"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.2" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="History &amp; Incidents"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                  </Grid>
+                </Button>
+
+                <Button
+                    x:Name="ServersNav"
+                    Classes="nav"
+                    Click="NavigationButton_OnClick">
+                  <Grid ColumnDefinitions="24,*">
+                    <Path
+                        Width="16"
+                        Height="16"
+                        Data="M2,2 L14,2 L14,7 L2,7 Z M2,9 L14,9 L14,14 L2,14 Z M4,4.5 L5.5,4.5 M4,11.5 L5.5,11.5"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.2" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="Servers"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                  </Grid>
+                </Button>
+
                 <TextBlock
-                    Text="Pseudo filesystems are filtered from the normal operational view."
-                    FontSize="12"
-                    Foreground="#8E98AB"
-                    Margin="0,4,0,0" />
+                    Text="MEDIA"
+                    Classes="eyebrow"
+                    Margin="10,15,0,6" />
+
+                <Button
+                    x:Name="MediaHubNav"
+                    Classes="nav"
+                    Click="NavigationButton_OnClick">
+                  <Grid ColumnDefinitions="24,*">
+                    <Path
+                        Width="16"
+                        Height="16"
+                        Data="M2,2 L7,2 L7,7 L2,7 Z M9,2 L14,2 L14,7 L9,7 Z M2,9 L7,9 L7,14 L2,14 Z M9,9 L14,9 L14,14 L9,14 Z"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.2" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="Media Hub"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                  </Grid>
+                </Button>
+
+                <TextBlock
+                    Text="SYSTEM"
+                    Classes="eyebrow"
+                    Margin="10,15,0,6" />
+
+                <Button
+                    x:Name="ServicesNav"
+                    Classes="nav"
+                    Click="NavigationButton_OnClick">
+                  <Grid ColumnDefinitions="24,*">
+                    <Path
+                        Width="16"
+                        Height="16"
+                        Data="M2,4 L14,4 M2,8 L14,8 M2,12 L14,12 M4,2 L4,6 M10,6 L10,10 M6,10 L6,14"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.2" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="Services &amp; Actions"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                  </Grid>
+                </Button>
+
+                <Button
+                    x:Name="DockerNav"
+                    Classes="nav"
+                    Click="NavigationButton_OnClick">
+                  <Grid ColumnDefinitions="24,*">
+                    <Path
+                        Width="16"
+                        Height="16"
+                        Data="M2,5 L6,5 L6,9 L2,9 Z M7,5 L11,5 L11,9 L7,9 Z M12,5 L15,5 L15,9 L12,9 Z M4,1 L8,1 L8,4 L4,4 Z M9,1 L13,1 L13,4 L9,4 Z M1,10 C3,14 12,15 15,9"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.1" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="Docker"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                  </Grid>
+                </Button>
+
+                <Button
+                    x:Name="StorageNav"
+                    Classes="nav"
+                    Click="NavigationButton_OnClick">
+                  <Grid ColumnDefinitions="24,*">
+                    <Path
+                        Width="16"
+                        Height="16"
+                        Data="M2,3 C2,1.5 14,1.5 14,3 L14,13 C14,14.5 2,14.5 2,13 Z M2,3 C2,5 14,5 14,3 M2,8 C2,10 14,10 14,8"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.2" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="Storage"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                  </Grid>
+                </Button>
+
+                <Button
+                    x:Name="LogsNav"
+                    Classes="nav"
+                    Click="NavigationButton_OnClick">
+                  <Grid ColumnDefinitions="24,*">
+                    <Path
+                        Width="16"
+                        Height="16"
+                        Data="M2,2 L14,2 L14,14 L2,14 Z M4,5 L12,5 M4,8 L12,8 M4,11 L9,11"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.2" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="Logs"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                  </Grid>
+                </Button>
+
+                <Button
+                    x:Name="BackupsNav"
+                    Classes="nav"
+                    Click="NavigationButton_OnClick">
+                  <Grid ColumnDefinitions="24,*">
+                    <Path
+                        Width="16"
+                        Height="16"
+                        Data="M3,2 L13,2 L13,14 L3,14 Z M5,2 L5,6 L11,6 L11,2 M5,10 L11,10 L11,14 L5,14 Z"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.2" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="Backups"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                  </Grid>
+                </Button>
               </StackPanel>
+            </ScrollViewer>
+
+            <StackPanel
+                Grid.Row="2"
+                Margin="10,12,0,0">
+              <TextBlock
+                  Text="GRAVEOPS LINUX"
+                  Classes="eyebrow"
+                  Foreground="{DynamicResource AccentBrush}" />
+              <TextBlock
+                  Text="Parity shell · native provider"
+                  Classes="dim"
+                  FontSize="10"
+                  Margin="0,4,0,0" />
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <!-- Main workspace -->
+        <Grid
+            Grid.Column="1"
+            RowDefinitions="Auto,Auto,*"
+            Background="{DynamicResource BackgroundBrush}">
+
+          <Grid
+              Grid.Row="0"
+              ColumnDefinitions="*,Auto"
+              Margin="28,24,28,0">
+
+            <StackPanel>
+              <TextBlock
+                  x:Name="PageTitleText"
+                  Text="Dashboard"
+                  Classes="pageTitle" />
+
+              <TextBlock
+                  x:Name="PageSubtitleText"
+                  Text="Fleet-aware local Linux operations"
+                  Classes="pageSubtitle"
+                  Margin="0,6,0,0" />
+            </StackPanel>
+
+            <StackPanel
+                Grid.Column="1"
+                Orientation="Horizontal"
+                VerticalAlignment="Center"
+                Spacing="10">
+
+              <TextBlock
+                  x:Name="LastUpdatedText"
+                  Text="Waiting for first capture"
+                  Classes="dim"
+                  FontSize="11"
+                  VerticalAlignment="Center" />
+
+              <Button
+                  x:Name="RefreshButton"
+                  Classes="primary"
+                  Content="Refresh environment"
+                  Click="RefreshButton_OnClick" />
+            </StackPanel>
+          </Grid>
+
+          <Border
+              Grid.Row="1"
+              Margin="28,18,28,0"
+              Background="{DynamicResource SurfaceBrush}"
+              BorderBrush="{DynamicResource BorderBrush}"
+              BorderThickness="1"
+              CornerRadius="9"
+              Padding="13,9">
+
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <TextBlock
+                  Text="●"
+                  FontSize="10"
+                  Foreground="{DynamicResource SuccessBrush}"
+                  VerticalAlignment="Center" />
+
               <TextBlock
                   Grid.Column="1"
-                  x:Name="CapturedAtText"
-                  Text="--"
+                  x:Name="StatusStripText"
+                  Text="Local Linux provider ready"
                   FontSize="11"
-                  Foreground="#70798C"
+                  Margin="8,0,0,0"
+                  VerticalAlignment="Center" />
+
+              <TextBlock
+                  Grid.Column="2"
+                  Text="Native systemd · Docker · storage · journal"
+                  Classes="dim"
+                  FontSize="10"
                   VerticalAlignment="Center" />
             </Grid>
+          </Border>
 
-            <TextBox
-                x:Name="StorageText"
-                IsReadOnly="True"
-                AcceptsReturn="True"
-                MinHeight="230"
-                FontFamily="Cascadia Mono, DejaVu Sans Mono, monospace"
-                FontSize="12"
-                Background="#0B0E14"
-                Foreground="#D4DAE5"
-                BorderBrush="#2A3040"
-                TextWrapping="NoWrap"
-                ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                ScrollViewer.VerticalScrollBarVisibility="Auto" />
-          </StackPanel>
-        </Border>
+          <Grid
+              Grid.Row="2"
+              Margin="28,20,28,28">
 
-        <Border
-            Background="#141822"
-            CornerRadius="13"
-            Padding="20"
-            BorderBrush="#292F3D"
-            BorderThickness="1">
-          <StackPanel Spacing="10">
-            <TextBlock
-                Text="Probe warnings"
-                FontSize="18"
-                FontWeight="SemiBold"
-                Foreground="White" />
-            <TextBlock
-                x:Name="WarningsText"
-                Text="None"
-                Foreground="#C3CAD6"
-                TextWrapping="Wrap" />
-          </StackPanel>
-        </Border>
-      </StackPanel>
-    </ScrollViewer>
-  </Grid>
+            <!-- Dashboard -->
+            <ScrollViewer
+                x:Name="DashboardPage"
+                IsVisible="True">
+
+              <StackPanel Spacing="18">
+                <Grid
+                    ColumnDefinitions="*,*,*"
+                    ColumnSpacing="14">
+
+                  <Border Classes="card">
+                    <StackPanel Spacing="8">
+                      <TextBlock Text="HOST" Classes="eyebrow" />
+                      <TextBlock
+                          x:Name="DashboardHostnameText"
+                          Text="Loading..."
+                          FontSize="18"
+                          FontWeight="SemiBold"
+                          TextTrimming="CharacterEllipsis" />
+                      <TextBlock
+                          x:Name="DashboardOsText"
+                          Text="--"
+                          Classes="muted"
+                          TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border
+                      Grid.Column="1"
+                      Classes="card">
+                    <StackPanel Spacing="8">
+                      <TextBlock Text="SYSTEM" Classes="eyebrow" />
+                      <TextBlock
+                          x:Name="DashboardSystemText"
+                          Text="Loading..."
+                          FontSize="18"
+                          FontWeight="SemiBold" />
+                      <TextBlock
+                          x:Name="DashboardKernelText"
+                          Text="--"
+                          Classes="muted" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border
+                      Grid.Column="2"
+                      Classes="card">
+                    <StackPanel Spacing="8">
+                      <TextBlock Text="DOCKER" Classes="eyebrow" />
+                      <TextBlock
+                          x:Name="DashboardDockerText"
+                          Text="Loading..."
+                          FontSize="18"
+                          FontWeight="SemiBold"
+                          TextWrapping="Wrap" />
+                      <TextBlock
+                          x:Name="DashboardUptimeText"
+                          Text="--"
+                          Classes="muted" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
+
+                <Grid
+                    ColumnDefinitions="1.25*,0.75*"
+                    ColumnSpacing="14">
+
+                  <Border Classes="card">
+                    <StackPanel Spacing="14">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock
+                              Text="Environment snapshot"
+                              Classes="sectionTitle" />
+                          <TextBlock
+                              Text="Current native Linux telemetry for the selected host."
+                              Classes="pageSubtitle"
+                              Margin="0,4,0,0" />
+                        </StackPanel>
+
+                        <Border
+                            Grid.Column="1"
+                            Background="{DynamicResource SuccessTintBrush}"
+                            CornerRadius="7"
+                            Padding="10,5">
+
+                          <TextBlock
+                              x:Name="DashboardHealthBadge"
+                              Text="HEALTHY"
+                              Classes="eyebrow"
+                              Foreground="{DynamicResource SuccessBrush}" />
+                        </Border>
+                      </Grid>
+
+                      <Grid
+                          ColumnDefinitions="*,*"
+                          RowDefinitions="Auto,Auto"
+                          ColumnSpacing="14"
+                          RowSpacing="12">
+
+                        <Border Classes="inset">
+                          <StackPanel Spacing="5">
+                            <TextBlock Text="CPU" Classes="eyebrow" />
+                            <TextBlock
+                                x:Name="DashboardCpuText"
+                                Text="--"
+                                FontSize="12"
+                                TextWrapping="Wrap" />
+                            <TextBlock
+                                x:Name="DashboardLoadText"
+                                Text="--"
+                                Classes="dim"
+                                FontSize="10" />
+                          </StackPanel>
+                        </Border>
+
+                        <Border
+                            Grid.Column="1"
+                            Classes="inset">
+                          <StackPanel Spacing="5">
+                            <TextBlock Text="MEMORY" Classes="eyebrow" />
+                            <TextBlock
+                                x:Name="DashboardMemoryText"
+                                Text="--"
+                                FontSize="12"
+                                TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Border>
+
+                        <Border
+                            Grid.Row="1"
+                            Classes="inset">
+                          <StackPanel Spacing="5">
+                            <TextBlock Text="NETWORK" Classes="eyebrow" />
+                            <TextBlock
+                                x:Name="DashboardIpText"
+                                Text="--"
+                                FontSize="12"
+                                TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Border>
+
+                        <Border
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            Classes="inset">
+                          <StackPanel Spacing="5">
+                            <TextBlock Text="DISCOVERY" Classes="eyebrow" />
+                            <TextBlock
+                                x:Name="DashboardDiscoveryText"
+                                Text="--"
+                                FontSize="12"
+                                TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Border>
+                      </Grid>
+                    </StackPanel>
+                  </Border>
+
+                  <Border
+                      Grid.Column="1"
+                      Classes="card">
+
+                    <StackPanel Spacing="12">
+                      <TextBlock
+                          Text="Needs attention"
+                          Classes="sectionTitle" />
+
+                      <TextBlock
+                          Text="Provider warnings and failed systemd services."
+                          Classes="pageSubtitle" />
+
+                      <ListBox
+                          x:Name="DashboardAttentionList"
+                          Classes="dataList"
+                          MinHeight="190"
+                          MaxHeight="260" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
+
+                <Grid
+                    ColumnDefinitions="*,*,*"
+                    ColumnSpacing="14">
+
+                  <Border Classes="card">
+                    <StackPanel Spacing="8">
+                      <TextBlock Text="SERVICES" Classes="eyebrow" />
+                      <TextBlock
+                          x:Name="DashboardServicesModuleText"
+                          Text="--"
+                          FontSize="20"
+                          FontWeight="SemiBold" />
+                      <TextBlock
+                          Text="Known host services discovered through systemd."
+                          Classes="pageSubtitle" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border
+                      Grid.Column="1"
+                      Classes="card">
+                    <StackPanel Spacing="8">
+                      <TextBlock Text="STORAGE" Classes="eyebrow" />
+                      <TextBlock
+                          x:Name="DashboardStorageModuleText"
+                          Text="--"
+                          FontSize="20"
+                          FontWeight="SemiBold" />
+                      <TextBlock
+                          Text="Operational filesystems after pseudo-filesystem filtering."
+                          Classes="pageSubtitle" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border
+                      Grid.Column="2"
+                      Classes="card">
+                    <StackPanel Spacing="8">
+                      <TextBlock Text="MEDIA HUB" Classes="eyebrow" />
+                      <TextBlock
+                          x:Name="DashboardMediaModuleText"
+                          Text="--"
+                          FontSize="20"
+                          FontWeight="SemiBold" />
+                      <TextBlock
+                          Text="Verified integrations detected from service and container identity."
+                          Classes="pageSubtitle" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
+              </StackPanel>
+            </ScrollViewer>
+
+            <!-- Servers -->
+            <ScrollViewer
+                x:Name="ServersPage"
+                IsVisible="False">
+
+              <StackPanel Spacing="18">
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                  <Border Classes="card">
+                    <StackPanel Spacing="10">
+                      <TextBlock Text="Selected host" Classes="sectionTitle" />
+                      <TextBlock
+                          x:Name="ServerIdentityText"
+                          Text="--"
+                          FontSize="18"
+                          FontWeight="SemiBold" />
+                      <TextBlock
+                          x:Name="ServerOperatingSystemText"
+                          Text="--"
+                          Classes="muted" />
+                      <TextBlock
+                          x:Name="ServerKernelText"
+                          Text="--"
+                          Classes="muted" />
+                      <TextBlock
+                          x:Name="ServerUptimeText"
+                          Text="--"
+                          Classes="muted" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="1" Classes="card">
+                    <StackPanel Spacing="10">
+                      <TextBlock Text="Runtime" Classes="sectionTitle" />
+                      <TextBlock
+                          x:Name="ServerCpuText"
+                          Text="--"
+                          TextWrapping="Wrap" />
+                      <TextBlock
+                          x:Name="ServerMemoryText"
+                          Text="--"
+                          TextWrapping="Wrap" />
+                      <TextBlock
+                          x:Name="ServerNetworkText"
+                          Text="--"
+                          TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
+
+                <Border Classes="card">
+                  <StackPanel Spacing="12">
+                    <TextBlock
+                        Text="Provider capability"
+                        Classes="sectionTitle" />
+                    <TextBlock
+                        Text="This Linux client is reading the local machine directly. It does not SSH back into itself. Remote-host routing will reuse the shared host-provider model."
+                        Classes="muted"
+                        TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+
+            <!-- Media Hub -->
+            <ScrollViewer
+                x:Name="MediaHubPage"
+                IsVisible="False">
+
+              <StackPanel Spacing="18">
+                <Border Classes="card">
+                  <StackPanel Spacing="12">
+                    <TextBlock
+                        Text="Verified integrations"
+                        Classes="sectionTitle" />
+                    <TextBlock
+                        Text="Discovery correlates Docker and systemd identity rather than displaying every catalog entry."
+                        Classes="pageSubtitle" />
+                    <ListBox
+                        x:Name="IntegrationsList"
+                        Classes="dataList"
+                        MinHeight="360" />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+
+            <!-- Services -->
+            <ScrollViewer
+                x:Name="ServicesPage"
+                IsVisible="False">
+
+              <StackPanel Spacing="18">
+                <Border Classes="card">
+                  <StackPanel Spacing="12">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel>
+                        <TextBlock
+                            Text="Native systemd services"
+                            Classes="sectionTitle" />
+                        <TextBlock
+                            Text="Read-only operational inventory. Privileged start, stop, and restart controls remain explicit work for the next parity phase."
+                            Classes="pageSubtitle"
+                            Margin="0,4,0,0" />
+                      </StackPanel>
+
+                      <TextBlock
+                          Grid.Column="1"
+                          x:Name="ServicesSummaryText"
+                          Text="--"
+                          Classes="muted"
+                          VerticalAlignment="Center" />
+                    </Grid>
+
+                    <ListBox
+                        x:Name="ServicesList"
+                        Classes="dataList"
+                        MinHeight="420" />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+
+            <!-- Docker -->
+            <ScrollViewer
+                x:Name="DockerPage"
+                IsVisible="False">
+
+              <StackPanel Spacing="18">
+                <Border Classes="card">
+                  <StackPanel Spacing="12">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel>
+                        <TextBlock
+                            Text="Docker containers"
+                            Classes="sectionTitle" />
+                        <TextBlock
+                            Text="Container identity, image, runtime state, status, and published ports."
+                            Classes="pageSubtitle"
+                            Margin="0,4,0,0" />
+                      </StackPanel>
+
+                      <TextBlock
+                          Grid.Column="1"
+                          x:Name="DockerSummaryText"
+                          Text="--"
+                          Classes="muted"
+                          VerticalAlignment="Center" />
+                    </Grid>
+
+                    <ListBox
+                        x:Name="DockerList"
+                        Classes="dataList"
+                        MinHeight="420" />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+
+            <!-- Storage -->
+            <ScrollViewer
+                x:Name="StoragePage"
+                IsVisible="False">
+
+              <StackPanel Spacing="18">
+                <Border Classes="card">
+                  <StackPanel Spacing="12">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel>
+                        <TextBlock
+                            Text="Local storage"
+                            Classes="sectionTitle" />
+                        <TextBlock
+                            Text="Operational mount view with tmpfs, devtmpfs, squashfs, and overlay filesystems suppressed."
+                            Classes="pageSubtitle"
+                            Margin="0,4,0,0" />
+                      </StackPanel>
+
+                      <TextBlock
+                          Grid.Column="1"
+                          x:Name="StorageSummaryText"
+                          Text="--"
+                          Classes="muted"
+                          VerticalAlignment="Center" />
+                    </Grid>
+
+                    <ListBox
+                        x:Name="StorageList"
+                        Classes="dataList"
+                        MinHeight="420" />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+
+            <!-- Logs -->
+            <Grid
+                x:Name="LogsPage"
+                IsVisible="False">
+
+              <Border Classes="card">
+                <StackPanel Spacing="12">
+                  <TextBlock
+                      Text="Recent warning journal"
+                      Classes="sectionTitle" />
+                  <TextBlock
+                      Text="The local provider requests warning-or-higher entries from journalctl. Visibility depends on the current user's journal permissions."
+                      Classes="pageSubtitle" />
+                  <TextBox
+                      x:Name="LogsText"
+                      Classes="console"
+                      IsReadOnly="True"
+                      AcceptsReturn="True"
+                      TextWrapping="NoWrap"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                </StackPanel>
+              </Border>
+            </Grid>
+
+            <!-- Intelligence -->
+            <ScrollViewer
+                x:Name="IntelligencePage"
+                IsVisible="False">
+
+              <StackPanel Spacing="18">
+                <Border Classes="card">
+                  <StackPanel Spacing="12">
+                    <TextBlock
+                        Text="Control Plane Intelligence"
+                        Classes="sectionTitle" />
+                    <TextBlock
+                        Text="The Windows intelligence engine must be extracted from WPF-specific state into GraveOps.Core before Linux can make equivalent impact-aware recommendations."
+                        Classes="muted"
+                        TextWrapping="Wrap" />
+                    <Border Classes="inset">
+                      <TextBlock
+                          Text="Scheduled parity work: shared environment impact model → dependency inspection order → provider-neutral recommendations."
+                          TextWrapping="Wrap" />
+                    </Border>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+
+            <!-- Lifecycle -->
+            <ScrollViewer
+                x:Name="LifecyclePage"
+                IsVisible="False">
+
+              <StackPanel Spacing="18">
+                <Border Classes="card">
+                  <StackPanel Spacing="12">
+                    <TextBlock
+                        Text="Media lifecycle"
+                        Classes="sectionTitle" />
+                    <TextBlock
+                        Text="The first Linux lifecycle page will correlate Arr and downloader ownership from the same provider snapshots used by the Windows reference implementation."
+                        Classes="muted"
+                        TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+
+            <!-- History -->
+            <ScrollViewer
+                x:Name="HistoryPage"
+                IsVisible="False">
+
+              <StackPanel Spacing="18">
+                <Border Classes="card">
+                  <StackPanel Spacing="12">
+                    <TextBlock
+                        Text="History &amp; incidents"
+                        Classes="sectionTitle" />
+                    <TextBlock
+                        Text="The Linux provider is live. Bounded transition history and incident replay will be ported after the shared history service is separated from the WPF dispatcher."
+                        Classes="muted"
+                        TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+
+            <!-- Backups -->
+            <ScrollViewer
+                x:Name="BackupsPage"
+                IsVisible="False">
+
+              <StackPanel Spacing="18">
+                <Border Classes="card">
+                  <StackPanel Spacing="12">
+                    <TextBlock
+                        Text="Backup readiness"
+                        Classes="sectionTitle" />
+                    <TextBlock
+                        Text="Backup discovery and restore safety will use provider-neutral contracts. No destructive restore controls are exposed in this parity shell."
+                        Classes="muted"
+                        TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+          </Grid>
+        </Grid>
+      </Grid>
+    </Grid>
+  </Border>
 </Window>
