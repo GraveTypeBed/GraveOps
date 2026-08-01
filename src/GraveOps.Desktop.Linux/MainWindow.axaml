@@ -13,6 +13,7 @@
     WindowDecorations="None"
     ExtendClientAreaToDecorationsHint="True"
     ExtendClientAreaTitleBarHeightHint="38"
+    KeyDown="MainWindow_OnKeyDown"
     Background="{DynamicResource BackdropBrush}">
 
   <Border
@@ -533,7 +534,7 @@
         <!-- Main workspace -->
         <Grid
             Grid.Column="1"
-            RowDefinitions="Auto,*"
+            RowDefinitions="Auto,*,30"
             Background="{DynamicResource BackgroundBrush}">
 
           <Grid
@@ -566,6 +567,17 @@
                   Classes="dim"
                   FontSize="11"
                   VerticalAlignment="Center" />
+
+              <Button
+                  x:Name="CommandPaletteButton"
+                  Content="Search · Ctrl+K"
+                  MinWidth="122"
+                  Click="CommandPaletteButton_OnClick" />
+
+              <Button
+                  x:Name="OverviewButton"
+                  Content="Overview"
+                  Click="OverviewButton_OnClick" />
 
               <Button
                   x:Name="RefreshButton"
@@ -1590,6 +1602,283 @@
               </StackPanel>
             </ScrollViewer>
 
+          </Grid>
+
+          <Border
+              Grid.Row="2"
+              Background="{DynamicResource HeaderBrush}"
+              BorderBrush="{DynamicResource BorderBrush}"
+              BorderThickness="0,1,0,0"
+              Padding="14,0">
+
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel
+                  Orientation="Horizontal"
+                  VerticalAlignment="Center"
+                  Spacing="7">
+
+                <TextBlock
+                    Text="●"
+                    FontSize="9"
+                    Foreground="{DynamicResource SuccessBrush}" />
+
+                <TextBlock
+                    x:Name="FooterTargetText"
+                    Text="No target"
+                    Classes="muted"
+                    FontSize="10" />
+
+                <TextBlock Text="/" Classes="dim" FontSize="10" />
+
+                <TextBlock
+                    x:Name="FooterConnectionText"
+                    Text="WAITING"
+                    Classes="muted"
+                    FontSize="10" />
+              </StackPanel>
+
+              <StackPanel
+                  Grid.Column="1"
+                  Orientation="Horizontal"
+                  VerticalAlignment="Center"
+                  Spacing="7">
+
+                <TextBlock
+                    x:Name="FooterModeText"
+                    Text="SAFE MODE"
+                    Classes="muted"
+                    FontSize="10" />
+
+                <TextBlock Text="/" Classes="dim" FontSize="10" />
+
+                <TextBlock
+                    x:Name="FooterFindingsText"
+                    Text="0 active"
+                    Classes="muted"
+                    FontSize="10" />
+
+                <TextBlock Text="/" Classes="dim" FontSize="10" />
+
+                <TextBlock
+                    x:Name="FooterFreshnessText"
+                    Text="waiting"
+                    Classes="dim"
+                    FontSize="10" />
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <Border
+              x:Name="OverviewDrawer"
+              Grid.RowSpan="3"
+              ZIndex="90"
+              Width="430"
+              HorizontalAlignment="Right"
+              Background="{DynamicResource SurfaceBrush}"
+              BorderBrush="{DynamicResource BorderStrongBrush}"
+              BorderThickness="1,0,0,0"
+              IsVisible="False">
+
+            <Grid
+                RowDefinitions="Auto,Auto,Auto,Auto,*"
+                Margin="18">
+
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel>
+                  <TextBlock
+                      Text="Overview"
+                      FontSize="20"
+                      FontWeight="SemiBold" />
+
+                  <TextBlock
+                      Text="Current target, control-plane state and concise environment context."
+                      Classes="muted"
+                      FontSize="10"
+                      Margin="0,3,0,0"
+                      TextWrapping="Wrap" />
+                </StackPanel>
+
+                <Button
+                    Grid.Column="1"
+                    Content="×"
+                    Width="36"
+                    Height="32"
+                    Click="OverviewCloseButton_OnClick" />
+              </Grid>
+
+              <Grid
+                  Grid.Row="1"
+                  ColumnDefinitions="*,*"
+                  ColumnSpacing="10"
+                  Margin="0,16,0,0">
+
+                <Border Classes="inset">
+                  <StackPanel Spacing="5">
+                    <TextBlock Text="TARGET" Classes="eyebrow" />
+                    <TextBlock
+                        x:Name="OverviewTargetText"
+                        Text="--"
+                        FontWeight="SemiBold"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        x:Name="OverviewOsText"
+                        Text="--"
+                        Classes="dim"
+                        TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Classes="inset">
+                  <StackPanel Spacing="5">
+                    <TextBlock Text="CONTROL PLANE" Classes="eyebrow" />
+                    <TextBlock
+                        x:Name="OverviewControlPlaneText"
+                        Text="WAITING"
+                        FontWeight="SemiBold" />
+                    <TextBlock
+                        x:Name="OverviewCapturedText"
+                        Text="No capture"
+                        Classes="dim"
+                        TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
+              </Grid>
+
+              <Border
+                  Grid.Row="2"
+                  Classes="inset"
+                  Margin="0,10,0,0">
+
+                <StackPanel Spacing="6">
+                  <TextBlock Text="ENVIRONMENT" Classes="eyebrow" />
+                  <TextBlock
+                      x:Name="OverviewFindingsText"
+                      Text="No findings captured"
+                      FontWeight="SemiBold"
+                      TextWrapping="Wrap" />
+                  <TextBlock
+                      x:Name="OverviewPolicyText"
+                      Text="Default monitoring"
+                      Classes="dim"
+                      TextWrapping="Wrap" />
+                  <TextBlock
+                      x:Name="OverviewHighestPriorityText"
+                      Text="No active operational finding."
+                      Classes="muted"
+                      TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+
+              <Border
+                  Grid.Row="3"
+                  Classes="inset"
+                  Margin="0,10,0,0">
+
+                <StackPanel Spacing="5">
+                  <TextBlock Text="BACKUPS" Classes="eyebrow" />
+                  <TextBlock
+                      x:Name="OverviewBackupText"
+                      Text="Waiting for backup capture"
+                      FontWeight="SemiBold"
+                      TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+
+              <StackPanel
+                  Grid.Row="4"
+                  Margin="0,14,0,0"
+                  Spacing="8">
+
+                <TextBlock Text="QUICK NAVIGATION" Classes="eyebrow" />
+
+                <WrapPanel>
+                  <Button Content="Dashboard" Tag="DashboardNav" Margin="0,0,7,7" Click="OverviewNavigateButton_OnClick" />
+                  <Button Content="Intelligence" Tag="IntelligenceNav" Margin="0,0,7,7" Click="OverviewNavigateButton_OnClick" />
+                  <Button Content="Storage" Tag="StorageNav" Margin="0,0,7,7" Click="OverviewNavigateButton_OnClick" />
+                  <Button Content="Media Hub" Tag="MediaHubNav" Margin="0,0,7,7" Click="OverviewNavigateButton_OnClick" />
+                  <Button Content="Backups" Tag="BackupsNav" Margin="0,0,7,7" Click="OverviewNavigateButton_OnClick" />
+                  <Button Content="History" Tag="HistoryNav" Margin="0,0,7,7" Click="OverviewNavigateButton_OnClick" />
+                </WrapPanel>
+
+                <TextBlock
+                    Text="Detailed findings, logs, actions and history remain on their owner pages."
+                    Classes="dim"
+                    FontSize="10"
+                    TextWrapping="Wrap" />
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <Grid
+              x:Name="CommandPaletteOverlay"
+              Grid.RowSpan="3"
+              ZIndex="100"
+              Background="#B2090A0C"
+              IsVisible="False">
+
+            <Border
+                Width="720"
+                MaxHeight="620"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Center"
+                Margin="0,88,0,0"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderStrongBrush}"
+                BorderThickness="1"
+                CornerRadius="14"
+                Padding="16">
+
+              <Grid RowDefinitions="Auto,*,Auto">
+                <TextBox
+                    x:Name="CommandPaletteTextBox"
+                    FontSize="17"
+                    Padding="14,10"
+                    PlaceholderText="Search pages and detected applications"
+                    TextChanged="CommandPaletteTextBox_OnTextChanged"
+                    KeyDown="CommandPaletteTextBox_OnKeyDown" />
+
+                <ListBox
+                    x:Name="CommandPaletteList"
+                    Grid.Row="1"
+                    Classes="dataList"
+                    MinHeight="260"
+                    MaxHeight="470"
+                    Margin="0,10,0,0"
+                    DoubleTapped="CommandPaletteList_OnDoubleTapped">
+
+                  <ListBox.ItemTemplate>
+                    <DataTemplate x:CompileBindings="False">
+                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <StackPanel Spacing="3">
+                          <TextBlock
+                              Text="{ReflectionBinding Title}"
+                              FontWeight="SemiBold" />
+                          <TextBlock
+                              Text="{ReflectionBinding Subtitle}"
+                              Classes="muted"
+                              FontSize="10"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <TextBlock
+                            Grid.Column="1"
+                            Text="{ReflectionBinding Kind}"
+                            Classes="dim"
+                            FontSize="9"
+                            VerticalAlignment="Center" />
+                      </Grid>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+
+                <TextBlock
+                    Grid.Row="2"
+                    Text="Enter opens · Up/Down selects · Esc closes · Ctrl+K toggles"
+                    Classes="dim"
+                    FontSize="10"
+                    Margin="4,10,0,0" />
+              </Grid>
+            </Border>
           </Grid>
         </Grid>
       </Grid>

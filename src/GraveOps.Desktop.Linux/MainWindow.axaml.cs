@@ -100,6 +100,8 @@ public partial class MainWindow : Window
     private IReadOnlyList<OpsIntegration> _integrations = Array.Empty<OpsIntegration>();
     private IReadOnlyList<OpsLogGroup> _logs = Array.Empty<OpsLogGroup>();
     private OpsPolicyEvaluation? _policyEvaluation;
+    private IReadOnlyList<CommandPaletteItem> _commandPaletteItems =
+        Array.Empty<CommandPaletteItem>();
 
     public MainWindow()
     {
@@ -205,6 +207,8 @@ public partial class MainWindow : Window
         {
             SelectIntegrationByName(integrationName);
         }
+
+        CloseCommandPalette();
     }
 
     private void SelectIntegrationByName(string integrationName)
@@ -283,6 +287,287 @@ public partial class MainWindow : Window
             processingVisible;
         Get<StackPanel>("ProcessingNavGroup").IsVisible =
             processingVisible;
+    }
+
+    private void MainWindow_OnKeyDown(
+        object? sender,
+        KeyEventArgs e)
+    {
+        if (e.Key == Key.K &&
+            e.KeyModifiers.HasFlag(KeyModifiers.Control))
+        {
+            ToggleCommandPalette();
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.Escape)
+        {
+            CloseCommandPalette();
+            Get<Border>("OverviewDrawer").IsVisible = false;
+            e.Handled = true;
+        }
+    }
+
+    private void CommandPaletteButton_OnClick(
+        object? sender,
+        RoutedEventArgs e) =>
+        ToggleCommandPalette();
+
+    private void OverviewButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        CloseCommandPalette();
+        var drawer = Get<Border>("OverviewDrawer");
+        drawer.IsVisible = !drawer.IsVisible;
+
+        if (drawer.IsVisible)
+            PopulateOperatorShell();
+    }
+
+    private void OverviewCloseButton_OnClick(
+        object? sender,
+        RoutedEventArgs e) =>
+        Get<Border>("OverviewDrawer").IsVisible = false;
+
+    private void OverviewNavigateButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        if (sender is Button button &&
+            button.Tag is string navigationName)
+        {
+            Get<Border>("OverviewDrawer").IsVisible = false;
+            Navigate(navigationName);
+        }
+    }
+
+    private void ToggleCommandPalette()
+    {
+        var overlay = Get<Grid>("CommandPaletteOverlay");
+
+        if (overlay.IsVisible)
+        {
+            CloseCommandPalette();
+            return;
+        }
+
+        Get<Border>("OverviewDrawer").IsVisible = false;
+        RebuildCommandPalette();
+
+        var box = Get<TextBox>("CommandPaletteTextBox");
+        box.Text = string.Empty;
+        overlay.IsVisible = true;
+        ApplyCommandPaletteFilter();
+        box.Focus();
+    }
+
+    private void CloseCommandPalette()
+    {
+        var overlay = Get<Grid>("CommandPaletteOverlay");
+        if (!overlay.IsVisible)
+            return;
+
+        overlay.IsVisible = false;
+        Get<TextBox>("CommandPaletteTextBox").Text =
+            string.Empty;
+    }
+
+    private void RebuildCommandPalette()
+    {
+        bool IsDetectedIntegration(string navigationName)
+        {
+            if (!IntegrationNavigationTargets.TryGetValue(
+                    navigationName,
+                    out var integrationName))
+            {
+                return true;
+            }
+
+            return _integrations.Any(item =>
+                item.Name.Equals(
+                    integrationName,
+                    StringComparison.OrdinalIgnoreCase));
+        }
+
+        _commandPaletteItems = _navigation
+            .Where(item => IsDetectedIntegration(item.Key))
+            .Select(item => new CommandPaletteItem(
+                item.Value.Title,
+                item.Value.Subtitle,
+                IntegrationNavigationTargets.ContainsKey(item.Key)
+                    ? "APPLICATION"
+                    : "PAGE",
+                item.Key))
+            .OrderBy(item =>
+                item.Kind.Equals(
+                    "PAGE",
+                    StringComparison.Ordinal)
+                    ? 0
+                    : 1)
+            .ThenBy(item => item.Title)
+            .ToArray();
+
+        ApplyCommandPaletteFilter();
+    }
+
+    private void CommandPaletteTextBox_OnTextChanged(
+        object? sender,
+        TextChangedEventArgs e) =>
+        ApplyCommandPaletteFilter();
+
+    private void ApplyCommandPaletteFilter()
+    {
+        var list = Get<ListBox>("CommandPaletteList");
+        var query =
+            Get<TextBox>("CommandPaletteTextBox")
+                .Text?
+                .Trim();
+
+        var rows = _commandPaletteItems
+            .Where(item =>
+                string.IsNullOrWhiteSpace(query) ||
+                item.Title.Contains(
+                    query,
+                    StringComparison.OrdinalIgnoreCase) ||
+                item.Subtitle.Contains(
+                    query,
+                    StringComparison.OrdinalIgnoreCase) ||
+                item.Kind.Contains(
+                    query,
+                    StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        list.ItemsSource = rows;
+        list.SelectedIndex = rows.Length > 0 ? 0 : -1;
+    }
+
+    private void CommandPaletteTextBox_OnKeyDown(
+        object? sender,
+        KeyEventArgs e)
+    {
+        var list = Get<ListBox>("CommandPaletteList");
+        var count =
+            (list.ItemsSource as IReadOnlyCollection<CommandPaletteItem>)
+                ?.Count ??
+            0;
+
+        if (e.Key == Key.Down && count > 0)
+        {
+            list.SelectedIndex =
+                Math.Min(list.SelectedIndex + 1, count - 1);
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.Up && count > 0)
+        {
+            list.SelectedIndex =
+                Math.Max(list.SelectedIndex - 1, 0);
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.Enter)
+        {
+            ExecuteSelectedCommand();
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.Escape)
+        {
+            CloseCommandPalette();
+            e.Handled = true;
+        }
+    }
+
+    private void CommandPaletteList_OnDoubleTapped(
+        object? sender,
+        TappedEventArgs e) =>
+        ExecuteSelectedCommand();
+
+    private void ExecuteSelectedCommand()
+    {
+        if (Get<ListBox>("CommandPaletteList").SelectedItem
+            is not CommandPaletteItem item)
+        {
+            return;
+        }
+
+        CloseCommandPalette();
+        Navigate(item.NavigationName);
+    }
+
+    private void PopulateOperatorShell()
+    {
+        if (_snapshot is null ||
+            _backup is null ||
+            _policyEvaluation is null)
+        {
+            return;
+        }
+
+        var active = _policyEvaluation.Active
+            .Where(item =>
+                item.Severity >= OpsSeverity.Warning)
+            .ToArray();
+        var errors = active.Count(item =>
+            item.Severity >= OpsSeverity.Error);
+        var warnings = active.Count(item =>
+            item.Severity == OpsSeverity.Warning);
+        var muted = _policyEvaluation.Muted.Count;
+        var background = _logs.Count(item =>
+            item.Severity == OpsSeverity.Info);
+        var customPolicies =
+            LinuxOpsAnalyzer.OperationalStorage(_snapshot)
+                .Count(item =>
+                    _findingPolicies.HasCustomStorageThreshold(
+                        item.MountPoint));
+        var safeMode =
+            Get<CheckBox>("SafeModeCheckBox").IsChecked == true;
+
+        Get<TextBlock>("FooterTargetText").Text =
+            _snapshot.Hostname;
+        Get<TextBlock>("FooterConnectionText").Text =
+            Get<TextBlock>("ConnectionText").Text;
+        Get<TextBlock>("FooterModeText").Text =
+            safeMode ? "SAFE MODE" : "NORMAL";
+        Get<TextBlock>("FooterFindingsText").Text =
+            $"{active.Length} active · {background} background";
+        Get<TextBlock>("FooterFreshnessText").Text =
+            $"captured {_snapshot.CapturedAt.ToLocalTime():t}";
+
+        Get<TextBlock>("OverviewTargetText").Text =
+            _snapshot.Hostname;
+        Get<TextBlock>("OverviewOsText").Text =
+            _snapshot.OperatingSystem;
+        Get<TextBlock>("OverviewControlPlaneText").Text =
+            Get<TextBlock>("ConnectionText").Text;
+        Get<TextBlock>("OverviewCapturedText").Text =
+            $"Captured {_snapshot.CapturedAt.ToLocalTime():g}";
+        Get<TextBlock>("OverviewFindingsText").Text =
+            $"{errors} error · {warnings} warning · " +
+            $"{muted} muted";
+        Get<TextBlock>("OverviewPolicyText").Text =
+            customPolicies == 0
+                ? "Default storage monitoring"
+                : $"{customPolicies} custom storage " +
+                  $"{(customPolicies == 1 ? "policy" : "policies")} active";
+        Get<TextBlock>("OverviewBackupText").Text =
+            $"{_backup.State} · {_backup.Summary}";
+
+        var top = active
+            .OrderByDescending(item => item.Severity)
+            .ThenBy(item => item.Rank)
+            .FirstOrDefault();
+
+        Get<TextBlock>("OverviewHighestPriorityText").Text =
+            top is null
+                ? "No active operational finding."
+                : $"Highest priority · {top.Component} — " +
+                  $"{top.Problem}";
     }
 
     private async void RefreshButton_OnClick(object? sender, RoutedEventArgs e) => await RefreshAsync();
@@ -390,6 +675,8 @@ public partial class MainWindow : Window
         ApplyLogsFilter();
         PopulateBackups();
         UpdateActionButtons();
+        PopulateOperatorShell();
+        RebuildCommandPalette();
     }
 
     private void PopulateDashboard()
@@ -1338,8 +1625,11 @@ public partial class MainWindow : Window
 
     private void SafeModeCheckBox_OnClick(
         object? sender,
-        RoutedEventArgs e) =>
+        RoutedEventArgs e)
+    {
         UpdateActionButtons();
+        PopulateOperatorShell();
+    }
 
     private void UpdateServiceDetail()
     {
@@ -1895,6 +2185,8 @@ public partial class MainWindow : Window
         Get<TextBlock>("ConnectionText").Foreground = brush;
         Get<TextBlock>("ConnectionDot").Foreground = brush;
         Get<TextBlock>("ConnectionDetailText").Text = detail;
+        Get<TextBlock>("FooterConnectionText").Text = state;
+        Get<TextBlock>("OverviewControlPlaneText").Text = state;
     }
 
     private static bool Matches(string? filter, params string?[] values)
@@ -1902,6 +2194,12 @@ public partial class MainWindow : Window
         if (string.IsNullOrWhiteSpace(filter)) return true;
         return values.Any(value => value?.Contains(filter, StringComparison.OrdinalIgnoreCase) == true);
     }
+
+    private sealed record CommandPaletteItem(
+        string Title,
+        string Subtitle,
+        string Kind,
+        string NavigationName);
 
     private sealed record StorageDisplayRow(
         StorageVolumeSnapshot Snapshot,
