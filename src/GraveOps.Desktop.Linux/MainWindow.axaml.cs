@@ -81,12 +81,12 @@ public partial class MainWindow : Window
     private readonly IReadOnlyDictionary<string, NavigationTarget> _navigation =
         new Dictionary<string, NavigationTarget>(StringComparer.Ordinal)
         {
-            ["DashboardNav"] = new("DashboardPage", "Dashboard", "Fleet topology, active-target operations and quick decisions"),
-            ["IntelligenceNav"] = new("IntelligencePage", "Intelligence", "Fleet impact, dependencies and guided remediation"),
-            ["LifecycleNav"] = new("LifecyclePage", "Lifecycle", "Item-aware media flow, stage readiness and owner handoff"),
-            ["HistoryNav"] = new("HistoryPage", "History", "Health transitions, GraveOps activity and incident replay"),
-            ["ServersNav"] = new("ServersPage", "Servers", "Selected-host identity, runtime and provider capability"),
-            ["MediaHubNav"] = new("MediaHubPage", "Media Hub", "Verified media and acquisition integrations"),
+            ["DashboardNav"] = new("DashboardPage", "Dashboard", "Interactive environment health, ownership and active-host operations"),
+            ["IntelligenceNav"] = new("IntelligencePage", "Intelligence", "Fleet impact, root cause, dependencies and contextual next actions"),
+            ["LifecycleNav"] = new("LifecyclePage", "Media Lifecycle", "Track active media across acquisition, download, import, processing and library stages"),
+            ["HistoryNav"] = new("HistoryPage", "History & Incidents", "Fleet health transitions, GraveOps activity and incident replay"),
+            ["ServersNav"] = new("ServersPage", "Servers", "Local and remote host profiles, capabilities and secure credentials"),
+            ["MediaHubNav"] = new("MediaHubPage", "Media Hub", "Fleet health, launcher configuration and all media applications"),
             ["DumbNav"] = new("ApplicationWorkspacePage", "DUMB", "Stack orchestration and verified local interface"),
             ["PlexNav"] = new("ApplicationWorkspacePage", "Plex", "Library availability, playback endpoint and related findings"),
             ["TautulliNav"] = new("ApplicationWorkspacePage", "Tautulli", "Playback analytics and related findings"),
@@ -1225,7 +1225,6 @@ public partial class MainWindow : Window
     private void ActivateArrProduct(string productName)
     {
         _activeArrProduct = productName;
-        Get<TabControl>("ArrModuleTabs").SelectedIndex = 0;
         PopulateArrApplicationPage();
         _ = RefreshArrLiveTelemetryAsync();
     }
@@ -1480,14 +1479,14 @@ public partial class MainWindow : Window
         object? sender,
         RoutedEventArgs e)
     {
-        Get<TabControl>("ArrModuleTabs").SelectedIndex = 2;
+        Get<Border>("ArrCustomizationPanel").IsVisible = true;
         PopulateArrCustomization();
     }
 
     private void ArrCustomizeCloseButton_OnClick(
         object? sender,
         RoutedEventArgs e) =>
-        Get<TabControl>("ArrModuleTabs").SelectedIndex = 0;
+        Get<Border>("ArrCustomizationPanel").IsVisible = false;
 
     private void PopulateArrCustomizationInstances(
         IReadOnlyList<ArrWorkspaceView> instances)
@@ -1910,6 +1909,40 @@ public partial class MainWindow : Window
 
         Get<TextBlock>("MediaHubSummaryText").Text =
             $"{rows.Length} shown · {_integrations.Count} detected";
+
+        var offline = _integrations.Count(item =>
+            item.Severity >= OpsSeverity.Error ||
+            item.State.Contains(
+                "offline",
+                StringComparison.OrdinalIgnoreCase) ||
+            item.State.Contains(
+                "unavailable",
+                StringComparison.OrdinalIgnoreCase) ||
+            item.State.Contains(
+                "not detected",
+                StringComparison.OrdinalIgnoreCase));
+
+        var attention = _integrations.Count(item =>
+            item.Severity == OpsSeverity.Warning &&
+            !item.State.Contains(
+                "offline",
+                StringComparison.OrdinalIgnoreCase) &&
+            !item.State.Contains(
+                "unavailable",
+                StringComparison.OrdinalIgnoreCase));
+
+        var healthy = Math.Max(
+            0,
+            _integrations.Count - offline - attention);
+
+        Get<TextBlock>("MediaHealthyMetricText").Text =
+            healthy.ToString();
+        Get<TextBlock>("MediaAttentionMetricText").Text =
+            attention.ToString();
+        Get<TextBlock>("MediaOfflineMetricText").Text =
+            offline.ToString();
+        Get<TextBlock>("MediaTargetMetricText").Text =
+            _controlPlane.ActiveProfile.DisplayName;
 
         PopulateIntegrationWorkspace();
     }
@@ -2812,7 +2845,7 @@ public partial class MainWindow : Window
                 "This removes local bounded transition history. It does not modify system logs or host state."))
             return;
         _history.Clear();
-        Get<ListBox>("HistoryList").ItemsSource = _history.Records;
+        PopulateHistoryV43();
     }
 
     private void LogsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)

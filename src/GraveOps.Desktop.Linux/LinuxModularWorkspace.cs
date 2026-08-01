@@ -78,10 +78,14 @@ public sealed record ModularApplicationDescriptor(
 
 public sealed class ModularLayoutContract
 {
-    public string Version { get; set; } = "4.3.4";
+    public string Version { get; set; } = "4.3.6";
     public bool ViewportFirst { get; set; } = true;
     public bool PageLevelScrollDisabled { get; set; } = true;
     public bool DirectAppsUseDedicatedWorkspace { get; set; } = true;
+    public bool WindowsVisualParity { get; set; } = true;
+    public bool SharedPageComposition { get; set; } = true;
+    public int SidebarWidth { get; set; } = 260;
+    public int ContentGap { get; set; } = 14;
     public int MetricStripHeight { get; set; } = 82;
     public int MinimumSupportedWidth { get; set; } = 1180;
     public int MinimumSupportedHeight { get; set; } = 760;

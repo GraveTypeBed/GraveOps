@@ -65,6 +65,11 @@
       <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
     </Style>
 
+    <Style Selector="TextBlock.metricValue">
+      <Setter Property="FontSize" Value="20" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
     <Style Selector="TextBlock.muted">
       <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
     </Style>
@@ -79,6 +84,23 @@
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="14" />
       <Setter Property="Padding" Value="18" />
+    </Style>
+
+    <Style Selector="Border.module">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Padding" Value="18" />
+    </Style>
+
+    <Style Selector="Border.metric">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Padding" Value="18" />
+      <Setter Property="MinHeight" Value="82" />
     </Style>
 
     <Style Selector="Border.inset">
@@ -117,6 +139,17 @@
       <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
     </Style>
 
+    <Style Selector="Button.ghost">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    </Style>
+
+    <Style Selector="Button.ghost:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+
     <Style Selector="Button.nav">
       <Setter Property="Height" Value="40" />
       <Setter Property="Margin" Value="0,1" />
@@ -126,7 +159,7 @@
       <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderBrush" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="BorderThickness" Value="3,0,0,0" />
     </Style>
 
     <Style Selector="Button.nav:pointerover">
@@ -136,7 +169,8 @@
 
     <Style Selector="Button.nav.selected">
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-      <Setter Property="Background" Value="{DynamicResource AccentTintBrush}" />
+      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
     </Style>
 
     <Style Selector="Button.titlebar">
@@ -227,16 +261,6 @@
       <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
     </Style>
 
-    <Style Selector="TextBox.console">
-      <Setter Property="Background" Value="{DynamicResource ConsoleBrush}" />
-      <Setter Property="Foreground" Value="#D7D3D7" />
-      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-      <Setter Property="FontFamily" Value="DejaVu Sans Mono, monospace" />
-      <Setter Property="FontSize" Value="12" />
-      <Setter Property="Padding" Value="12" />
-    </Style>
-  
-
     <Style Selector="Border.badge">
       <Setter Property="CornerRadius" Value="7" />
       <Setter Property="Padding" Value="9,4" />
@@ -258,5 +282,13 @@
       <Setter Property="BorderThickness" Value="1" />
     </Style>
 
+    <Style Selector="TextBox.console">
+      <Setter Property="Background" Value="{DynamicResource ConsoleBrush}" />
+      <Setter Property="Foreground" Value="#D7D3D7" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="FontFamily" Value="DejaVu Sans Mono, monospace" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Padding" Value="12" />
+    </Style>
   </Application.Styles>
 </Application>

@@ -21,9 +21,6 @@ public partial class MainWindow
         SelectIntegrationByName(
             integrationName);
 
-        Get<TabControl>("DirectIntegrationTabs")
-            .SelectedIndex = 0;
-
         PopulateDirectIntegrationWorkspace();
     }
 
