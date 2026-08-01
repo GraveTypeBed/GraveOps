@@ -81,10 +81,10 @@ public partial class MainWindow : Window
     private readonly IReadOnlyDictionary<string, NavigationTarget> _navigation =
         new Dictionary<string, NavigationTarget>(StringComparer.Ordinal)
         {
-            ["DashboardNav"] = new("DashboardPage", "Dashboard", "Fleet-aware local Linux operations"),
-            ["IntelligenceNav"] = new("IntelligencePage", "Intelligence", "Impact-aware inspection and recommendations"),
-            ["LifecycleNav"] = new("LifecyclePage", "Lifecycle", "Provider-neutral media workflow readiness"),
-            ["HistoryNav"] = new("HistoryPage", "History", "Persisted transitions, guarded actions and operator decisions"),
+            ["DashboardNav"] = new("DashboardPage", "Dashboard", "Fleet topology, active-target operations and quick decisions"),
+            ["IntelligenceNav"] = new("IntelligencePage", "Intelligence", "Fleet impact, dependencies and guided remediation"),
+            ["LifecycleNav"] = new("LifecyclePage", "Lifecycle", "Item-aware media flow, stage readiness and owner handoff"),
+            ["HistoryNav"] = new("HistoryPage", "History", "Health transitions, GraveOps activity and incident replay"),
             ["ServersNav"] = new("ServersPage", "Servers", "Selected-host identity, runtime and provider capability"),
             ["MediaHubNav"] = new("MediaHubPage", "Media Hub", "Verified media and acquisition integrations"),
             ["DumbNav"] = new("MediaHubPage", "DUMB", "Stack orchestration and verified local interface"),
@@ -1033,6 +1033,7 @@ public partial class MainWindow : Window
                 _integrations,
                 _rawAnalysis);
             ApplyFindingPolicies();
+            RecordInsightCapture();
             _history.Record(
                 _snapshot,
                 _analysis!,
@@ -1131,110 +1132,17 @@ public partial class MainWindow : Window
         PopulateControlPlaneFoundation();
     }
 
-    private void PopulateDashboard()
-    {
-        var snapshot = _snapshot!;
-        var analysis = _analysis!;
-        var storage = LinuxOpsAnalyzer.OperationalStorage(snapshot);
-        var services = LinuxOpsAnalyzer.UniqueServices(snapshot);
+    private void PopulateDashboard() =>
+        PopulateDashboardV43();
 
-        Get<TextBlock>("DashboardHostnameText").Text = snapshot.Hostname;
-        Get<TextBlock>("DashboardOsText").Text = snapshot.OperatingSystem;
-        Get<TextBlock>("DashboardSystemText").Text = snapshot.SystemState;
-        Get<TextBlock>("DashboardKernelText").Text = $"Kernel {snapshot.Kernel}";
-        Get<TextBlock>("DashboardDockerText").Text = snapshot.DockerState;
-        Get<TextBlock>("DashboardUptimeText").Text = snapshot.Uptime;
-        Get<TextBlock>("DashboardCpuText").Text = snapshot.CpuModel;
-        Get<TextBlock>("DashboardLoadText").Text = $"Load {snapshot.LoadAverage}";
-        Get<TextBlock>("DashboardMemoryText").Text = snapshot.MemorySummary;
-        Get<TextBlock>("DashboardIpText").Text = snapshot.IpAddresses;
-        Get<TextBlock>("DashboardDiscoveryText").Text = $"{_integrations.Count} integrations · {snapshot.Containers.Count} containers";
+    private void PopulateIntelligence() =>
+        PopulateIntelligenceV43();
 
-        var findings = _policyEvaluation!.Active
-            .Where(item => item.Severity >= OpsSeverity.Warning)
-            .Take(12)
-            .ToArray();
-        var muted = _policyEvaluation.Muted;
+    private void PopulateLifecycle() =>
+        PopulateLifecycleV43();
 
-        var errors = findings.Count(item =>
-            item.Severity >= OpsSeverity.Error);
-        var warnings = findings.Count(item =>
-            item.Severity == OpsSeverity.Warning);
-
-        var customPolicies = storage.Count(item =>
-            _findingPolicies.HasCustomStorageThreshold(
-                item.MountPoint));
-
-        Get<TextBlock>("DashboardFindingsSummaryText").Text =
-            findings.Length == 0 && muted.Count == 0
-                ? "No active findings"
-                : $"{errors} error · {warnings} warning · {muted.Count} muted";
-
-        Get<TextBlock>("DashboardPolicySummaryText").Text =
-            customPolicies == 0
-                ? "Default monitoring"
-                : $"{customPolicies} custom storage " +
-                  $"{(customPolicies == 1 ? "policy" : "policies")} active";
-
-        Get<ListBox>("DashboardAttentionList").ItemsSource =
-            findings.Length == 0
-                ? new[]
-                {
-                    _findingPolicies.CreateRow(
-                        new OpsFinding(
-                            OpsSeverity.Healthy,
-                            "Environment",
-                            "No active operational findings.",
-                            "Latest capture completed successfully.",
-                            "No impact detected.",
-                            "Continue normal monitoring.",
-                            0))
-                }
-                : findings;
-
-        var mutedPanel = Get<Border>("MutedFindingsPanel");
-        mutedPanel.IsVisible = muted.Count > 0;
-        Get<TextBlock>("MutedFindingsSummaryText").Text =
-            $"{muted.Count} muted";
-        Get<ListBox>("MutedFindingsList").ItemsSource = muted;
-        UpdateFindingPolicyButtons();
-
-        Get<TextBlock>("DashboardServicesModuleText").Text = services.Count.ToString();
-        Get<TextBlock>("DashboardStorageModuleText").Text = storage.Count.ToString();
-        Get<TextBlock>("DashboardMediaModuleText").Text = _integrations.Count.ToString();
-    }
-
-    private void PopulateIntelligence()
-    {
-        var analysis = _analysis!;
-        var border = Get<Border>("IntelligenceSeverityBorder");
-        var severity = Get<TextBlock>("IntelligenceSeverityText");
-        border.Background = OpsPalette.Background(analysis.Severity);
-        severity.Foreground = OpsPalette.Foreground(analysis.Severity);
-        severity.Text = analysis.Label;
-        Get<TextBlock>("IntelligenceRootCauseText").Text = analysis.RootCause;
-        Get<TextBlock>("IntelligenceHeadlineText").Text = analysis.Headline;
-        Get<TextBlock>("IntelligenceCountText").Text = $"{analysis.Findings.Count} finding(s)";
-        Get<ListBox>("IntelligenceFindingsList").ItemsSource = analysis.Findings.Count == 0
-            ? new[] { new OpsFinding(OpsSeverity.Healthy, "Environment", "No active findings.", "", "No impact detected.", "Continue normal monitoring.", 0) }
-            : analysis.Findings;
-    }
-
-    private void PopulateLifecycle()
-    {
-        Get<ListBox>("LifecycleStagesList").ItemsSource = _lifecycle;
-        var blocked = _lifecycle.Count(item => item.Severity >= OpsSeverity.Error);
-        var warning = _lifecycle.Count(item => item.Severity == OpsSeverity.Warning);
-        Get<TextBlock>("LifecycleSummaryText").Text = blocked > 0
-            ? $"{blocked} blocked · {warning} attention"
-            : warning > 0 ? $"{warning} stage(s) need attention" : "No active lifecycle blocker detected";
-    }
-
-    private void PopulateHistory()
-    {
-        Get<ListBox>("HistoryList").ItemsSource =
-            _history.Records;
-    }
+    private void PopulateHistory() =>
+        PopulateHistoryV43();
 
     private void PopulateServerPage()
     {

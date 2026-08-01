@@ -684,185 +684,380 @@
           <Grid
               Grid.Row="1"
               Margin="28,20,28,28">
-
             <!-- Dashboard -->
             <ScrollViewer
                 x:Name="DashboardPage"
                 IsVisible="True">
-
-              <StackPanel Spacing="18">
-                <Grid
-                    ColumnDefinitions="*,*,*"
-                    ColumnSpacing="14">
-
+              <StackPanel Spacing="16">
+                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
                   <Border Classes="card">
-                    <StackPanel Spacing="8">
-                      <TextBlock Text="HOST" Classes="eyebrow" />
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="ENVIRONMENT" Classes="eyebrow" />
                       <TextBlock
-                          x:Name="DashboardHostnameText"
-                          Text="Loading..."
-                          FontSize="18"
-                          FontWeight="SemiBold"
-                          TextTrimming="CharacterEllipsis" />
-                      <TextBlock
-                          x:Name="DashboardOsText"
-                          Text="--"
-                          Classes="muted"
-                          TextWrapping="Wrap" />
-                    </StackPanel>
-                  </Border>
-
-                  <Border
-                      Grid.Column="1"
-                      Classes="card">
-                    <StackPanel Spacing="8">
-                      <TextBlock Text="SYSTEM" Classes="eyebrow" />
-                      <TextBlock
-                          x:Name="DashboardSystemText"
-                          Text="Loading..."
-                          FontSize="18"
+                          x:Name="DashboardFleetStateText"
+                          Text="WAITING"
+                          FontSize="21"
                           FontWeight="SemiBold" />
                       <TextBlock
-                          x:Name="DashboardKernelText"
-                          Text="--"
-                          Classes="muted" />
+                          Text="Highest fleet state"
+                          Classes="dim" />
                     </StackPanel>
                   </Border>
 
-                  <Border
-                      Grid.Column="2"
-                      Classes="card">
-                    <StackPanel Spacing="8">
-                      <TextBlock Text="DOCKER" Classes="eyebrow" />
+                  <Border Grid.Column="1" Classes="card">
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="HOSTS" Classes="eyebrow" />
                       <TextBlock
-                          x:Name="DashboardDockerText"
-                          Text="Loading..."
-                          FontSize="18"
-                          FontWeight="SemiBold"
-                          TextWrapping="Wrap" />
+                          x:Name="DashboardFleetHostCountText"
+                          Text="0"
+                          FontSize="21"
+                          FontWeight="SemiBold" />
                       <TextBlock
-                          x:Name="DashboardUptimeText"
-                          Text="--"
-                          Classes="muted" />
+                          Text="Saved control-plane targets"
+                          Classes="dim" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="2" Classes="card">
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="VERIFIED APPS" Classes="eyebrow" />
+                      <TextBlock
+                          x:Name="DashboardFleetApplicationCountText"
+                          Text="0"
+                          FontSize="21"
+                          FontWeight="SemiBold" />
+                      <TextBlock
+                          Text="Stored application ownership"
+                          Classes="dim" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="3" Classes="card">
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="ATTENTION" Classes="eyebrow" />
+                      <TextBlock
+                          x:Name="DashboardFleetAttentionCountText"
+                          Text="0"
+                          FontSize="21"
+                          FontWeight="SemiBold" />
+                      <TextBlock
+                          Text="Warning-or-higher fleet findings"
+                          Classes="dim" />
                     </StackPanel>
                   </Border>
                 </Grid>
 
-                <Grid
-                    ColumnDefinitions="0.78*,1.22*"
-                    ColumnSpacing="14">
-
+                <Grid ColumnDefinitions="0.92*,1.08*" ColumnSpacing="14">
                   <Border Classes="card">
-                    <StackPanel Spacing="14">
-                      <StackPanel>
-                        <TextBlock
-                            Text="Environment snapshot"
-                            Classes="sectionTitle" />
-                        <TextBlock
-                            Text="Current native Linux telemetry for the selected host."
-                            Classes="pageSubtitle"
-                            Margin="0,4,0,0" />
-                      </StackPanel>
-
-                      <Grid
-                          ColumnDefinitions="*,*"
-                          RowDefinitions="Auto,Auto"
-                          ColumnSpacing="14"
-                          RowSpacing="12">
-
-                        <Border Classes="inset">
-                          <StackPanel Spacing="5">
-                            <TextBlock Text="CPU" Classes="eyebrow" />
-                            <TextBlock
-                                x:Name="DashboardCpuText"
-                                Text="--"
-                                FontSize="12"
-                                TextWrapping="Wrap" />
-                            <TextBlock
-                                x:Name="DashboardLoadText"
-                                Text="--"
-                                Classes="dim"
-                                FontSize="10" />
-                          </StackPanel>
-                        </Border>
-
-                        <Border
-                            Grid.Column="1"
-                            Classes="inset">
-                          <StackPanel Spacing="5">
-                            <TextBlock Text="MEMORY" Classes="eyebrow" />
-                            <TextBlock
-                                x:Name="DashboardMemoryText"
-                                Text="--"
-                                FontSize="12"
-                                TextWrapping="Wrap" />
-                          </StackPanel>
-                        </Border>
-
-                        <Border
-                            Grid.Row="1"
-                            Classes="inset">
-                          <StackPanel Spacing="5">
-                            <TextBlock Text="NETWORK" Classes="eyebrow" />
-                            <TextBlock
-                                x:Name="DashboardIpText"
-                                Text="--"
-                                FontSize="12"
-                                TextWrapping="Wrap" />
-                          </StackPanel>
-                        </Border>
-
-                        <Border
-                            Grid.Row="1"
-                            Grid.Column="1"
-                            Classes="inset">
-                          <StackPanel Spacing="5">
-                            <TextBlock Text="DISCOVERY" Classes="eyebrow" />
-                            <TextBlock
-                                x:Name="DashboardDiscoveryText"
-                                Text="--"
-                                FontSize="12"
-                                TextWrapping="Wrap" />
-                          </StackPanel>
-                        </Border>
-                      </Grid>
-                    </StackPanel>
-                  </Border>
-
-                  <Border
-                      Grid.Column="1"
-                      Classes="card">
-
-                    <StackPanel Spacing="12">
+                    <StackPanel Spacing="11">
                       <Grid ColumnDefinitions="*,Auto">
                         <StackPanel>
                           <TextBlock
-                              Text="Operational findings"
+                              Text="Environment topology"
                               Classes="sectionTitle" />
-
                           <TextBlock
-                              Text="Active host and media-environment findings. GraveOps status is shown separately in the Control Plane."
+                              Text="Saved hosts with their most recent successful capture. Switching targets refreshes and updates this fleet cache."
                               Classes="pageSubtitle"
                               Margin="0,4,0,0"
                               TextWrapping="Wrap" />
                         </StackPanel>
 
-                        <StackPanel
+                        <TextBlock
                             Grid.Column="1"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Center">
+                            x:Name="DashboardEnvironmentSummaryText"
+                            Text="Waiting for captures"
+                            Classes="muted"
+                            VerticalAlignment="Center" />
+                      </Grid>
 
+                      <ListBox
+                          x:Name="DashboardEnvironmentList"
+                          Classes="dataList"
+                          MinHeight="245"
+                          MaxHeight="340"
+                          SelectionChanged="DashboardEnvironmentList_OnSelectionChanged">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <Grid
+                                ColumnDefinitions="1.1*,130,100,90,90"
+                                ColumnSpacing="10">
+                              <StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                  <TextBlock
+                                      Text="{ReflectionBinding HostName}"
+                                      FontWeight="SemiBold"
+                                      TextTrimming="CharacterEllipsis" />
+                                  <TextBlock
+                                      Text="{ReflectionBinding ActiveLabel}"
+                                      Foreground="{DynamicResource AccentBrush}"
+                                      FontSize="9"
+                                      FontWeight="SemiBold" />
+                                </StackPanel>
+                                <TextBlock
+                                    Text="{ReflectionBinding Connection}"
+                                    Classes="dim"
+                                    FontSize="9"
+                                    TextTrimming="CharacterEllipsis"
+                                    ToolTip.Tip="{ReflectionBinding Connection}" />
+                              </StackPanel>
+
+                              <TextBlock
+                                  Grid.Column="1"
+                                  Text="{ReflectionBinding Role}"
+                                  Classes="muted"
+                                  TextTrimming="CharacterEllipsis" />
+
+                              <TextBlock
+                                  Grid.Column="2"
+                                  Text="{ReflectionBinding ApplicationSummary}" />
+
+                              <TextBlock
+                                  Grid.Column="3"
+                                  Text="{ReflectionBinding AttentionSummary}"
+                                  TextTrimming="CharacterEllipsis" />
+
+                              <TextBlock
+                                  Grid.Column="4"
+                                  Text="{ReflectionBinding SeverityLabel}"
+                                  FontWeight="SemiBold"
+                                  Foreground="{DynamicResource AccentBrush}" />
+                            </Grid>
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="1" Classes="card">
+                    <StackPanel Spacing="11">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock
+                              Text="Selected host"
+                              Classes="eyebrow" />
+                          <TextBlock
+                              x:Name="DashboardSelectedHostText"
+                              Text="No target selected"
+                              FontSize="22"
+                              FontWeight="SemiBold"
+                              Margin="0,5,0,0" />
+                          <TextBlock
+                              x:Name="DashboardSelectedConnectionText"
+                              Text="--"
+                              Classes="muted"
+                              Margin="0,3,0,0"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <Button
+                            Grid.Column="1"
+                            x:Name="DashboardFocusHostButton"
+                            Content="Focus host"
+                            IsEnabled="False"
+                            Click="DashboardFocusHostButton_OnClick" />
+                      </Grid>
+
+                      <Grid
+                          ColumnDefinitions="*,*,*"
+                          RowDefinitions="Auto,Auto"
+                          ColumnSpacing="9"
+                          RowSpacing="9">
+                        <Border Classes="inset">
+                          <StackPanel Spacing="3">
+                            <TextBlock Text="APPLICATIONS" Classes="eyebrow" />
+                            <TextBlock
+                                x:Name="DashboardSelectedApplicationsText"
+                                Text="--"
+                                FontSize="17"
+                                FontWeight="SemiBold" />
+                          </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="1" Classes="inset">
+                          <StackPanel Spacing="3">
+                            <TextBlock Text="ATTENTION" Classes="eyebrow" />
+                            <TextBlock
+                                x:Name="DashboardSelectedAttentionText"
+                                Text="--"
+                                FontSize="17"
+                                FontWeight="SemiBold" />
+                          </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="2" Classes="inset">
+                          <StackPanel Spacing="3">
+                            <TextBlock Text="QUEUED WORK" Classes="eyebrow" />
+                            <TextBlock
+                                x:Name="DashboardSelectedQueueText"
+                                Text="--"
+                                FontSize="17"
+                                FontWeight="SemiBold" />
+                          </StackPanel>
+                        </Border>
+
+                        <Border Grid.Row="1" Classes="inset">
+                          <StackPanel Spacing="3">
+                            <TextBlock Text="DOCKER" Classes="eyebrow" />
+                            <TextBlock
+                                x:Name="DashboardSelectedDockerText"
+                                Text="--"
+                                FontWeight="SemiBold"
+                                TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Border>
+
+                        <Border Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Classes="inset">
+                          <StackPanel Spacing="3">
+                            <TextBlock Text="FRESHNESS" Classes="eyebrow" />
+                            <TextBlock
+                                x:Name="DashboardSelectedCapturedText"
+                                Text="--"
+                                Classes="muted"
+                                TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Border>
+                      </Grid>
+
+                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <ListBox
+                            x:Name="DashboardApplicationList"
+                            Classes="dataList"
+                            MinHeight="135"
+                            MaxHeight="210"
+                            SelectionChanged="DashboardApplicationList_OnSelectionChanged">
+                          <ListBox.ItemTemplate>
+                            <DataTemplate x:CompileBindings="False">
+                              <Grid ColumnDefinitions="150,130,*,90" ColumnSpacing="9">
+                                <TextBlock
+                                    Text="{ReflectionBinding Application}"
+                                    FontWeight="SemiBold" />
+                                <TextBlock
+                                    Grid.Column="1"
+                                    Text="{ReflectionBinding Runtime}"
+                                    Classes="muted"
+                                    TextTrimming="CharacterEllipsis" />
+                                <TextBlock
+                                    Grid.Column="2"
+                                    Text="{ReflectionBinding State}"
+                                    TextTrimming="CharacterEllipsis" />
+                                <TextBlock
+                                    Grid.Column="3"
+                                    Text="{ReflectionBinding SeverityLabel}"
+                                    Foreground="{DynamicResource AccentBrush}"
+                                    FontWeight="SemiBold" />
+                              </Grid>
+                            </DataTemplate>
+                          </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <Button
+                            Grid.Column="1"
+                            x:Name="DashboardOpenApplicationButton"
+                            Content="Open application"
+                            IsEnabled="False"
+                            VerticalAlignment="Top"
+                            Click="DashboardOpenApplicationButton_OnClick" />
+                      </Grid>
+                    </StackPanel>
+                  </Border>
+                </Grid>
+
+                <Grid ColumnDefinitions="1.08*,0.92*" ColumnSpacing="14">
+                  <Border Classes="card">
+                    <StackPanel Spacing="11">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock
+                              Text="Fleet impact"
+                              Classes="sectionTitle" />
+                          <TextBlock
+                              Text="Cross-target issues retain host, component, state, impact and owning-page context."
+                              Classes="pageSubtitle"
+                              Margin="0,4,0,0"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <Button
+                            Grid.Column="1"
+                            x:Name="DashboardOpenAttentionButton"
+                            Content="Open related"
+                            IsEnabled="False"
+                            Click="DashboardOpenAttentionButton_OnClick" />
+                      </Grid>
+
+                      <ListBox
+                          x:Name="DashboardFleetAttentionList"
+                          Classes="dataList"
+                          MinHeight="230"
+                          MaxHeight="330"
+                          SelectionChanged="DashboardFleetAttentionList_OnSelectionChanged">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <Grid ColumnDefinitions="125,135,90,1.2*,1.2*" ColumnSpacing="9">
+                              <TextBlock
+                                  Text="{ReflectionBinding HostName}"
+                                  FontWeight="SemiBold"
+                                  TextTrimming="CharacterEllipsis" />
+                              <TextBlock
+                                  Grid.Column="1"
+                                  Text="{ReflectionBinding Component}"
+                                  TextTrimming="CharacterEllipsis" />
+                              <TextBlock
+                                  Grid.Column="2"
+                                  Text="{ReflectionBinding SeverityLabel}"
+                                  Foreground="{DynamicResource AccentBrush}"
+                                  FontWeight="SemiBold" />
+                              <TextBlock
+                                  Grid.Column="3"
+                                  Text="{ReflectionBinding Issue}"
+                                  TextTrimming="CharacterEllipsis"
+                                  ToolTip.Tip="{ReflectionBinding Issue}" />
+                              <TextBlock
+                                  Grid.Column="4"
+                                  Text="{ReflectionBinding Impact}"
+                                  Classes="muted"
+                                  TextTrimming="CharacterEllipsis"
+                                  ToolTip.Tip="{ReflectionBinding Impact}" />
+                            </Grid>
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+
+                      <Border Classes="inset">
+                        <TextBlock
+                            x:Name="DashboardFleetAttentionDetailText"
+                            Text="No fleet-wide attention item is selected."
+                            Classes="muted"
+                            TextWrapping="Wrap" />
+                      </Border>
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="1" Classes="card">
+                    <StackPanel Spacing="11">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock
+                              Text="Active-target findings"
+                              Classes="sectionTitle" />
+                          <TextBlock
+                              Text="Acknowledgement, snooze, ignore and threshold policies remain attached to the active host."
+                              Classes="pageSubtitle"
+                              Margin="0,4,0,0"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1">
                           <TextBlock
                               x:Name="DashboardFindingsSummaryText"
                               Text="0 active"
                               Classes="muted"
                               HorizontalAlignment="Right" />
-
                           <TextBlock
                               x:Name="DashboardPolicySummaryText"
                               Text="Default monitoring"
                               Classes="dim"
-                              FontSize="10"
+                              FontSize="9"
                               Margin="0,3,0,0"
                               HorizontalAlignment="Right" />
                         </StackPanel>
@@ -871,127 +1066,115 @@
                       <ListBox
                           x:Name="DashboardAttentionList"
                           Classes="dataList"
-                          MinHeight="180"
-                          MaxHeight="290"
+                          MinHeight="210"
+                          MaxHeight="300"
                           SelectionChanged="DashboardAttentionList_OnSelectionChanged">
                         <ListBox.ItemTemplate>
                           <DataTemplate x:CompileBindings="False">
-                            <StackPanel Spacing="5">
-                              <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="10">
-                                <TextBlock Text="{ReflectionBinding Severity}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
-                                <TextBlock Grid.Column="1" Text="{ReflectionBinding Component}" FontWeight="SemiBold" />
-                                <TextBlock Grid.Column="2" Text="{ReflectionBinding Resource}" Classes="dim" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Resource}" />
+                            <StackPanel Spacing="4">
+                              <Grid ColumnDefinitions="85,130,*" ColumnSpacing="9">
+                                <TextBlock
+                                    Text="{ReflectionBinding Severity}"
+                                    FontWeight="SemiBold"
+                                    Foreground="{DynamicResource AccentBrush}" />
+                                <TextBlock
+                                    Grid.Column="1"
+                                    Text="{ReflectionBinding Component}"
+                                    FontWeight="SemiBold"
+                                    TextTrimming="CharacterEllipsis" />
+                                <TextBlock
+                                    Grid.Column="2"
+                                    Text="{ReflectionBinding Resource}"
+                                    Classes="dim"
+                                    HorizontalAlignment="Right"
+                                    TextTrimming="CharacterEllipsis" />
                               </Grid>
-                              <TextBlock Text="{ReflectionBinding Problem}" TextWrapping="Wrap" />
-                              <TextBlock Text="{ReflectionBinding Evidence}" Classes="muted" TextWrapping="Wrap" />
+                              <TextBlock
+                                  Text="{ReflectionBinding Problem}"
+                                  TextWrapping="Wrap" />
+                              <TextBlock
+                                  Text="{ReflectionBinding Evidence}"
+                                  Classes="muted"
+                                  FontSize="10"
+                                  TextWrapping="Wrap" />
                             </StackPanel>
                           </DataTemplate>
                         </ListBox.ItemTemplate>
                       </ListBox>
 
-                      <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*" ColumnSpacing="8">
+                      <WrapPanel>
                         <Button
                             x:Name="AcknowledgeFindingButton"
                             Content="Acknowledge"
                             IsEnabled="False"
+                            Margin="0,0,8,8"
                             Click="AcknowledgeFindingButton_OnClick" />
-
                         <Button
-                            Grid.Column="1"
                             x:Name="SnoozeFindingButton"
                             Content="Snooze..."
                             IsEnabled="False"
+                            Margin="0,0,8,8"
                             Click="SnoozeFindingButton_OnClick" />
-
                         <Button
-                            Grid.Column="2"
                             x:Name="IgnoreFindingButton"
                             Content="Ignore"
                             IsEnabled="False"
+                            Margin="0,0,8,8"
                             Click="IgnoreFindingButton_OnClick" />
-
                         <Button
-                            Grid.Column="3"
                             x:Name="FindingThresholdButton"
                             Content="Thresholds..."
                             IsEnabled="False"
+                            Margin="0,0,8,8"
                             Click="FindingThresholdButton_OnClick" />
+                      </WrapPanel>
 
-                        <TextBlock
-                            Grid.Column="4"
-                            x:Name="DashboardPolicyStatusText"
-                            Text="Select a finding to manage it."
-                            Classes="dim"
-                            VerticalAlignment="Center"
-                            TextTrimming="CharacterEllipsis" />
-                      </Grid>
+                      <TextBlock
+                          x:Name="DashboardPolicyStatusText"
+                          Text="Select a finding to manage it."
+                          Classes="dim"
+                          TextWrapping="Wrap" />
 
                       <Border
                           x:Name="MutedFindingsPanel"
                           Classes="inset"
                           IsVisible="False">
-                        <StackPanel Spacing="10">
+                        <StackPanel Spacing="8">
                           <Grid ColumnDefinitions="*,Auto">
-                            <StackPanel>
-                              <TextBlock
-                                  Text="Muted findings"
-                                  Classes="sectionTitle" />
-                              <TextBlock
-                                  Text="Acknowledged, snoozed and exact-resource ignore rules remain visible here. Critical findings always reactivate."
-                                  Classes="pageSubtitle"
-                                  Margin="0,3,0,0"
-                                  TextWrapping="Wrap" />
-                            </StackPanel>
-
+                            <TextBlock
+                                Text="Muted findings"
+                                Classes="sectionTitle" />
                             <TextBlock
                                 Grid.Column="1"
                                 x:Name="MutedFindingsSummaryText"
                                 Text="0 muted"
-                                Classes="muted"
-                                VerticalAlignment="Center" />
+                                Classes="muted" />
                           </Grid>
 
                           <ListBox
                               x:Name="MutedFindingsList"
                               Classes="dataList"
-                              MaxHeight="190"
+                              MaxHeight="180"
                               SelectionChanged="MutedFindingsList_OnSelectionChanged">
                             <ListBox.ItemTemplate>
                               <DataTemplate x:CompileBindings="False">
-                                <Grid ColumnDefinitions="85,170,1.1*,160,1.1*" ColumnSpacing="10">
+                                <Grid ColumnDefinitions="95,140,*,150" ColumnSpacing="8">
                                   <TextBlock
                                       Text="{ReflectionBinding Severity}"
-                                      FontWeight="SemiBold"
-                                      Foreground="{DynamicResource AccentBrush}" />
-
-                                  <StackPanel Grid.Column="1" Spacing="2">
-                                    <TextBlock
-                                        Text="{ReflectionBinding Component}"
-                                        FontWeight="SemiBold"
-                                        TextTrimming="CharacterEllipsis" />
-                                    <TextBlock
-                                        Text="{ReflectionBinding Resource}"
-                                        Classes="dim"
-                                        TextTrimming="CharacterEllipsis"
-                                        ToolTip.Tip="{ReflectionBinding Resource}" />
-                                  </StackPanel>
-
+                                      FontWeight="SemiBold" />
+                                  <TextBlock
+                                      Grid.Column="1"
+                                      Text="{ReflectionBinding Component}"
+                                      TextTrimming="CharacterEllipsis" />
                                   <TextBlock
                                       Grid.Column="2"
                                       Text="{ReflectionBinding Reason}"
-                                      TextWrapping="Wrap" />
-
+                                      TextTrimming="CharacterEllipsis" />
                                   <TextBlock
                                       Grid.Column="3"
                                       Text="{ReflectionBinding UntilText}"
                                       Classes="muted"
-                                      TextWrapping="Wrap" />
-
-                                  <TextBlock
-                                      Grid.Column="4"
-                                      Text="{ReflectionBinding CurrentState}"
-                                      Classes="muted"
-                                      TextWrapping="Wrap" />
+                                      TextTrimming="CharacterEllipsis" />
                                 </Grid>
                               </DataTemplate>
                             </ListBox.ItemTemplate>
@@ -1009,56 +1192,110 @@
                   </Border>
                 </Grid>
 
-                <Grid
-                    ColumnDefinitions="*,*,*"
-                    ColumnSpacing="14">
+                <Border Classes="card">
+                  <StackPanel Spacing="11">
+                    <TextBlock
+                        Text="Quick modules"
+                        Classes="sectionTitle" />
+                    <TextBlock
+                        Text="Open the owning workspace without losing fleet context."
+                        Classes="pageSubtitle"
+                        TextWrapping="Wrap" />
 
-                  <Border Classes="card">
-                    <StackPanel Spacing="8">
-                      <TextBlock Text="SERVICES" Classes="eyebrow" />
-                      <TextBlock
-                          x:Name="DashboardServicesModuleText"
-                          Text="--"
-                          FontSize="20"
-                          FontWeight="SemiBold" />
-                      <TextBlock
-                          Text="Known host services discovered through systemd."
-                          Classes="pageSubtitle" />
-                    </StackPanel>
-                  </Border>
+                    <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                      <Button
+                          Tag="IntelligenceNav"
+                          HorizontalContentAlignment="Stretch"
+                          Click="DashboardQuickModuleButton_OnClick">
+                        <StackPanel Spacing="4">
+                          <TextBlock Text="Intelligence" FontWeight="SemiBold" />
+                          <TextBlock
+                              x:Name="DashboardQuickIntelligenceText"
+                              Text="--"
+                              Classes="muted"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Button>
 
-                  <Border
-                      Grid.Column="1"
-                      Classes="card">
-                    <StackPanel Spacing="8">
-                      <TextBlock Text="STORAGE" Classes="eyebrow" />
-                      <TextBlock
-                          x:Name="DashboardStorageModuleText"
-                          Text="--"
-                          FontSize="20"
-                          FontWeight="SemiBold" />
-                      <TextBlock
-                          Text="Operational filesystems after pseudo-filesystem filtering."
-                          Classes="pageSubtitle" />
-                    </StackPanel>
-                  </Border>
+                      <Button
+                          Grid.Column="1"
+                          Tag="LifecycleNav"
+                          HorizontalContentAlignment="Stretch"
+                          Click="DashboardQuickModuleButton_OnClick">
+                        <StackPanel Spacing="4">
+                          <TextBlock Text="Lifecycle" FontWeight="SemiBold" />
+                          <TextBlock
+                              x:Name="DashboardQuickLifecycleText"
+                              Text="--"
+                              Classes="muted"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Button>
 
-                  <Border
-                      Grid.Column="2"
-                      Classes="card">
-                    <StackPanel Spacing="8">
-                      <TextBlock Text="MEDIA HUB" Classes="eyebrow" />
-                      <TextBlock
-                          x:Name="DashboardMediaModuleText"
-                          Text="--"
-                          FontSize="20"
-                          FontWeight="SemiBold" />
-                      <TextBlock
-                          Text="Verified integrations detected from service and container identity."
-                          Classes="pageSubtitle" />
-                    </StackPanel>
-                  </Border>
-                </Grid>
+                      <Button
+                          Grid.Column="2"
+                          Tag="MediaHubNav"
+                          HorizontalContentAlignment="Stretch"
+                          Click="DashboardQuickModuleButton_OnClick">
+                        <StackPanel Spacing="4">
+                          <TextBlock Text="Media Hub" FontWeight="SemiBold" />
+                          <TextBlock
+                              x:Name="DashboardQuickMediaText"
+                              Text="--"
+                              Classes="muted"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Button>
+
+                      <Button
+                          Grid.Row="1"
+                          Tag="StorageNav"
+                          HorizontalContentAlignment="Stretch"
+                          Click="DashboardQuickModuleButton_OnClick">
+                        <StackPanel Spacing="4">
+                          <TextBlock Text="Storage" FontWeight="SemiBold" />
+                          <TextBlock
+                              x:Name="DashboardQuickStorageText"
+                              Text="--"
+                              Classes="muted"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Button>
+
+                      <Button
+                          Grid.Row="1"
+                          Grid.Column="1"
+                          Tag="BackupsNav"
+                          HorizontalContentAlignment="Stretch"
+                          Click="DashboardQuickModuleButton_OnClick">
+                        <StackPanel Spacing="4">
+                          <TextBlock Text="Backups" FontWeight="SemiBold" />
+                          <TextBlock
+                              x:Name="DashboardQuickBackupsText"
+                              Text="--"
+                              Classes="muted"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Button>
+
+                      <Button
+                          Grid.Row="1"
+                          Grid.Column="2"
+                          Tag="HistoryNav"
+                          HorizontalContentAlignment="Stretch"
+                          Click="DashboardQuickModuleButton_OnClick">
+                        <StackPanel Spacing="4">
+                          <TextBlock Text="History" FontWeight="SemiBold" />
+                          <TextBlock
+                              x:Name="DashboardQuickHistoryText"
+                              Text="--"
+                              Classes="muted"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Button>
+                    </Grid>
+                  </StackPanel>
+                </Border>
               </StackPanel>
             </ScrollViewer>
 
@@ -2151,79 +2388,637 @@
                 </StackPanel>
               </Border>
             </Grid>
-
-<!-- Intelligence -->
+            <!-- Intelligence -->
             <ScrollViewer x:Name="IntelligencePage" IsVisible="False">
-              <StackPanel Spacing="18">
-                <Grid ColumnDefinitions="0.75*,1.25*" ColumnSpacing="14">
+              <StackPanel Spacing="16">
+                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
                   <Border Classes="card">
-                    <StackPanel Spacing="12">
-                      <TextBlock Text="Control Plane Intelligence" Classes="sectionTitle" />
-                      <Border x:Name="IntelligenceSeverityBorder" Classes="badge" HorizontalAlignment="Left">
-                        <TextBlock x:Name="IntelligenceSeverityText" Text="WAITING" Classes="eyebrow" />
-                      </Border>
-                      <TextBlock x:Name="IntelligenceRootCauseText" Text="No analysis yet" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
-                      <TextBlock x:Name="IntelligenceHeadlineText" Text="Refresh the environment to run analysis." Classes="muted" TextWrapping="Wrap" />
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="OVERALL" Classes="eyebrow" />
+                      <TextBlock
+                          x:Name="IntelligenceOverallMetricText"
+                          Text="WAITING"
+                          FontSize="21"
+                          FontWeight="SemiBold" />
                     </StackPanel>
                   </Border>
+
                   <Border Grid.Column="1" Classes="card">
-                    <StackPanel Spacing="10">
-                      <TextBlock Text="Dependency order" Classes="sectionTitle" />
-                      <TextBlock Text="Host → Storage → Docker → Discovery → Downloads → Arr → Processing → Library" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" />
-                      <TextBlock Text="Findings are ranked upstream-first so downstream symptoms do not trigger unnecessary restarts." Classes="pageSubtitle" TextWrapping="Wrap" />
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="BLOCKERS" Classes="eyebrow" />
+                      <TextBlock
+                          x:Name="IntelligenceBlockersMetricText"
+                          Text="0"
+                          FontSize="21"
+                          FontWeight="SemiBold" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="2" Classes="card">
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="WARNINGS" Classes="eyebrow" />
+                      <TextBlock
+                          x:Name="IntelligenceWarningsMetricText"
+                          Text="0"
+                          FontSize="21"
+                          FontWeight="SemiBold" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="3" Classes="card">
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="ROOT CAUSE" Classes="eyebrow" />
+                      <TextBlock
+                          x:Name="IntelligenceRootCauseMetricText"
+                          Text="--"
+                          FontSize="15"
+                          FontWeight="SemiBold"
+                          TextWrapping="Wrap" />
                     </StackPanel>
                   </Border>
                 </Grid>
-                <Border Classes="card">
-                  <StackPanel Spacing="12">
-                    <Grid ColumnDefinitions="*,Auto">
-                      <TextBlock Text="Ranked findings" Classes="sectionTitle" />
-                      <TextBlock Grid.Column="1" x:Name="IntelligenceCountText" Text="0 findings" Classes="muted" VerticalAlignment="Center" />
-                    </Grid>
-                    <ListBox x:Name="IntelligenceFindingsList" Classes="dataList passive" MinHeight="430">
-                      <ListBox.ItemTemplate>
-                        <DataTemplate x:CompileBindings="False">
-                          <StackPanel Spacing="6">
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                              <TextBlock Text="{ReflectionBinding Severity}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
-                              <TextBlock Text="{ReflectionBinding Component}" FontWeight="SemiBold" />
+
+                <Grid ColumnDefinitions="0.72*,1.28*" ColumnSpacing="14">
+                  <Border Classes="card">
+                    <StackPanel Spacing="11">
+                      <TextBlock
+                          Text="Control Plane Intelligence"
+                          Classes="sectionTitle" />
+
+                      <Border
+                          x:Name="IntelligenceSeverityBorder"
+                          Classes="badge"
+                          HorizontalAlignment="Left">
+                        <TextBlock
+                            x:Name="IntelligenceSeverityText"
+                            Text="WAITING"
+                            Classes="eyebrow" />
+                      </Border>
+
+                      <TextBlock
+                          x:Name="IntelligenceRootCauseText"
+                          Text="No analysis yet"
+                          FontSize="19"
+                          FontWeight="SemiBold"
+                          TextWrapping="Wrap" />
+
+                      <TextBlock
+                          x:Name="IntelligenceHeadlineText"
+                          Text="Refresh the environment to run analysis."
+                          Classes="muted"
+                          TextWrapping="Wrap" />
+
+                      <WrapPanel>
+                        <Button
+                            Content="Copy report"
+                            Margin="0,0,8,8"
+                            Click="IntelligenceCopyReportButton_OnClick" />
+                        <Button
+                            Content="State history"
+                            Margin="0,0,8,8"
+                            Click="IntelligenceOpenHistoryButton_OnClick" />
+                      </WrapPanel>
+
+                      <TextBlock
+                          x:Name="IntelligenceCopyStatusText"
+                          Text="No report copied."
+                          Classes="dim"
+                          TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="1" Classes="card">
+                    <StackPanel Spacing="11">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock
+                              Text="Fleet impact"
+                              Classes="sectionTitle" />
+                          <TextBlock
+                              Text="Host and component ownership make downstream impact explicit."
+                              Classes="pageSubtitle"
+                              Margin="0,4,0,0"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <TextBlock
+                            Grid.Column="1"
+                            Text="HOST → COMPONENT → IMPACT"
+                            Classes="eyebrow"
+                            VerticalAlignment="Center" />
+                      </Grid>
+
+                      <ListBox
+                          x:Name="IntelligenceImpactList"
+                          Classes="dataList"
+                          MinHeight="210"
+                          MaxHeight="315"
+                          SelectionChanged="IntelligenceImpactList_OnSelectionChanged">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <Grid ColumnDefinitions="120,135,90,1.2*,1.2*" ColumnSpacing="9">
+                              <TextBlock
+                                  Text="{ReflectionBinding HostName}"
+                                  FontWeight="SemiBold"
+                                  TextTrimming="CharacterEllipsis" />
+                              <TextBlock
+                                  Grid.Column="1"
+                                  Text="{ReflectionBinding Component}"
+                                  TextTrimming="CharacterEllipsis" />
+                              <TextBlock
+                                  Grid.Column="2"
+                                  Text="{ReflectionBinding SeverityLabel}"
+                                  Foreground="{DynamicResource AccentBrush}"
+                                  FontWeight="SemiBold" />
+                              <TextBlock
+                                  Grid.Column="3"
+                                  Text="{ReflectionBinding Issue}"
+                                  TextTrimming="CharacterEllipsis"
+                                  ToolTip.Tip="{ReflectionBinding Issue}" />
+                              <TextBlock
+                                  Grid.Column="4"
+                                  Text="{ReflectionBinding Impact}"
+                                  Classes="muted"
+                                  TextTrimming="CharacterEllipsis"
+                                  ToolTip.Tip="{ReflectionBinding Impact}" />
+                            </Grid>
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+                    </StackPanel>
+                  </Border>
+                </Grid>
+
+                <Grid ColumnDefinitions="0.86*,1.14*" ColumnSpacing="14">
+                  <Border Classes="card">
+                    <StackPanel Spacing="11">
+                      <TextBlock
+                          Text="Dependency state"
+                          Classes="sectionTitle" />
+                      <TextBlock
+                          Text="Upstream order is preserved so downstream symptoms do not trigger unnecessary restarts."
+                          Classes="pageSubtitle"
+                          TextWrapping="Wrap" />
+
+                      <ListBox
+                          x:Name="IntelligenceDependencyList"
+                          Classes="dataList"
+                          MinHeight="315"
+                          MaxHeight="430"
+                          SelectionChanged="IntelligenceDependencyList_OnSelectionChanged">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <Grid ColumnDefinitions="42,120,95,*" RowDefinitions="Auto,Auto" ColumnSpacing="9" RowSpacing="4">
+                              <TextBlock
+                                  Text="{ReflectionBinding Order}"
+                                  FontSize="17"
+                                  FontWeight="SemiBold"
+                                  Foreground="{DynamicResource DimBrush}" />
+                              <TextBlock
+                                  Grid.Column="1"
+                                  Text="{ReflectionBinding Component}"
+                                  FontWeight="SemiBold" />
+                              <TextBlock
+                                  Grid.Column="2"
+                                  Text="{ReflectionBinding State}"
+                                  Foreground="{DynamicResource AccentBrush}"
+                                  FontWeight="SemiBold" />
+                              <TextBlock
+                                  Grid.Column="3"
+                                  Text="{ReflectionBinding Evidence}"
+                                  TextWrapping="Wrap" />
+                              <TextBlock
+                                  Grid.Row="1"
+                                  Grid.Column="3"
+                                  Text="{ReflectionBinding Impact}"
+                                  Classes="muted"
+                                  TextWrapping="Wrap" />
+                            </Grid>
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="1" Classes="card">
+                    <StackPanel Spacing="11">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock
+                            Text="Ranked priority findings"
+                            Classes="sectionTitle" />
+                        <TextBlock
+                            Grid.Column="1"
+                            x:Name="IntelligenceCountText"
+                            Text="0 findings"
+                            Classes="muted"
+                            VerticalAlignment="Center" />
+                      </Grid>
+
+                      <ListBox
+                          x:Name="IntelligenceFindingsList"
+                          Classes="dataList"
+                          MinHeight="315"
+                          MaxHeight="430"
+                          SelectionChanged="IntelligenceFindingsList_OnSelectionChanged">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <StackPanel Spacing="5">
+                              <StackPanel Orientation="Horizontal" Spacing="9">
+                                <TextBlock
+                                    Text="{ReflectionBinding Severity}"
+                                    FontWeight="SemiBold"
+                                    Foreground="{DynamicResource AccentBrush}" />
+                                <TextBlock
+                                    Text="{ReflectionBinding Component}"
+                                    FontWeight="SemiBold" />
+                              </StackPanel>
+                              <TextBlock
+                                  Text="{ReflectionBinding Problem}"
+                                  TextWrapping="Wrap" />
+                              <TextBlock
+                                  Text="{ReflectionBinding Impact, StringFormat='Impact · {0}'}"
+                                  Classes="muted"
+                                  FontSize="10"
+                                  TextWrapping="Wrap" />
                             </StackPanel>
-                            <TextBlock Text="{ReflectionBinding Problem}" TextWrapping="Wrap" />
-                            <TextBlock Text="{ReflectionBinding Impact, StringFormat='Impact · {0}'}" Classes="muted" TextWrapping="Wrap" />
-                            <TextBlock Text="{ReflectionBinding NextStep, StringFormat='Next · {0}'}" Classes="dim" TextWrapping="Wrap" />
-                          </StackPanel>
-                        </DataTemplate>
-                      </ListBox.ItemTemplate>
-                    </ListBox>
-                  </StackPanel>
-                </Border>
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+                    </StackPanel>
+                  </Border>
+                </Grid>
+
+                <Grid ColumnDefinitions="1.05*,0.95*" ColumnSpacing="14">
+                  <Border Classes="card">
+                    <StackPanel Spacing="11">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock
+                              Text="Guided remediation"
+                              Classes="sectionTitle" />
+                          <TextBlock
+                              Text="Ordered upstream-first. Staging a step opens its owning page without running an unreviewed command."
+                              Classes="pageSubtitle"
+                              Margin="0,4,0,0"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <Button
+                            Grid.Column="1"
+                            x:Name="IntelligenceStageActionButton"
+                            Content="Stage suggested action"
+                            IsEnabled="False"
+                            Click="IntelligenceStageActionButton_OnClick" />
+                      </Grid>
+
+                      <ListBox
+                          x:Name="IntelligenceRemediationList"
+                          Classes="dataList"
+                          MinHeight="240"
+                          MaxHeight="350"
+                          SelectionChanged="IntelligenceRemediationList_OnSelectionChanged">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <Grid ColumnDefinitions="45,90,145,1.2*,1.2*" ColumnSpacing="9">
+                              <TextBlock
+                                  Text="{ReflectionBinding Step}"
+                                  FontSize="17"
+                                  FontWeight="SemiBold"
+                                  Foreground="{DynamicResource DimBrush}" />
+                              <TextBlock
+                                  Grid.Column="1"
+                                  Text="{ReflectionBinding SeverityLabel}"
+                                  Foreground="{DynamicResource AccentBrush}"
+                                  FontWeight="SemiBold" />
+                              <TextBlock
+                                  Grid.Column="2"
+                                  Text="{ReflectionBinding Component}"
+                                  FontWeight="SemiBold"
+                                  TextTrimming="CharacterEllipsis" />
+                              <TextBlock
+                                  Grid.Column="3"
+                                  Text="{ReflectionBinding Why}"
+                                  TextTrimming="CharacterEllipsis"
+                                  ToolTip.Tip="{ReflectionBinding Why}" />
+                              <TextBlock
+                                  Grid.Column="4"
+                                  Text="{ReflectionBinding NextStep}"
+                                  Classes="muted"
+                                  TextTrimming="CharacterEllipsis"
+                                  ToolTip.Tip="{ReflectionBinding NextStep}" />
+                            </Grid>
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="1" Classes="card">
+                    <StackPanel Spacing="11">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock
+                              Text="Selected intelligence"
+                              Classes="sectionTitle" />
+                          <TextBlock
+                              x:Name="IntelligenceSelectedTitleText"
+                              Text="Select a finding, dependency or remediation step"
+                              Classes="pageSubtitle"
+                              Margin="0,4,0,0"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <Button
+                            Grid.Column="1"
+                            x:Name="IntelligenceOpenRelatedButton"
+                            Content="Open related"
+                            IsEnabled="False"
+                            Click="IntelligenceOpenRelatedButton_OnClick" />
+                      </Grid>
+
+                      <TextBox
+                          x:Name="IntelligenceSelectedDetailText"
+                          Classes="console"
+                          IsReadOnly="True"
+                          AcceptsReturn="True"
+                          TextWrapping="Wrap"
+                          MinHeight="235"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
               </StackPanel>
             </ScrollViewer>
-
-<!-- Lifecycle -->
+            <!-- Lifecycle -->
             <ScrollViewer x:Name="LifecyclePage" IsVisible="False">
-              <StackPanel Spacing="18">
+              <StackPanel Spacing="16">
+                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
+                  <Border Classes="card">
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="ACTIVE ITEMS" Classes="eyebrow" />
+                      <TextBlock
+                          x:Name="LifecycleActiveMetricText"
+                          Text="0"
+                          FontSize="21"
+                          FontWeight="SemiBold" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="1" Classes="card">
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="NEEDS ATTENTION" Classes="eyebrow" />
+                      <TextBlock
+                          x:Name="LifecycleAttentionMetricText"
+                          Text="0"
+                          FontSize="21"
+                          FontWeight="SemiBold" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="2" Classes="card">
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="DOWNLOADING" Classes="eyebrow" />
+                      <TextBlock
+                          x:Name="LifecycleDownloadingMetricText"
+                          Text="0"
+                          FontSize="21"
+                          FontWeight="SemiBold" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="3" Classes="card">
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="IMPORT / RECONCILE" Classes="eyebrow" />
+                      <TextBlock
+                          x:Name="LifecycleImportMetricText"
+                          Text="0"
+                          FontSize="21"
+                          FontWeight="SemiBold" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
+
                 <Border Classes="card">
-                  <StackPanel Spacing="12">
+                  <StackPanel Spacing="11">
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel>
-                        <TextBlock Text="Media lifecycle" Classes="sectionTitle" />
-                        <TextBlock Text="Readiness from the host through final library availability." Classes="pageSubtitle" Margin="0,4,0,0" />
+                        <TextBlock
+                            Text="Media lifecycle"
+                            Classes="sectionTitle" />
+                        <TextBlock
+                            Text="Request → Discovery → Arr → Download → Import → Processing → Library"
+                            FontSize="14"
+                            FontWeight="SemiBold"
+                            Margin="0,4,0,0"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            Text="Current stage readiness remains visible even when no item-level queue telemetry is available."
+                            Classes="pageSubtitle"
+                            Margin="0,4,0,0"
+                            TextWrapping="Wrap" />
                       </StackPanel>
-                      <TextBlock Grid.Column="1" x:Name="LifecycleSummaryText" Text="Waiting for capture" Classes="muted" VerticalAlignment="Center" />
+
+                      <TextBlock
+                          Grid.Column="1"
+                          x:Name="LifecycleSummaryText"
+                          Text="Waiting for capture"
+                          Classes="muted"
+                          VerticalAlignment="Center" />
                     </Grid>
-                    <ListBox x:Name="LifecycleStagesList" Classes="dataList passive" MinHeight="500">
+
+                    <ListBox
+                        x:Name="LifecycleStagesList"
+                        Classes="dataList passive"
+                        MinHeight="190"
+                        MaxHeight="290">
                       <ListBox.ItemTemplate>
                         <DataTemplate x:CompileBindings="False">
-                          <Grid ColumnDefinitions="46,125,110,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="5">
-                            <TextBlock Text="{ReflectionBinding Order}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource DimBrush}" />
-                            <TextBlock Grid.Column="1" Text="{ReflectionBinding Stage}" FontWeight="SemiBold" />
-                            <TextBlock Grid.Column="2" Text="{ReflectionBinding State}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
-                            <TextBlock Grid.Column="3" Text="{ReflectionBinding Evidence}" TextWrapping="Wrap" />
-                            <StackPanel Grid.Row="1" Grid.Column="3" Spacing="3">
-                              <TextBlock Text="{ReflectionBinding Impact, StringFormat='Impact · {0}'}" Classes="muted" TextWrapping="Wrap" />
-                              <TextBlock Text="{ReflectionBinding NextStep, StringFormat='Next · {0}'}" Classes="dim" TextWrapping="Wrap" />
-                            </StackPanel>
+                          <Grid ColumnDefinitions="42,120,105,1.2*,1.1*" ColumnSpacing="9">
+                            <TextBlock
+                                Text="{ReflectionBinding Order}"
+                                FontSize="17"
+                                FontWeight="SemiBold"
+                                Foreground="{DynamicResource DimBrush}" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Text="{ReflectionBinding Stage}"
+                                FontWeight="SemiBold" />
+                            <TextBlock
+                                Grid.Column="2"
+                                Text="{ReflectionBinding State}"
+                                FontWeight="SemiBold"
+                                Foreground="{DynamicResource AccentBrush}" />
+                            <TextBlock
+                                Grid.Column="3"
+                                Text="{ReflectionBinding Evidence}"
+                                TextTrimming="CharacterEllipsis"
+                                ToolTip.Tip="{ReflectionBinding Evidence}" />
+                            <TextBlock
+                                Grid.Column="4"
+                                Text="{ReflectionBinding Impact}"
+                                Classes="muted"
+                                TextTrimming="CharacterEllipsis"
+                                ToolTip.Tip="{ReflectionBinding Impact}" />
+                          </Grid>
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
+                  </StackPanel>
+                </Border>
+
+                <Grid ColumnDefinitions="1.16*,0.84*" ColumnSpacing="14">
+                  <Border Classes="card">
+                    <StackPanel Spacing="11">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock
+                              Text="Correlated work"
+                              Classes="sectionTitle" />
+                          <TextBlock
+                              Text="Live Arr queue rows are correlated when available; otherwise GraveOps retains explicit stage-readiness rows."
+                              Classes="pageSubtitle"
+                              Margin="0,4,0,0"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <Button
+                            Grid.Column="1"
+                            x:Name="LifecycleOpenOwnerButton"
+                            Content="Open owner"
+                            IsEnabled="False"
+                            Click="LifecycleOpenOwnerButton_OnClick" />
+                      </Grid>
+
+                      <ListBox
+                          x:Name="LifecycleItemsList"
+                          Classes="dataList"
+                          MinHeight="360"
+                          MaxHeight="520"
+                          SelectionChanged="LifecycleItemsList_OnSelectionChanged">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <Grid ColumnDefinitions="1.25*,125,100,105,75,85,1.15*" ColumnSpacing="9">
+                              <TextBlock
+                                  Text="{ReflectionBinding Item}"
+                                  FontWeight="SemiBold"
+                                  TextTrimming="CharacterEllipsis"
+                                  ToolTip.Tip="{ReflectionBinding Item}" />
+                              <TextBlock
+                                  Grid.Column="1"
+                                  Text="{ReflectionBinding Owner}"
+                                  TextTrimming="CharacterEllipsis" />
+                              <TextBlock
+                                  Grid.Column="2"
+                                  Text="{ReflectionBinding Stage}"
+                                  Classes="muted" />
+                              <TextBlock
+                                  Grid.Column="3"
+                                  Text="{ReflectionBinding State}"
+                                  Foreground="{DynamicResource AccentBrush}"
+                                  FontWeight="SemiBold"
+                                  TextTrimming="CharacterEllipsis" />
+                              <TextBlock
+                                  Grid.Column="4"
+                                  Text="{ReflectionBinding Progress}" />
+                              <TextBlock
+                                  Grid.Column="5"
+                                  Text="{ReflectionBinding Remaining}" />
+                              <TextBlock
+                                  Grid.Column="6"
+                                  Text="{ReflectionBinding Detail}"
+                                  Classes="muted"
+                                  TextTrimming="CharacterEllipsis"
+                                  ToolTip.Tip="{ReflectionBinding Detail}" />
+                            </Grid>
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="1" Classes="card">
+                    <StackPanel Spacing="11">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock
+                              Text="Selected item"
+                              Classes="sectionTitle" />
+                          <TextBlock
+                              x:Name="LifecycleSelectedTitleText"
+                              Text="No lifecycle item selected"
+                              Classes="pageSubtitle"
+                              Margin="0,4,0,0"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <Button
+                            Grid.Column="1"
+                            Content="Intelligence"
+                            Click="LifecycleOpenIntelligenceButton_OnClick" />
+                      </Grid>
+
+                      <TextBox
+                          x:Name="LifecycleSelectedDetailText"
+                          Classes="console"
+                          IsReadOnly="True"
+                          AcceptsReturn="True"
+                          TextWrapping="Wrap"
+                          MinHeight="330"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
+
+                <Border Classes="card">
+                  <StackPanel Spacing="11">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel>
+                        <TextBlock
+                            Text="Upstream-first guided remediation"
+                            Classes="sectionTitle" />
+                        <TextBlock
+                            Text="The earliest meaningful blocker is shown first so downstream services are not restarted before their dependency is corrected."
+                            Classes="pageSubtitle"
+                            Margin="0,4,0,0"
+                            TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Grid>
+
+                    <ListBox
+                        x:Name="LifecycleRemediationList"
+                        Classes="dataList"
+                        MinHeight="180"
+                        MaxHeight="300"
+                        SelectionChanged="LifecycleRemediationList_OnSelectionChanged">
+                      <ListBox.ItemTemplate>
+                        <DataTemplate x:CompileBindings="False">
+                          <Grid ColumnDefinitions="45,90,145,1.2*,1.2*" ColumnSpacing="9">
+                            <TextBlock
+                                Text="{ReflectionBinding Step}"
+                                FontSize="17"
+                                FontWeight="SemiBold"
+                                Foreground="{DynamicResource DimBrush}" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Text="{ReflectionBinding SeverityLabel}"
+                                Foreground="{DynamicResource AccentBrush}"
+                                FontWeight="SemiBold" />
+                            <TextBlock
+                                Grid.Column="2"
+                                Text="{ReflectionBinding Component}"
+                                FontWeight="SemiBold"
+                                TextTrimming="CharacterEllipsis" />
+                            <TextBlock
+                                Grid.Column="3"
+                                Text="{ReflectionBinding Why}"
+                                TextTrimming="CharacterEllipsis"
+                                ToolTip.Tip="{ReflectionBinding Why}" />
+                            <TextBlock
+                                Grid.Column="4"
+                                Text="{ReflectionBinding NextStep}"
+                                Classes="muted"
+                                TextTrimming="CharacterEllipsis"
+                                ToolTip.Tip="{ReflectionBinding NextStep}" />
                           </Grid>
                         </DataTemplate>
                       </ListBox.ItemTemplate>
@@ -2232,41 +3027,310 @@
                 </Border>
               </StackPanel>
             </ScrollViewer>
-
-<!-- History -->
+            <!-- History -->
             <ScrollViewer x:Name="HistoryPage" IsVisible="False">
-              <StackPanel Spacing="18">
+              <StackPanel Spacing="16">
+                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
+                  <Border Classes="card">
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="TRANSITIONS · 24H" Classes="eyebrow" />
+                      <TextBlock
+                          x:Name="HistoryTransitionMetricText"
+                          Text="0"
+                          FontSize="21"
+                          FontWeight="SemiBold" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="1" Classes="card">
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="ACTIVITY · 24H" Classes="eyebrow" />
+                      <TextBlock
+                          x:Name="HistoryActivityMetricText"
+                          Text="0"
+                          FontSize="21"
+                          FontWeight="SemiBold" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="2" Classes="card">
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="INCIDENTS" Classes="eyebrow" />
+                      <TextBlock
+                          x:Name="HistoryIncidentMetricText"
+                          Text="0"
+                          FontSize="21"
+                          FontWeight="SemiBold" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="3" Classes="card">
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="RETENTION" Classes="eyebrow" />
+                      <TextBlock
+                          x:Name="HistoryRetentionMetricText"
+                          Text="0/750 · 0/300"
+                          FontSize="16"
+                          FontWeight="SemiBold"
+                          TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
+
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                  <Border Classes="card">
+                    <StackPanel Spacing="11">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock
+                              Text="Health transitions"
+                              Classes="sectionTitle" />
+                          <TextBlock
+                              Text="Changes only: repeated identical samples are not recorded."
+                              Classes="pageSubtitle"
+                              Margin="0,4,0,0"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Grid>
+
+                      <ListBox
+                          x:Name="HistoryTransitionsList"
+                          Classes="dataList"
+                          MinHeight="300"
+                          MaxHeight="430"
+                          SelectionChanged="HistoryTransitionsList_OnSelectionChanged">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <Grid ColumnDefinitions="130,90,145,*,1.2*" ColumnSpacing="9">
+                              <TextBlock
+                                  Text="{ReflectionBinding DisplayTime}"
+                                  Classes="dim" />
+                              <TextBlock
+                                  Grid.Column="1"
+                                  Text="{ReflectionBinding SeverityLabel}"
+                                  Foreground="{DynamicResource AccentBrush}"
+                                  FontWeight="SemiBold" />
+                              <TextBlock
+                                  Grid.Column="2"
+                                  Text="{ReflectionBinding Component}"
+                                  FontWeight="SemiBold"
+                                  TextTrimming="CharacterEllipsis" />
+                              <TextBlock
+                                  Grid.Column="3"
+                                  Text="{ReflectionBinding Transition}"
+                                  TextTrimming="CharacterEllipsis"
+                                  ToolTip.Tip="{ReflectionBinding Transition}" />
+                              <TextBlock
+                                  Grid.Column="4"
+                                  Text="{ReflectionBinding Detail}"
+                                  Classes="muted"
+                                  TextTrimming="CharacterEllipsis"
+                                  ToolTip.Tip="{ReflectionBinding Detail}" />
+                            </Grid>
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="1" Classes="card">
+                    <StackPanel Spacing="11">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock
+                              Text="GraveOps activity"
+                              Classes="sectionTitle" />
+                          <TextBlock
+                              Text="Navigation, captures, targets, notifications, actions and failures."
+                              Classes="pageSubtitle"
+                              Margin="0,4,0,0"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Grid>
+
+                      <ListBox
+                          x:Name="HistoryActivityList"
+                          Classes="dataList"
+                          MinHeight="300"
+                          MaxHeight="430"
+                          SelectionChanged="HistoryActivityList_OnSelectionChanged">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <Grid ColumnDefinitions="130,120,130,*,1.1*" ColumnSpacing="9">
+                              <TextBlock
+                                  Text="{ReflectionBinding DisplayTime}"
+                                  Classes="dim" />
+                              <TextBlock
+                                  Grid.Column="1"
+                                  Text="{ReflectionBinding Stream}"
+                                  FontWeight="SemiBold" />
+                              <TextBlock
+                                  Grid.Column="2"
+                                  Text="{ReflectionBinding Target}"
+                                  TextTrimming="CharacterEllipsis" />
+                              <TextBlock
+                                  Grid.Column="3"
+                                  Text="{ReflectionBinding Transition}"
+                                  TextTrimming="CharacterEllipsis"
+                                  ToolTip.Tip="{ReflectionBinding Transition}" />
+                              <TextBlock
+                                  Grid.Column="4"
+                                  Text="{ReflectionBinding Detail}"
+                                  Classes="muted"
+                                  TextTrimming="CharacterEllipsis"
+                                  ToolTip.Tip="{ReflectionBinding Detail}" />
+                            </Grid>
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+                    </StackPanel>
+                  </Border>
+                </Grid>
+
+                <Grid ColumnDefinitions="1.02*,0.98*" ColumnSpacing="14">
+                  <Border Classes="card">
+                    <StackPanel Spacing="11">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock
+                              Text="Incident replay"
+                              Classes="sectionTitle" />
+                          <TextBlock
+                              Text="Warning-or-higher events are prioritized. When no incident is active, recent history remains available."
+                              Classes="pageSubtitle"
+                              Margin="0,4,0,0"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <Button
+                            Grid.Column="1"
+                            Content="Replay selected"
+                            Click="HistoryReplaySelectedButton_OnClick" />
+                      </Grid>
+
+                      <ListBox
+                          x:Name="HistoryIncidentList"
+                          Classes="dataList"
+                          MinHeight="250"
+                          MaxHeight="360"
+                          SelectionChanged="HistoryIncidentList_OnSelectionChanged">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <Grid ColumnDefinitions="130,90,130,150,*" ColumnSpacing="9">
+                              <TextBlock
+                                  Text="{ReflectionBinding DisplayTime}"
+                                  Classes="dim" />
+                              <TextBlock
+                                  Grid.Column="1"
+                                  Text="{ReflectionBinding SeverityLabel}"
+                                  Foreground="{DynamicResource AccentBrush}"
+                                  FontWeight="SemiBold" />
+                              <TextBlock
+                                  Grid.Column="2"
+                                  Text="{ReflectionBinding Target}"
+                                  TextTrimming="CharacterEllipsis" />
+                              <TextBlock
+                                  Grid.Column="3"
+                                  Text="{ReflectionBinding Component}"
+                                  FontWeight="SemiBold"
+                                  TextTrimming="CharacterEllipsis" />
+                              <TextBlock
+                                  Grid.Column="4"
+                                  Text="{ReflectionBinding Transition}"
+                                  TextTrimming="CharacterEllipsis"
+                                  ToolTip.Tip="{ReflectionBinding Transition}" />
+                            </Grid>
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+
+                      <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="8">
+                        <Button
+                            x:Name="HistoryCopyReplayButton"
+                            Content="Copy replay"
+                            IsEnabled="False"
+                            Click="HistoryCopyReplayButton_OnClick" />
+                        <Button
+                            Grid.Column="1"
+                            x:Name="HistoryOpenRelatedButton"
+                            Content="Open related"
+                            IsEnabled="False"
+                            Click="HistoryOpenRelatedButton_OnClick" />
+                        <Button
+                            Grid.Column="2"
+                            Content="Clear history"
+                            Classes="danger"
+                            Click="HistoryClearAllButton_OnClick" />
+                        <TextBlock
+                            Grid.Column="3"
+                            x:Name="HistoryCopyStatusText"
+                            Text="No replay copied."
+                            Classes="dim"
+                            VerticalAlignment="Center"
+                            TextWrapping="Wrap" />
+                      </Grid>
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="1" Classes="card">
+                    <StackPanel Spacing="11">
+                      <TextBlock
+                          Text="Selected incident"
+                          Classes="sectionTitle" />
+                      <TextBlock
+                          x:Name="HistorySelectedTitleText"
+                          Text="No incident selected"
+                          Classes="pageSubtitle"
+                          TextWrapping="Wrap" />
+
+                      <TextBox
+                          x:Name="HistorySelectedDetailText"
+                          Classes="console"
+                          IsReadOnly="True"
+                          AcceptsReturn="True"
+                          TextWrapping="Wrap"
+                          MinHeight="145"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto" />
+
+                      <TextBlock
+                          Text="Replay report"
+                          Classes="sectionTitle"
+                          Margin="0,4,0,0" />
+
+                      <TextBox
+                          x:Name="HistoryReplayText"
+                          Classes="console"
+                          IsReadOnly="True"
+                          AcceptsReturn="True"
+                          Text="Select a transition or activity row to build an incident replay."
+                          TextWrapping="Wrap"
+                          MinHeight="215"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
+
                 <Border Classes="card">
-                  <StackPanel Spacing="12">
-                    <Grid ColumnDefinitions="*,Auto">
-                      <StackPanel>
-                        <TextBlock Text="Transition and action history" Classes="sectionTitle" />
-                        <TextBlock Text="Meaningful state changes, guarded actions and operator-policy changes are persisted locally. Historical rows preserve the labels recorded at that time." Classes="pageSubtitle" Margin="0,4,0,0" TextWrapping="Wrap" />
-                      </StackPanel>
-                      <Button Grid.Column="1" Content="Clear history" Classes="danger" Click="ClearHistoryButton_OnClick" />
-                    </Grid>
-                    <ListBox x:Name="HistoryList" Classes="dataList passive" MinHeight="520">
-                      <ListBox.ItemTemplate>
-                        <DataTemplate x:CompileBindings="False">
-                          <Grid ColumnDefinitions="150,100,170,150,*" ColumnSpacing="10">
-                            <TextBlock Text="{ReflectionBinding Timestamp, StringFormat='{}{0:g}'}" Classes="dim" />
-                            <TextBlock Grid.Column="1" Text="{ReflectionBinding Severity}" FontWeight="SemiBold" />
-                            <TextBlock Grid.Column="2" Text="{ReflectionBinding Component}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Grid.Column="3" Text="{ReflectionBinding FromState, StringFormat='{}{0} →'}" Classes="muted" />
-                            <StackPanel Grid.Column="4" Spacing="3">
-                              <TextBlock Text="{ReflectionBinding ToState}" FontWeight="SemiBold" />
-                              <TextBlock Text="{ReflectionBinding Detail}" Classes="muted" TextWrapping="Wrap" />
-                            </StackPanel>
-                          </Grid>
-                        </DataTemplate>
-                      </ListBox.ItemTemplate>
-                    </ListBox>
+                  <StackPanel Spacing="7">
+                    <TextBlock
+                        Text="History ownership"
+                        Classes="sectionTitle" />
+                    <TextBlock
+                        Text="Health transitions come from change-only environment recording. GraveOps Activity comes from the shared control plane. Fleet capture summaries remain separate so clearing history does not erase the latest host topology."
+                        Classes="muted"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        x:Name="HistoryCachePathText"
+                        Text="Fleet cache is stored in fleet-insight-cache.json."
+                        Classes="dim"
+                        FontFamily="DejaVu Sans Mono, monospace"
+                        TextWrapping="Wrap" />
                   </StackPanel>
                 </Border>
               </StackPanel>
             </ScrollViewer>
 
-<!-- Backups -->
+            <!-- Backups -->
             <ScrollViewer x:Name="BackupsPage" IsVisible="False">
               <StackPanel Spacing="18">
                 <Grid ColumnDefinitions="0.75*,1.25*" ColumnSpacing="14">
