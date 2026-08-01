@@ -69,7 +69,11 @@ public sealed record OpsBackupUnit(
 public sealed record OpsBackupArtifact(
     string Path,
     string Size,
-    DateTimeOffset ModifiedAt);
+    DateTimeOffset ModifiedAt)
+{
+    public DateTimeOffset LocalModifiedAt =>
+        ModifiedAt.ToLocalTime();
+}
 
 public sealed record OpsBackupSnapshot(
     OpsSeverity Severity,
@@ -162,13 +166,17 @@ public static class LinuxOpsAnalyzer
             .ToArray();
 
         return parsed
-            .GroupBy(item => $"{item.Source}|{NormalizeLog(item.Message)}", StringComparer.OrdinalIgnoreCase)
+            .GroupBy(
+                item =>
+                    $"{CanonicalSource(item.Source)}|" +
+                    $"{NormalizeLog(CanonicalSource(item.Source), item.Message)}",
+                StringComparer.OrdinalIgnoreCase)
             .Select(group =>
             {
                 var newest = group.OrderByDescending(item => item.LastSeen).First();
                 return new OpsLogGroup(
                     group.Max(item => item.Severity),
-                    newest.Source,
+                    CanonicalSource(newest.Source),
                     group.Max(item => item.LastSeen),
                     group.Count(),
                     newest.Message);
@@ -323,7 +331,7 @@ public static class LinuxOpsAnalyzer
         var severity = actionable.Max(item => item.Severity);
         return new OpsAnalysis(
             severity,
-            severity >= OpsSeverity.Error ? "CRITICAL" : "ATTENTION",
+            SeverityLabel(severity),
             top.Component,
             $"Highest-priority finding: {top.Component} — {top.Problem}",
             ordered);
@@ -389,6 +397,16 @@ public static class LinuxOpsAnalyzer
         >= 85 => OpsSeverity.Warning,
         _ => OpsSeverity.Healthy
     };
+
+    public static string SeverityLabel(OpsSeverity severity) =>
+        severity switch
+        {
+            OpsSeverity.Critical => "CRITICAL",
+            OpsSeverity.Error => "ERROR",
+            OpsSeverity.Warning => "ATTENTION",
+            OpsSeverity.Info => "INFO",
+            _ => "HEALTHY"
+        };
 
     public static OpsSeverity ServiceSeverity(ServiceSnapshot service)
     {
@@ -494,13 +512,63 @@ public static class LinuxOpsAnalyzer
                 ? OpsSeverity.Error
                 : OpsSeverity.Warning;
 
-        return new OpsLogGroup(severity, source, timestamp, 1, message);
+        return new OpsLogGroup(
+            severity,
+            CanonicalSource(source),
+            timestamp,
+            1,
+            message);
     }
 
-    private static string NormalizeLog(string value)
+    private static string CanonicalSource(string value)
     {
-        var text = Regex.Replace(value, @"0x[0-9a-f]+", "0x#", RegexOptions.IgnoreCase);
-        text = Regex.Replace(text, @"\b\d{5,}\b", "#");
+        var source = value.Trim();
+
+        if (source.StartsWith(
+                "gnome-keyring",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return "gnome-keyring-daemon";
+        }
+
+        return source;
+    }
+
+    private static string NormalizeLog(
+        string source,
+        string value)
+    {
+        var lowered = value.ToLowerInvariant();
+
+        if (source.Equals(
+                "gnome-keyring-daemon",
+                StringComparison.OrdinalIgnoreCase) &&
+            lowered.Contains("assertion"))
+        {
+            return "gnome-keyring assertion family";
+        }
+
+        if (lowered.Contains("world-inaccessible"))
+            return "systemd unit world-inaccessible";
+
+        if (lowered.Contains("dumped core") ||
+            lowered.Contains("core dump") ||
+            lowered.Contains("segfault"))
+        {
+            return "process crash or core dump";
+        }
+
+        var text = Regex.Replace(
+            value,
+            @"0x[0-9a-f]+",
+            "0x#",
+            RegexOptions.IgnoreCase);
+
+        text = Regex.Replace(
+            text,
+            @"\b\d{5,}\b",
+            "#");
+
         return text.Trim();
     }
 
@@ -556,41 +624,122 @@ public sealed class LinuxBackupProbe
             evidence.Add($"Tools: {string.Join(", ", tools)}");
         evidence.AddRange(units.Select(item => $"{item.Unit}: {item.Active}/{item.SubState}, {item.Enabled}"));
         if (artifacts.FirstOrDefault() is { } newest)
-            evidence.Add($"Newest artifact: {newest.Path} · {newest.ModifiedAt.LocalDateTime:g}");
+        {
+            evidence.Add(
+                $"Newest verified artifact: {newest.Path} · " +
+                $"{newest.LocalModifiedAt.LocalDateTime:g}");
+        }
 
-        var timers = units.Where(item => item.Unit.EndsWith(".timer", StringComparison.OrdinalIgnoreCase)).ToArray();
-        var activeTimers = timers.Where(item => item.Active.Equals("active", StringComparison.OrdinalIgnoreCase)).ToArray();
+        var timers = units
+            .Where(item =>
+                item.Unit.EndsWith(
+                    ".timer",
+                    StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        var activeTimers = timers
+            .Where(item =>
+                item.Active.Equals(
+                    "active",
+                    StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
         var latest = artifacts.FirstOrDefault();
 
-        if (timers.Length == 0 && artifacts.Count == 0 && tools.Length == 0)
-            return new OpsBackupSnapshot(OpsSeverity.Info, "NOT CONFIGURED", "No provider detected",
-                "No backup tool, schedule or recent artifact was detected.", evidence, units, artifacts);
+        if (timers.Length == 0 &&
+            artifacts.Count == 0)
+        {
+            var summary = tools.Length == 0
+                ? "No configured backup schedule or verified backup artifact was detected."
+                : "Backup-capable tools are installed, but no configured schedule or verified artifact was detected.";
 
-        if (timers.Length > 0 && activeTimers.Length == 0)
-            return new OpsBackupSnapshot(OpsSeverity.Error, "ATTENTION", "systemd timers",
-                "Backup-related timers exist, but none are active.", evidence, units, artifacts);
+            return new OpsBackupSnapshot(
+                OpsSeverity.Info,
+                "NOT CONFIGURED",
+                tools.Length == 0
+                    ? "No provider detected"
+                    : string.Join(" / ", tools),
+                summary,
+                evidence,
+                units,
+                artifacts);
+        }
 
-        if (timers.Any(item => item.Enabled.Equals("disabled", StringComparison.OrdinalIgnoreCase)))
-            return new OpsBackupSnapshot(OpsSeverity.Warning, "ATTENTION", "systemd timers",
-                "At least one backup-related timer is disabled.", evidence, units, artifacts);
+        if (timers.Length == 0)
+        {
+            return new OpsBackupSnapshot(
+                OpsSeverity.Warning,
+                "ARTIFACTS / UNVERIFIED",
+                "No matching schedule",
+                "Relevant-looking artifacts were found, but no matching backup timer was detected.",
+                evidence,
+                units,
+                artifacts);
+        }
+
+        if (activeTimers.Length == 0)
+        {
+            return new OpsBackupSnapshot(
+                OpsSeverity.Error,
+                "ATTENTION",
+                "systemd timers",
+                "Media-configuration backup timers exist, but none are active.",
+                evidence,
+                units,
+                artifacts);
+        }
+
+        if (timers.Any(item =>
+                item.Enabled.Equals(
+                    "disabled",
+                    StringComparison.OrdinalIgnoreCase)))
+        {
+            return new OpsBackupSnapshot(
+                OpsSeverity.Warning,
+                "ATTENTION",
+                "systemd timers",
+                "At least one media-configuration backup timer is disabled.",
+                evidence,
+                units,
+                artifacts);
+        }
 
         if (latest is null)
-            return new OpsBackupSnapshot(OpsSeverity.Warning, "SCHEDULED / UNVERIFIED",
-                timers.Length > 0 ? "systemd timers" : string.Join(" / ", tools),
-                "Scheduling or tooling was detected, but no recent artifact was found in inspected paths.",
-                evidence, units, artifacts);
+        {
+            return new OpsBackupSnapshot(
+                OpsSeverity.Warning,
+                "SCHEDULED / UNVERIFIED",
+                "systemd timers",
+                "Backup scheduling is active, but no verified media-configuration artifact was found.",
+                evidence,
+                units,
+                artifacts);
+        }
 
-        var age = DateTimeOffset.Now - latest.ModifiedAt;
+        var age =
+            DateTimeOffset.Now -
+            latest.LocalModifiedAt;
+
         if (age > TimeSpan.FromDays(14))
-            return new OpsBackupSnapshot(OpsSeverity.Warning, "STALE",
-                timers.Length > 0 ? "systemd timers" : string.Join(" / ", tools),
-                $"The newest discovered backup artifact is {Math.Floor(age.TotalDays)} days old.",
-                evidence, units, artifacts);
+        {
+            return new OpsBackupSnapshot(
+                OpsSeverity.Warning,
+                "STALE",
+                "systemd timers",
+                $"The newest verified backup artifact is {Math.Floor(age.TotalDays)} days old.",
+                evidence,
+                units,
+                artifacts);
+        }
 
-        return new OpsBackupSnapshot(OpsSeverity.Healthy, "READY",
-            timers.Length > 0 ? "systemd timers" : string.Join(" / ", tools),
-            $"Backup scheduling is active and the newest artifact is {RelativeAge(age)} old.",
-            evidence, units, artifacts);
+        return new OpsBackupSnapshot(
+            OpsSeverity.Healthy,
+            "READY",
+            "systemd timers",
+            $"Backup scheduling is active and the newest verified artifact is {RelativeAge(age)} old.",
+            evidence,
+            units,
+            artifacts);
     }
 
     private static async Task<IReadOnlyList<OpsBackupUnit>> CaptureUnitsAsync(CancellationToken cancellationToken)
@@ -606,7 +755,9 @@ public sealed class LinuxBackupProbe
             new[] { "list-unit-files", "--type=timer", "--no-legend", "--no-pager" }, cancellationToken))
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)
             .Select(line => line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault())
-            .Where(unit => !string.IsNullOrWhiteSpace(unit) && IsBackupName(unit!))
+            .Where(unit =>
+                !string.IsNullOrWhiteSpace(unit) &&
+                IsRelevantBackupUnit(unit!))
             .Cast<string>();
 
         var rows = new List<OpsBackupUnit>();
@@ -673,11 +824,19 @@ public sealed class LinuxBackupProbe
                 !double.TryParse(columns[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var epoch))
                 continue;
 
+            var path = columns[2];
+
+            if (!IsRelevantArtifactPath(path))
+                continue;
+
             long.TryParse(columns[1], out var bytes);
             rows.Add(new OpsBackupArtifact(
-                columns[2],
+                path,
                 FormatBytes(bytes),
-                DateTimeOffset.FromUnixTimeMilliseconds((long)(epoch * 1000))));
+                DateTimeOffset
+                    .FromUnixTimeMilliseconds(
+                        (long)(epoch * 1000))
+                    .ToLocalTime()));
         }
 
         return rows.OrderByDescending(item => item.ModifiedAt).Take(50).ToArray();
@@ -686,11 +845,83 @@ public sealed class LinuxBackupProbe
     private static bool CommandExists(string command) =>
         File.Exists($"/usr/bin/{command}") || File.Exists($"/usr/local/bin/{command}");
 
-    private static bool IsBackupName(string value)
+    private static bool IsRelevantBackupUnit(string value)
     {
         var text = value.ToLowerInvariant();
-        return text.Contains("backup") || text.Contains("restic") || text.Contains("borg") ||
-               text.Contains("snapshot") || text.Contains("rclone") || text.Contains("rsync");
+
+        if (text.StartsWith("media-config-backup"))
+            return true;
+
+        return text.Contains("restic") ||
+               text.Contains("borg") ||
+               text.Contains("rclone") ||
+               text.Contains("duplicity") ||
+               text.Contains("rsnapshot");
+    }
+
+    private static bool IsRelevantArtifactPath(string value)
+    {
+        var path = value
+            .Replace(
+                Path.DirectorySeparatorChar,
+                '/')
+            .ToLowerInvariant();
+
+        string[] exclusions =
+        {
+            "/.mozilla/",
+            "/.cache/",
+            "/.git/",
+            "/.local/share/trash/",
+            "/downloads/",
+            "/graveops-linux-operational-parity-backups/",
+            "/graveops-linux-parity-backups/",
+            "/graveops-linux-checkout-artifacts/",
+            "/graveops-linux-trust-calibration-backups/",
+            "/sessionstore-backups/"
+        };
+
+        if (exclusions.Any(path.Contains))
+            return false;
+
+        var fileName =
+            Path.GetFileName(path);
+
+        var isArchive =
+            path.EndsWith(".tar") ||
+            path.EndsWith(".tar.gz") ||
+            path.EndsWith(".tgz") ||
+            path.EndsWith(".zip") ||
+            path.EndsWith(".zst") ||
+            path.EndsWith(".bz2") ||
+            path.EndsWith(".xz");
+
+        if (path.Contains("media-config-backup") ||
+            path.Contains("/media-config/"))
+        {
+            return true;
+        }
+
+        if (path.Contains("/var/backups/") &&
+            (fileName.Contains("media-config") ||
+             fileName.Contains("restic") ||
+             fileName.Contains("borg") ||
+             fileName.Contains("rclone") ||
+             fileName.Contains("snapshot") ||
+             (fileName.Contains("backup") &&
+              isArchive)))
+        {
+            return true;
+        }
+
+        if ((path.Contains("/backup/") ||
+             path.Contains("/backups/")) &&
+            isArchive)
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private static IReadOnlyDictionary<string, string> ParseProperties(string output) =>

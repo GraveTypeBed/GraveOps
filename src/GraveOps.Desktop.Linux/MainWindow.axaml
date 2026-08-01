@@ -1180,7 +1180,7 @@
                           <Grid ColumnDefinitions="*,110,180" ColumnSpacing="12">
                             <TextBlock Text="{ReflectionBinding Path}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Path}" />
                             <TextBlock Grid.Column="1" Text="{ReflectionBinding Size}" Classes="muted" />
-                            <TextBlock Grid.Column="2" Text="{ReflectionBinding ModifiedAt, StringFormat='{}{0:g}'}" Classes="dim" />
+                            <TextBlock Grid.Column="2" Text="{ReflectionBinding LocalModifiedAt, StringFormat='{}{0:g}'}" Classes="dim" />
                           </Grid>
                         </DataTemplate>
                       </ListBox.ItemTemplate>
