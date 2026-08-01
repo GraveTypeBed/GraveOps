@@ -193,10 +193,64 @@
     </Style>
 
     <Style Selector="Button.quickModule">
-      <Setter Property="MinHeight" Value="82" />
-      <Setter Property="Padding" Value="12,10" />
+      <Setter Property="MinHeight" Value="62" />
+      <Setter Property="Padding" Value="11,9" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
       <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    </Style>
+
+    <Style Selector="Button.quickModule:pointerover">
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
+
+    <Style Selector="Button.headerCommand">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="11,7" />
+    </Style>
+
+    <Style Selector="TextBlock.dashboardSubtitle">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="LineHeight" Value="16" />
+    </Style>
+
+    <Style Selector="Border.emptyState">
+      <Setter Property="Background" Value="#121719" />
+      <Setter Property="BorderBrush" Value="#26352D" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="18" />
+    </Style>
+
+    <Style Selector="Border.chainRow">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="10,8" />
+    </Style>
+
+    <Style Selector="Border.chainSummary">
+      <Setter Property="Background" Value="#14171A" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="9,7" />
+    </Style>
+
+    <Style Selector="Border.selectionRow">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="Padding" Value="9,7" />
+    </Style>
+
+    <Style Selector="Border.statusBadge">
+      <Setter Property="Background" Value="{DynamicResource SuccessTintBrush}" />
+      <Setter Property="BorderBrush" Value="#1C5A32" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="Padding" Value="8,3" />
     </Style>
 
     <Style Selector="Button.ghost">
@@ -365,6 +419,25 @@
     <Style Selector="ListBox.dataList.passive ListBoxItem:selected">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.dashboardSelection ListBoxItem">
+      <Setter Property="Padding" Value="2" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style Selector="ListBox.dashboardSelection ListBoxItem:pointerover">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.dashboardSelection ListBoxItem:selected">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     </Style>
   </Application.Styles>
 </Application>

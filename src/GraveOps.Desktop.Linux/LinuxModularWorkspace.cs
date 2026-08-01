@@ -78,7 +78,7 @@ public sealed record ModularApplicationDescriptor(
 
 public sealed class ModularLayoutContract
 {
-    public string Version { get; set; } = "4.3.8";
+    public string Version { get; set; } = "4.3.9";
     public bool ViewportFirst { get; set; } = true;
     public bool PageLevelScrollDisabled { get; set; } = false;
     public bool DirectAppsUseDedicatedWorkspace { get; set; } = true;
@@ -86,6 +86,9 @@ public sealed class ModularLayoutContract
     public bool SharedPageComposition { get; set; } = true;
     public bool UploadedWindowsReferenceSource { get; set; } = true;
     public bool ReferenceShellAndDashboard { get; set; } = true;
+    public bool DashboardVisualCalibration { get; set; } = true;
+    public bool DesignedEmptyStates { get; set; } = true;
+    public bool SubtleDashboardSelection { get; set; } = true;
     public int PrimaryReferenceWidth { get; set; } = 1920;
     public int PrimaryReferenceHeight { get; set; } = 1040;
     public int SidebarWidth { get; set; } = 260;

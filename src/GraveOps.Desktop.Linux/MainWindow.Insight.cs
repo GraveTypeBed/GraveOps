@@ -125,8 +125,7 @@ public partial class MainWindow
                 CultureInfo.InvariantCulture);
 
         Get<TextBlock>("DashboardFleetApplicationCountText").Text =
-            _dashboardApplications.Count.ToString(
-                CultureInfo.InvariantCulture);
+            $"{_dashboardApplications.Count.ToString(CultureInfo.InvariantCulture)} verified applications";
 
         Get<TextBlock>("DashboardFleetAttentionCountText").Text =
             _dashboardFleetAttention.Count.ToString(
@@ -365,6 +364,18 @@ public partial class MainWindow
             _dashboardFleetAttention
                 .Take(24)
                 .ToArray();
+
+        var hasRecommendations =
+            _dashboardFleetAttention.Count > 0;
+
+        list.IsVisible =
+            hasRecommendations;
+
+        Get<Border>("DashboardRecommendationsEmptyPanel").IsVisible =
+            !hasRecommendations;
+
+        Get<TextBlock>("DashboardFleetAttentionDetailText").IsVisible =
+            hasRecommendations;
 
         if (list.SelectedItem is null &&
             _dashboardFleetAttention.Count > 0)

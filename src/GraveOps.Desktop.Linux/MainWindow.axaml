@@ -112,7 +112,7 @@
 
             <Border
                 Classes="flatCard"
-                Padding="13"
+                Padding="12"
                 Margin="0,0,0,17">
 
               <StackPanel>
@@ -157,6 +157,7 @@
                           x:Name="ConnectionText"
                           Text="READY"
                           FontSize="12"
+                          FontWeight="SemiBold"
                           Foreground="{DynamicResource SuccessBrush}" />
                     </StackPanel>
 
@@ -177,6 +178,7 @@
 
                 <ComboBox
                     x:Name="ActiveTargetComboBox"
+                    MinHeight="50"
                     HorizontalAlignment="Stretch"
                     SelectionChanged="ActiveTargetComboBox_OnSelectionChanged">
                   <ComboBox.ItemTemplate>
@@ -184,12 +186,13 @@
                       <StackPanel Spacing="1">
                         <TextBlock
                             Text="{ReflectionBinding DisplayName}"
+                            FontSize="11"
                             FontWeight="SemiBold"
-                            TextTrimming="CharacterEllipsis" />
+                            TextWrapping="Wrap" />
                         <TextBlock
                             Text="{ReflectionBinding ConnectionSummary}"
                             Classes="dim"
-                            FontSize="9"
+                            FontSize="9.5"
                             TextTrimming="CharacterEllipsis" />
                       </StackPanel>
                     </DataTemplate>
@@ -615,7 +618,7 @@
                 <TextBlock
                     x:Name="PageTitleText"
                     Text="Dashboard"
-                    FontSize="21"
+                    FontSize="22"
                     FontWeight="SemiBold" />
                 <TextBlock
                     x:Name="PageSubtitleText"
@@ -629,12 +632,12 @@
                   Grid.Column="1"
                   Orientation="Horizontal"
                   VerticalAlignment="Center"
-                  Spacing="8">
-                <Button x:Name="OverviewButton" Classes="compact" Content="Overview" Click="OverviewButton_OnClick" />
-                <Button x:Name="JobsButton" Classes="compact" Content="Jobs" Click="JobsButton_OnClick" />
-                <Button Classes="compact" Content="Intelligence" Tag="IntelligenceNav" Click="DashboardQuickModuleButton_OnClick" />
-                <Button x:Name="ActivityButton" Classes="compact" Content="Activity" Click="ActivityButton_OnClick" />
-                <Button Classes="compact" Content="Terminal" Tag="ToolsNav" Click="DashboardQuickModuleButton_OnClick" />
+                  Spacing="7">
+                <Button x:Name="OverviewButton" Classes="compact headerCommand" MinWidth="68" Content="Overview" Click="OverviewButton_OnClick" />
+                <Button x:Name="JobsButton" Classes="compact headerCommand" MinWidth="52" Content="Jobs" Click="JobsButton_OnClick" />
+                <Button Classes="compact headerCommand" MinWidth="84" Content="Intelligence" Tag="IntelligenceNav" Click="DashboardQuickModuleButton_OnClick" />
+                <Button x:Name="ActivityButton" Classes="compact headerCommand" MinWidth="72" Content="Activity" Click="ActivityButton_OnClick" />
+                <Button Classes="compact headerCommand" MinWidth="70" Content="Terminal" Tag="ToolsNav" Click="DashboardQuickModuleButton_OnClick" />
               </StackPanel>
             </Grid>
           </Border>
@@ -665,13 +668,13 @@
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
 
-                <StackPanel Spacing="12">
+                <StackPanel Spacing="10">
                   <Grid ColumnDefinitions="*,Auto">
                     <StackPanel VerticalAlignment="Center">
                       <TextBlock Text="System overview" Classes="sectionTitle" />
                       <TextBlock
                           Text="Live server state, health, workload and core operations."
-                          Classes="pageSubtitle"
+                          Classes="pageSubtitle dashboardSubtitle"
                           Margin="0,3,0,0" />
                     </StackPanel>
 
@@ -694,7 +697,7 @@
                   </Grid>
 
                   <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
-                    <Border Classes="flatCard">
+                    <Border Classes="flatCard" MinHeight="92">
                       <StackPanel>
                         <TextBlock Text="CONNECTION" Classes="eyebrow" />
                         <TextBlock
@@ -706,12 +709,12 @@
                             x:Name="DashboardEnvironmentSummaryText"
                             Text="Waiting for server state"
                             Classes="dim"
-                            FontSize="10"
+                            FontSize="10.5"
                             TextWrapping="Wrap" />
                       </StackPanel>
                     </Border>
 
-                    <Border Grid.Column="1" Classes="flatCard">
+                    <Border Grid.Column="1" Classes="flatCard" MinHeight="92">
                       <StackPanel>
                         <TextBlock Text="HEALTH" Classes="eyebrow" />
                         <TextBlock
@@ -723,12 +726,12 @@
                             x:Name="DashboardFindingsSummaryText"
                             Text="Waiting for health state"
                             Classes="dim"
-                            FontSize="10"
+                            FontSize="10.5"
                             TextWrapping="Wrap" />
                       </StackPanel>
                     </Border>
 
-                    <Border Grid.Column="2" Classes="flatCard">
+                    <Border Grid.Column="2" Classes="flatCard" MinHeight="92">
                       <StackPanel>
                         <TextBlock Text="BACKUPS" Classes="eyebrow" />
                         <TextBlock
@@ -742,12 +745,12 @@
                             x:Name="DashboardPolicySummaryText"
                             Text="Validated by the latest capture"
                             Classes="dim"
-                            FontSize="10"
+                            FontSize="10.5"
                             TextWrapping="Wrap" />
                       </StackPanel>
                     </Border>
 
-                    <Border Grid.Column="3" Classes="flatCard">
+                    <Border Grid.Column="3" Classes="flatCard" MinHeight="92">
                       <StackPanel>
                         <TextBlock Text="DOCKER" Classes="eyebrow" />
                         <TextBlock
@@ -760,21 +763,21 @@
                         <TextBlock
                             Text="Selected-host container state"
                             Classes="dim"
-                            FontSize="10"
+                            FontSize="10.5"
                             TextWrapping="Wrap" />
                       </StackPanel>
                     </Border>
                   </Grid>
 
                   <Grid ColumnDefinitions="2.15*,1*" ColumnSpacing="10">
-                    <Border Classes="card" MinHeight="245">
-                      <Grid RowDefinitions="Auto,*,Auto" RowSpacing="9">
+                    <Border Classes="card" MinHeight="210">
+                      <Grid RowDefinitions="Auto,*" RowSpacing="10">
                         <Grid ColumnDefinitions="*,Auto">
                           <StackPanel>
                             <TextBlock Text="Recommendations" Classes="sectionTitle" />
                             <TextBlock
                                 Text="Prioritized from the latest Linux capture and shared application telemetry."
-                                Classes="pageSubtitle"
+                                Classes="pageSubtitle dashboardSubtitle"
                                 Margin="0,3,0,0" />
                           </StackPanel>
                           <Button
@@ -786,116 +789,209 @@
                               Click="DashboardOpenAttentionButton_OnClick" />
                         </Grid>
 
-                        <ListBox
-                            Grid.Row="1"
-                            x:Name="DashboardFleetAttentionList"
-                            Classes="dataList"
-                            MinHeight="120"
-                            MaxHeight="220"
-                            SelectionChanged="DashboardFleetAttentionList_OnSelectionChanged">
-                          <ListBox.ItemTemplate>
-                            <DataTemplate x:CompileBindings="False">
-                              <Grid ColumnDefinitions="105,115,*,Auto" ColumnSpacing="10">
+                        <Grid Grid.Row="1" RowDefinitions="*,Auto" RowSpacing="7">
+                          <ListBox
+                              x:Name="DashboardFleetAttentionList"
+                              Classes="dataList dashboardSelection"
+                              MinHeight="96"
+                              MaxHeight="154"
+                              SelectionChanged="DashboardFleetAttentionList_OnSelectionChanged">
+                            <ListBox.ItemTemplate>
+                              <DataTemplate x:CompileBindings="False">
+                                <Border Classes="selectionRow" Margin="0,0,0,4">
+                                  <Grid ColumnDefinitions="92,120,*,Auto" ColumnSpacing="10">
+                                    <TextBlock
+                                        Text="{ReflectionBinding SeverityLabel}"
+                                        Foreground="{DynamicResource WarnBrush}"
+                                        FontWeight="SemiBold" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Text="{ReflectionBinding Component}"
+                                        FontWeight="SemiBold"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <TextBlock
+                                        Grid.Column="2"
+                                        Text="{ReflectionBinding Issue}"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <TextBlock
+                                        Grid.Column="3"
+                                        Text="{ReflectionBinding HostName}"
+                                        Classes="dim"
+                                        TextTrimming="CharacterEllipsis" />
+                                  </Grid>
+                                </Border>
+                              </DataTemplate>
+                            </ListBox.ItemTemplate>
+                          </ListBox>
+
+                          <Border
+                              x:Name="DashboardRecommendationsEmptyPanel"
+                              Grid.RowSpan="2"
+                              Classes="emptyState"
+                              IsVisible="True">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                              <Border
+                                  Width="38"
+                                  Height="38"
+                                  CornerRadius="19"
+                                  Background="{DynamicResource SuccessTintBrush}"
+                                  BorderBrush="#1C5A32"
+                                  BorderThickness="1"
+                                  VerticalAlignment="Center">
                                 <TextBlock
-                                    Text="{ReflectionBinding SeverityLabel}"
-                                    Foreground="{DynamicResource WarnBrush}"
+                                    Text="✓"
+                                    Foreground="{DynamicResource SuccessBrush}"
+                                    FontSize="18"
+                                    FontWeight="SemiBold"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" />
+                              </Border>
+
+                              <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                                <TextBlock
+                                    Text="No recommendations"
+                                    FontSize="14"
                                     FontWeight="SemiBold" />
                                 <TextBlock
-                                    Grid.Column="1"
-                                    Text="{ReflectionBinding Component}"
-                                    FontWeight="SemiBold"
-                                    TextTrimming="CharacterEllipsis" />
-                                <TextBlock
-                                    Grid.Column="2"
-                                    Text="{ReflectionBinding Issue}"
-                                    TextTrimming="CharacterEllipsis" />
-                                <TextBlock
-                                    Grid.Column="3"
-                                    Text="{ReflectionBinding HostName}"
-                                    Classes="dim"
-                                    TextTrimming="CharacterEllipsis" />
-                              </Grid>
-                            </DataTemplate>
-                          </ListBox.ItemTemplate>
-                        </ListBox>
+                                    Text="The latest capture found no active fleet-wide issue that requires operator action."
+                                    Classes="muted"
+                                    FontSize="11"
+                                    TextWrapping="Wrap" />
+                              </StackPanel>
+                            </Grid>
+                          </Border>
 
-                        <TextBlock
-                            Grid.Row="2"
-                            x:Name="DashboardFleetAttentionDetailText"
-                            Text="Nothing needs attention right now."
-                            Classes="muted"
-                            FontSize="10"
-                            TextWrapping="Wrap"
-                            MaxHeight="72" />
+                          <TextBlock
+                              Grid.Row="1"
+                              x:Name="DashboardFleetAttentionDetailText"
+                              IsVisible="False"
+                              Text="Nothing needs attention right now."
+                              Classes="muted"
+                              FontSize="10"
+                              TextWrapping="Wrap"
+                              MaxHeight="42"
+                              Margin="6,0" />
+                        </Grid>
                       </Grid>
                     </Border>
 
-                    <Border Grid.Column="1" Classes="card" MinHeight="245">
-                      <Grid RowDefinitions="Auto,*" RowSpacing="9">
-                        <StackPanel>
-                          <TextBlock Text="Connectivity chain" Classes="sectionTitle" />
-                          <TextBlock
-                              Text="Host → storage → Docker → downloads → Arr → Plex"
-                              Classes="pageSubtitle"
-                              Margin="0,3,0,0" />
-                        </StackPanel>
+                    <Border Grid.Column="1" Classes="card" MinHeight="210">
+                      <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
+                        <Grid ColumnDefinitions="*,Auto">
+                          <StackPanel>
+                            <TextBlock Text="Connectivity chain" Classes="sectionTitle" />
+                            <TextBlock
+                                Text="Host → storage → Docker → downloads → Arr → Plex"
+                                Classes="pageSubtitle dashboardSubtitle"
+                                Margin="0,3,0,0" />
+                          </StackPanel>
+
+                          <Button
+                              Grid.Column="1"
+                              x:Name="DashboardFocusHostButton"
+                              Classes="ghost compact"
+                              Content="Focus"
+                              IsEnabled="False"
+                              Click="DashboardFocusHostButton_OnClick" />
+                        </Grid>
 
                         <ListBox
                             Grid.Row="1"
                             x:Name="DashboardEnvironmentList"
-                            Classes="dataList"
-                            MinHeight="150"
+                            Classes="dataList dashboardSelection"
+                            MinHeight="104"
+                            MaxHeight="138"
                             SelectionChanged="DashboardEnvironmentList_OnSelectionChanged">
                           <ListBox.ItemTemplate>
                             <DataTemplate x:CompileBindings="False">
-                              <StackPanel Spacing="3">
-                                <Grid ColumnDefinitions="*,Auto">
-                                  <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <TextBlock
-                                        Text="●"
-                                        Foreground="{DynamicResource SuccessBrush}"
-                                        FontSize="8"
-                                        VerticalAlignment="Center" />
-                                    <TextBlock
-                                        Text="{ReflectionBinding HostName}"
-                                        FontWeight="SemiBold"
-                                        TextTrimming="CharacterEllipsis" />
-                                    <TextBlock
-                                        Text="{ReflectionBinding ActiveLabel}"
-                                        Foreground="{DynamicResource AccentBrush}"
-                                        FontSize="9" />
-                                  </StackPanel>
+                              <Border Classes="chainRow" Margin="0,0,0,4">
+                                <StackPanel Spacing="4">
+                                  <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                      <TextBlock
+                                          Text="●"
+                                          Foreground="{DynamicResource SuccessBrush}"
+                                          FontSize="8"
+                                          VerticalAlignment="Center" />
+                                      <TextBlock
+                                          Text="{ReflectionBinding HostName}"
+                                          FontWeight="SemiBold"
+                                          TextTrimming="CharacterEllipsis" />
+                                      <TextBlock
+                                          Text="{ReflectionBinding ActiveLabel}"
+                                          Foreground="{DynamicResource AccentBrush}"
+                                          FontSize="9" />
+                                    </StackPanel>
+                                    <Border
+                                        Grid.Column="1"
+                                        Classes="statusBadge">
+                                      <TextBlock
+                                          Text="{ReflectionBinding SeverityLabel}"
+                                          Foreground="{DynamicResource SuccessBrush}"
+                                          FontSize="9"
+                                          FontWeight="SemiBold" />
+                                    </Border>
+                                  </Grid>
                                   <TextBlock
-                                      Grid.Column="1"
-                                      Text="{ReflectionBinding SeverityLabel}"
-                                      FontWeight="SemiBold" />
-                                </Grid>
-                                <TextBlock
-                                    Text="{ReflectionBinding Connection}"
-                                    Classes="dim"
-                                    FontSize="9"
-                                    TextTrimming="CharacterEllipsis" />
-                                <TextBlock
-                                    Text="{ReflectionBinding ApplicationSummary}"
-                                    Classes="muted"
-                                    FontSize="10"
-                                    TextTrimming="CharacterEllipsis" />
-                              </StackPanel>
+                                      Text="{ReflectionBinding Connection}"
+                                      Classes="dim"
+                                      FontSize="9.5"
+                                      TextTrimming="CharacterEllipsis" />
+                                  <TextBlock
+                                      Text="{ReflectionBinding ApplicationSummary}"
+                                      Classes="muted"
+                                      FontSize="10.5"
+                                      TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                              </Border>
                             </DataTemplate>
                           </ListBox.ItemTemplate>
                         </ListBox>
+
+                        <Border Grid.Row="2" Classes="chainSummary">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel>
+                              <TextBlock
+                                  x:Name="DashboardSelectedHostText"
+                                  Text="No target selected"
+                                  FontWeight="SemiBold"
+                                  TextTrimming="CharacterEllipsis" />
+                              <TextBlock
+                                  x:Name="DashboardSelectedConnectionText"
+                                  Text="--"
+                                  Classes="mono"
+                                  FontSize="9.5"
+                                  TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                            <TextBlock
+                                Grid.Column="1"
+                                x:Name="DashboardSelectedCapturedText"
+                                Text="Waiting for capture"
+                                Classes="dim"
+                                FontSize="9"
+                                VerticalAlignment="Center" />
+                          </Grid>
+                        </Border>
+
+                        <!-- Existing Linux data contract retained without duplicating visible workload cards. -->
+                        <StackPanel IsVisible="False">
+                          <TextBlock x:Name="DashboardSelectedApplicationsText" />
+                          <TextBlock x:Name="DashboardSelectedAttentionText" />
+                          <TextBlock x:Name="DashboardSelectedQueueText" />
+                          <TextBlock x:Name="DashboardSelectedDockerText" />
+                        </StackPanel>
                       </Grid>
                     </Border>
                   </Grid>
 
                   <Border Classes="card">
-                    <StackPanel Spacing="10">
+                    <StackPanel Spacing="9">
                       <Grid ColumnDefinitions="*,Auto">
                         <StackPanel>
                           <TextBlock Text="Live workload" Classes="sectionTitle" />
                           <TextBlock
                               Text="Shared snapshots only—no extra repair or destructive probes."
-                              Classes="pageSubtitle"
+                              Classes="pageSubtitle dashboardSubtitle"
                               Margin="0,3,0,0" />
                         </StackPanel>
                         <TextBlock
@@ -963,14 +1059,14 @@
                   </Border>
 
                   <Grid ColumnDefinitions="2.15*,1*" ColumnSpacing="10">
-                    <Border Classes="card" VerticalAlignment="Top">
-                      <StackPanel Spacing="12">
+                    <Border Classes="card" MinHeight="210">
+                      <StackPanel Spacing="11">
                         <Grid ColumnDefinitions="*,Auto">
                           <StackPanel>
                             <TextBlock Text="System health" Classes="sectionTitle" />
                             <TextBlock
                                 Text="Canonical GraveOps health state from the active Linux target."
-                                Classes="pageSubtitle"
+                                Classes="pageSubtitle dashboardSubtitle"
                                 Margin="0,3,0,0" />
                           </StackPanel>
                           <Button
@@ -988,11 +1084,12 @@
                                 <TextBlock
                                     Text="PASS"
                                     Foreground="{DynamicResource SuccessBrush}"
-                                    FontSize="10" />
+                                    FontSize="10.5"
+                                    FontWeight="SemiBold" />
                                 <TextBlock
                                     Text="Healthy checks"
                                     Classes="dim"
-                                    FontSize="9"
+                                    FontSize="9.5"
                                     Margin="0,2,0,0" />
                               </StackPanel>
                               <TextBlock
@@ -1011,11 +1108,12 @@
                                 <TextBlock
                                     Text="WARN"
                                     Foreground="{DynamicResource WarnBrush}"
-                                    FontSize="10" />
+                                    FontSize="10.5"
+                                    FontWeight="SemiBold" />
                                 <TextBlock
                                     Text="Needs review"
                                     Classes="dim"
-                                    FontSize="9"
+                                    FontSize="9.5"
                                     Margin="0,2,0,0" />
                               </StackPanel>
                               <TextBlock
@@ -1034,11 +1132,12 @@
                                 <TextBlock
                                     Text="FAIL"
                                     Foreground="{DynamicResource DangerBrush}"
-                                    FontSize="10" />
+                                    FontSize="10.5"
+                                    FontWeight="SemiBold" />
                                 <TextBlock
                                     Text="Action required"
                                     Classes="dim"
-                                    FontSize="9"
+                                    FontSize="9.5"
                                     Margin="0,2,0,0" />
                               </StackPanel>
                               <TextBlock
@@ -1056,7 +1155,7 @@
                           <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="8" Margin="0,10,0,0">
                             <ListBox
                                 x:Name="DashboardAttentionList"
-                                Classes="dataList"
+                                Classes="dataList dashboardSelection"
                                 MinHeight="130"
                                 MaxHeight="260"
                                 SelectionChanged="DashboardAttentionList_OnSelectionChanged" />
@@ -1105,7 +1204,7 @@
                                 Classes="eyebrow" />
                             <ListBox
                                 x:Name="MutedFindingsList"
-                                Classes="dataList"
+                                Classes="dataList dashboardSelection"
                                 MaxHeight="160"
                                 SelectionChanged="MutedFindingsList_OnSelectionChanged" />
                             <Button
@@ -1119,164 +1218,128 @@
                       </StackPanel>
                     </Border>
 
-                    <StackPanel Grid.Column="1" Spacing="10">
-                      <Border Classes="card">
-                        <StackPanel Spacing="11">
+                    <Border Grid.Column="1" Classes="card" MinHeight="210">
+                      <StackPanel Spacing="10">
+                        <StackPanel>
                           <TextBlock Text="Quick operations" Classes="sectionTitle" />
                           <TextBlock
                               Text="Common destinations without duplicating full page detail."
-                              Classes="pageSubtitle"
+                              Classes="pageSubtitle dashboardSubtitle"
                               Margin="0,3,0,0" />
+                        </StackPanel>
 
-                          <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8">
-                            <Button
-                                Classes="quickModule"
-                                Tag="IntelligenceNav"
-                                Click="DashboardQuickModuleButton_OnClick">
-                              <StackPanel Spacing="4">
+                        <Grid
+                            ColumnDefinitions="*,*"
+                            RowDefinitions="*,*"
+                            ColumnSpacing="8"
+                            RowSpacing="8"
+                            MinHeight="134">
+                          <Button
+                              Classes="quickModule"
+                              Tag="IntelligenceNav"
+                              Click="DashboardQuickModuleButton_OnClick">
+                            <Grid ColumnDefinitions="*,Auto">
+                              <StackPanel Spacing="3">
                                 <TextBlock Text="Intelligence" FontWeight="SemiBold" />
                                 <TextBlock
                                     x:Name="DashboardQuickIntelligenceText"
                                     Text="--"
                                     Classes="muted"
-                                    FontSize="10"
-                                    TextWrapping="Wrap" />
+                                    FontSize="10.5"
+                                    TextWrapping="Wrap"
+                                    MaxHeight="34" />
                               </StackPanel>
-                            </Button>
+                              <TextBlock
+                                  Grid.Column="1"
+                                  Text="›"
+                                  Foreground="{DynamicResource AccentBrush}"
+                                  FontSize="18"
+                                  VerticalAlignment="Center" />
+                            </Grid>
+                          </Button>
 
-                            <Button
-                                Grid.Column="1"
-                                Classes="quickModule"
-                                Tag="MediaHubNav"
-                                Click="DashboardQuickModuleButton_OnClick">
-                              <StackPanel Spacing="4">
+                          <Button
+                              Grid.Column="1"
+                              Classes="quickModule"
+                              Tag="MediaHubNav"
+                              Click="DashboardQuickModuleButton_OnClick">
+                            <Grid ColumnDefinitions="*,Auto">
+                              <StackPanel Spacing="3">
                                 <TextBlock Text="Media Hub" FontWeight="SemiBold" />
                                 <TextBlock
                                     x:Name="DashboardQuickMediaText"
                                     Text="--"
                                     Classes="muted"
-                                    FontSize="10"
-                                    TextWrapping="Wrap" />
+                                    FontSize="10.5"
+                                    TextWrapping="Wrap"
+                                    MaxHeight="34" />
                               </StackPanel>
-                            </Button>
+                              <TextBlock
+                                  Grid.Column="1"
+                                  Text="›"
+                                  Foreground="{DynamicResource AccentBrush}"
+                                  FontSize="18"
+                                  VerticalAlignment="Center" />
+                            </Grid>
+                          </Button>
 
-                            <Button
-                                Grid.Row="1"
-                                Classes="quickModule"
-                                Tag="StorageNav"
-                                Click="DashboardQuickModuleButton_OnClick">
-                              <StackPanel Spacing="4">
+                          <Button
+                              Grid.Row="1"
+                              Classes="quickModule"
+                              Tag="StorageNav"
+                              Click="DashboardQuickModuleButton_OnClick">
+                            <Grid ColumnDefinitions="*,Auto">
+                              <StackPanel Spacing="3">
                                 <TextBlock Text="Storage" FontWeight="SemiBold" />
                                 <TextBlock
                                     x:Name="DashboardQuickStorageText"
                                     Text="--"
                                     Classes="muted"
-                                    FontSize="10"
-                                    TextWrapping="Wrap" />
+                                    FontSize="10.5"
+                                    TextWrapping="Wrap"
+                                    MaxHeight="34" />
                               </StackPanel>
-                            </Button>
+                              <TextBlock
+                                  Grid.Column="1"
+                                  Text="›"
+                                  Foreground="{DynamicResource AccentBrush}"
+                                  FontSize="18"
+                                  VerticalAlignment="Center" />
+                            </Grid>
+                          </Button>
 
-                            <Button
-                                Grid.Row="1"
-                                Grid.Column="1"
-                                Classes="quickModule"
-                                Tag="HistoryNav"
-                                Click="DashboardQuickModuleButton_OnClick">
-                              <StackPanel Spacing="4">
+                          <Button
+                              Grid.Row="1"
+                              Grid.Column="1"
+                              Classes="quickModule"
+                              Tag="HistoryNav"
+                              Click="DashboardQuickModuleButton_OnClick">
+                            <Grid ColumnDefinitions="*,Auto">
+                              <StackPanel Spacing="3">
                                 <TextBlock Text="Activity" FontWeight="SemiBold" />
                                 <TextBlock
                                     x:Name="DashboardQuickHistoryText"
                                     Text="--"
                                     Classes="muted"
-                                    FontSize="10"
-                                    TextWrapping="Wrap" />
+                                    FontSize="10.5"
+                                    TextWrapping="Wrap"
+                                    MaxHeight="34" />
                               </StackPanel>
-                            </Button>
-                          </Grid>
-
-                          <TextBlock
-                              x:Name="DashboardQuickLifecycleText"
-                              IsVisible="False" />
-                        </StackPanel>
-                      </Border>
-
-                      <Border Classes="card">
-                        <StackPanel Spacing="9">
-                          <Grid ColumnDefinitions="*,Auto">
-                            <StackPanel>
-                              <TextBlock Text="Host snapshot" Classes="sectionTitle" />
                               <TextBlock
-                                  Text="Identity, connection, applications, queue and Docker."
-                                  Classes="pageSubtitle"
-                                  Margin="0,3,0,0" />
-                            </StackPanel>
-                            <Button
-                                Grid.Column="1"
-                                x:Name="DashboardFocusHostButton"
-                                Classes="compact"
-                                Content="Focus"
-                                IsEnabled="False"
-                                Click="DashboardFocusHostButton_OnClick" />
-                          </Grid>
+                                  Grid.Column="1"
+                                  Text="›"
+                                  Foreground="{DynamicResource AccentBrush}"
+                                  FontSize="18"
+                                  VerticalAlignment="Center" />
+                            </Grid>
+                          </Button>
+                        </Grid>
 
-                          <TextBlock
-                              x:Name="DashboardSelectedHostText"
-                              Text="No target selected"
-                              FontSize="15"
-                              FontWeight="SemiBold"
-                              TextTrimming="CharacterEllipsis" />
-                          <TextBlock
-                              x:Name="DashboardSelectedConnectionText"
-                              Text="--"
-                              Classes="mono"
-                              TextTrimming="CharacterEllipsis" />
-                          <TextBlock
-                              x:Name="DashboardSelectedCapturedText"
-                              Text="Waiting for capture"
-                              Classes="dim" />
-
-                          <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8">
-                            <Border Classes="inset">
-                              <StackPanel>
-                                <TextBlock Text="ONLINE APPS" Classes="eyebrow" />
-                                <TextBlock
-                                    x:Name="DashboardSelectedApplicationsText"
-                                    Text="--"
-                                    FontWeight="SemiBold" />
-                              </StackPanel>
-                            </Border>
-                            <Border Grid.Column="1" Classes="inset">
-                              <StackPanel>
-                                <TextBlock Text="ATTENTION" Classes="eyebrow" />
-                                <TextBlock
-                                    x:Name="DashboardSelectedAttentionText"
-                                    Text="--"
-                                    FontWeight="SemiBold" />
-                              </StackPanel>
-                            </Border>
-                            <Border Grid.Row="1" Classes="inset">
-                              <StackPanel>
-                                <TextBlock Text="QUEUED" Classes="eyebrow" />
-                                <TextBlock
-                                    x:Name="DashboardSelectedQueueText"
-                                    Text="--"
-                                    FontWeight="SemiBold" />
-                              </StackPanel>
-                            </Border>
-                            <Border Grid.Row="1" Grid.Column="1" Classes="inset">
-                              <StackPanel>
-                                <TextBlock Text="DOCKER" Classes="eyebrow" />
-                                <TextBlock
-                                    x:Name="DashboardSelectedDockerText"
-                                    Text="--"
-                                    FontWeight="SemiBold"
-                                    TextTrimming="CharacterEllipsis" />
-                              </StackPanel>
-                            </Border>
-                          </Grid>
-                        </StackPanel>
-                      </Border>
-                    </StackPanel>
+                        <TextBlock
+                            x:Name="DashboardQuickLifecycleText"
+                            IsVisible="False" />
+                      </StackPanel>
+                    </Border>
                   </Grid>
 
                   <Grid ColumnDefinitions="2.15*,1*" ColumnSpacing="10" Margin="0,0,0,4">
@@ -1287,7 +1350,7 @@
                             <TextBlock Text="Service fleet" Classes="sectionTitle" />
                             <TextBlock
                                 Text="The active target's verified media and infrastructure applications."
-                                Classes="pageSubtitle"
+                                Classes="pageSubtitle dashboardSubtitle"
                                 Margin="0,3,0,0" />
                           </StackPanel>
                           <Button
@@ -1302,29 +1365,31 @@
                         <ListBox
                             Grid.Row="1"
                             x:Name="DashboardApplicationList"
-                            Classes="dataList"
-                            MinHeight="220"
-                            MaxHeight="360"
+                            Classes="dataList dashboardSelection"
+                            MinHeight="180"
+                            MaxHeight="300"
                             SelectionChanged="DashboardApplicationList_OnSelectionChanged">
                           <ListBox.ItemTemplate>
                             <DataTemplate x:CompileBindings="False">
-                              <Grid ColumnDefinitions="1.35*,0.85*,Auto" ColumnSpacing="10">
-                                <TextBlock
-                                    Text="{ReflectionBinding Application}"
-                                    FontWeight="SemiBold"
-                                    TextTrimming="CharacterEllipsis" />
-                                <TextBlock
-                                    Grid.Column="1"
-                                    Text="{ReflectionBinding State}"
-                                    Foreground="{DynamicResource SuccessBrush}"
-                                    FontWeight="SemiBold"
-                                    TextTrimming="CharacterEllipsis" />
-                                <TextBlock
-                                    Grid.Column="2"
-                                    Text="Open from GraveOps"
-                                    Classes="dim"
-                                    FontSize="9" />
-                              </Grid>
+                              <Border Classes="selectionRow" Margin="0,0,0,4">
+                                <Grid ColumnDefinitions="1.35*,0.85*,Auto" ColumnSpacing="10">
+                                  <TextBlock
+                                      Text="{ReflectionBinding Application}"
+                                      FontWeight="SemiBold"
+                                      TextTrimming="CharacterEllipsis" />
+                                  <TextBlock
+                                      Grid.Column="1"
+                                      Text="{ReflectionBinding State}"
+                                      Foreground="{DynamicResource SuccessBrush}"
+                                      FontWeight="SemiBold"
+                                      TextTrimming="CharacterEllipsis" />
+                                  <TextBlock
+                                      Grid.Column="2"
+                                      Text="Open from GraveOps"
+                                      Classes="dim"
+                                      FontSize="9.5" />
+                                </Grid>
+                              </Border>
                             </DataTemplate>
                           </ListBox.ItemTemplate>
                         </ListBox>
@@ -1344,7 +1409,7 @@
                             <TextBlock Text="Recent activity" Classes="sectionTitle" />
                             <TextBlock
                                 Text="Latest meaningful GraveOps operations."
-                                Classes="pageSubtitle"
+                                Classes="pageSubtitle dashboardSubtitle"
                                 Margin="0,3,0,0" />
                           </StackPanel>
                           <TextBlock
@@ -1358,8 +1423,8 @@
                             Grid.Row="1"
                             x:Name="DashboardRecentActivityList"
                             Classes="dataList passive"
-                            MinHeight="220"
-                            MaxHeight="360">
+                            MinHeight="180"
+                            MaxHeight="300">
                           <ListBox.ItemTemplate>
                             <DataTemplate x:CompileBindings="False">
                               <StackPanel Spacing="3">
