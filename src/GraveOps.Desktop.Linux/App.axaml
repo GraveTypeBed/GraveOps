@@ -190,5 +190,28 @@
       <Setter Property="FontSize" Value="12" />
       <Setter Property="Padding" Value="12" />
     </Style>
+  
+
+    <Style Selector="Border.badge">
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="Padding" Value="9,4" />
+      <Setter Property="Background" Value="{DynamicResource AccentTintBrush}" />
+    </Style>
+
+    <Style Selector="Button.danger">
+      <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+      <Setter Property="Background" Value="{DynamicResource DangerTintBrush}" />
+      <Setter Property="BorderBrush" Value="#5A2B31" />
+    </Style>
+
+    <Style Selector="TextBox.filter">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="11,7" />
+      <Setter Property="Background" Value="{DynamicResource InputBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
   </Application.Styles>
 </Application>

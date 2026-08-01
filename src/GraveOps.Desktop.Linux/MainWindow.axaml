@@ -2,6 +2,7 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     x:Class="GraveOps.Desktop.Linux.MainWindow"
+    x:CompileBindings="False"
     Title="GraveOps"
     Icon="/Assets/graveops-brandmark.png"
     Width="1500"
@@ -140,6 +141,7 @@
                         Spacing="7">
 
                       <TextBlock
+                          x:Name="ConnectionDot"
                           Text="●"
                           FontSize="10"
                           Foreground="{DynamicResource SuccessBrush}" />
@@ -486,6 +488,7 @@
 
             <Grid ColumnDefinitions="Auto,*,Auto">
               <TextBlock
+                  x:Name="StatusStripDot"
                   Text="●"
                   FontSize="10"
                   Foreground="{DynamicResource SuccessBrush}"
@@ -593,6 +596,7 @@
                         </StackPanel>
 
                         <Border
+                            x:Name="DashboardHealthBadgeBorder"
                             Grid.Column="1"
                             Background="{DynamicResource SuccessTintBrush}"
                             CornerRadius="7"
@@ -688,7 +692,19 @@
                           x:Name="DashboardAttentionList"
                           Classes="dataList"
                           MinHeight="190"
-                          MaxHeight="260" />
+                          MaxHeight="280">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <Grid ColumnDefinitions="90,*" ColumnSpacing="10">
+                              <TextBlock Text="{ReflectionBinding Severity}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
+                              <StackPanel Grid.Column="1" Spacing="3">
+                                <TextBlock Text="{ReflectionBinding Component}" FontWeight="SemiBold" />
+                                <TextBlock Text="{ReflectionBinding Problem}" Classes="muted" TextWrapping="Wrap" />
+                              </StackPanel>
+                            </Grid>
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
                     </StackPanel>
                   </Border>
                 </Grid>
@@ -809,246 +825,371 @@
               </StackPanel>
             </ScrollViewer>
 
-            <!-- Media Hub -->
-            <ScrollViewer
-                x:Name="MediaHubPage"
-                IsVisible="False">
-
+<!-- Media Hub -->
+            <ScrollViewer x:Name="MediaHubPage" IsVisible="False">
               <StackPanel Spacing="18">
                 <Border Classes="card">
                   <StackPanel Spacing="12">
-                    <TextBlock
-                        Text="Verified integrations"
-                        Classes="sectionTitle" />
-                    <TextBlock
-                        Text="Discovery correlates Docker and systemd identity rather than displaying every catalog entry."
-                        Classes="pageSubtitle" />
-                    <ListBox
-                        x:Name="IntegrationsList"
-                        Classes="dataList"
-                        MinHeight="360" />
+                    <Grid ColumnDefinitions="*,320">
+                      <StackPanel>
+                        <TextBlock Text="Verified integrations" Classes="sectionTitle" />
+                        <TextBlock Text="Docker identity, systemd units and DUMB published ports are correlated." Classes="pageSubtitle" Margin="0,4,0,0" />
+                      </StackPanel>
+                      <TextBox Grid.Column="1" x:Name="MediaFilterText" Classes="filter" PlaceholderText="Filter integrations" TextChanged="MediaFilterText_OnTextChanged" />
+                    </Grid>
+                    <ListBox x:Name="IntegrationsList" Classes="dataList" MinHeight="460">
+                      <ListBox.ItemTemplate>
+                        <DataTemplate x:CompileBindings="False">
+                          <Grid ColumnDefinitions="160,150,180,220,*,90" ColumnSpacing="12">
+                            <TextBlock Text="{ReflectionBinding Name}" FontWeight="SemiBold" />
+                            <TextBlock Grid.Column="1" Text="{ReflectionBinding Kind}" Classes="muted" />
+                            <TextBlock Grid.Column="2" Text="{ReflectionBinding State}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding State}" />
+                            <TextBlock Grid.Column="3" Text="{ReflectionBinding Evidence}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Evidence}" />
+                            <TextBlock Grid.Column="4" Text="{ReflectionBinding Endpoint}" Classes="dim" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="5" Text="{ReflectionBinding Severity}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
+                          </Grid>
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
                   </StackPanel>
                 </Border>
               </StackPanel>
             </ScrollViewer>
 
-            <!-- Services -->
-            <ScrollViewer
-                x:Name="ServicesPage"
-                IsVisible="False">
-
+<!-- Services -->
+            <ScrollViewer x:Name="ServicesPage" IsVisible="False">
               <StackPanel Spacing="18">
                 <Border Classes="card">
                   <StackPanel Spacing="12">
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel>
-                        <TextBlock
-                            Text="Native systemd services"
-                            Classes="sectionTitle" />
-                        <TextBlock
-                            Text="Read-only operational inventory. Privileged start, stop, and restart controls remain explicit work for the next parity phase."
-                            Classes="pageSubtitle"
-                            Margin="0,4,0,0" />
+                        <TextBlock Text="Native systemd services" Classes="sectionTitle" />
+                        <TextBlock Text="Select a service. Safe Mode blocks stop and restart by default." Classes="pageSubtitle" Margin="0,4,0,0" />
                       </StackPanel>
-
-                      <TextBlock
-                          Grid.Column="1"
-                          x:Name="ServicesSummaryText"
-                          Text="--"
-                          Classes="muted"
-                          VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" x:Name="ServicesSummaryText" Text="--" Classes="muted" VerticalAlignment="Center" />
                     </Grid>
-
-                    <ListBox
-                        x:Name="ServicesList"
-                        Classes="dataList"
-                        MinHeight="420" />
+                    <Grid ColumnDefinitions="300,Auto,Auto,Auto,*,Auto" ColumnSpacing="9">
+                      <TextBox x:Name="ServicesFilterText" Classes="filter" PlaceholderText="Filter services" TextChanged="ServicesFilterText_OnTextChanged" />
+                      <Button Grid.Column="1" x:Name="ServiceStartButton" Content="Start" IsEnabled="False" Click="ServiceStartButton_OnClick" />
+                      <Button Grid.Column="2" x:Name="ServiceStopButton" Content="Stop" Classes="danger" IsEnabled="False" Click="ServiceStopButton_OnClick" />
+                      <Button Grid.Column="3" x:Name="ServiceRestartButton" Content="Restart" IsEnabled="False" Click="ServiceRestartButton_OnClick" />
+                      <TextBlock Grid.Column="4" x:Name="ServiceActionStatusText" Text="Select a service." Classes="dim" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                      <CheckBox Grid.Column="5" x:Name="SafeModeCheckBox" Content="Safe Mode" IsChecked="True" VerticalAlignment="Center" Click="SafeModeCheckBox_OnClick" />
+                    </Grid>
+                    <ListBox x:Name="ServicesList" Classes="dataList" MinHeight="430" SelectionChanged="ServicesList_OnSelectionChanged">
+                      <ListBox.ItemTemplate>
+                        <DataTemplate x:CompileBindings="False">
+                          <Grid ColumnDefinitions="230,100,110,120,*,90" ColumnSpacing="12">
+                            <TextBlock Text="{ReflectionBinding Unit}" FontFamily="DejaVu Sans Mono, monospace" />
+                            <TextBlock Grid.Column="1" Text="{ReflectionBinding ActiveState}" />
+                            <TextBlock Grid.Column="2" Text="{ReflectionBinding SubState}" Classes="muted" />
+                            <TextBlock Grid.Column="3" Text="{ReflectionBinding UnitFileState}" Classes="muted" />
+                            <TextBlock Grid.Column="4" Text="{ReflectionBinding Description}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Description}" />
+                            <TextBlock Grid.Column="5" Text="status" Classes="dim" />
+                          </Grid>
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
                   </StackPanel>
                 </Border>
               </StackPanel>
             </ScrollViewer>
 
-            <!-- Docker -->
-            <ScrollViewer
-                x:Name="DockerPage"
-                IsVisible="False">
-
+<!-- Docker -->
+            <ScrollViewer x:Name="DockerPage" IsVisible="False">
               <StackPanel Spacing="18">
                 <Border Classes="card">
                   <StackPanel Spacing="12">
                     <Grid ColumnDefinitions="*,Auto">
                       <StackPanel>
-                        <TextBlock
-                            Text="Docker containers"
-                            Classes="sectionTitle" />
-                        <TextBlock
-                            Text="Container identity, image, runtime state, status, and published ports."
-                            Classes="pageSubtitle"
-                            Margin="0,4,0,0" />
+                        <TextBlock Text="Docker containers" Classes="sectionTitle" />
+                        <TextBlock Text="Exited (0) one-shot containers are informational; non-zero exits are findings." Classes="pageSubtitle" Margin="0,4,0,0" />
                       </StackPanel>
-
-                      <TextBlock
-                          Grid.Column="1"
-                          x:Name="DockerSummaryText"
-                          Text="--"
-                          Classes="muted"
-                          VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" x:Name="DockerSummaryText" Text="--" Classes="muted" VerticalAlignment="Center" />
                     </Grid>
-
-                    <ListBox
-                        x:Name="DockerList"
-                        Classes="dataList"
-                        MinHeight="420" />
+                    <Grid ColumnDefinitions="300,Auto,Auto,Auto,*" ColumnSpacing="9">
+                      <TextBox x:Name="DockerFilterText" Classes="filter" PlaceholderText="Filter containers" TextChanged="DockerFilterText_OnTextChanged" />
+                      <Button Grid.Column="1" x:Name="DockerStartButton" Content="Start" IsEnabled="False" Click="DockerStartButton_OnClick" />
+                      <Button Grid.Column="2" x:Name="DockerStopButton" Content="Stop" Classes="danger" IsEnabled="False" Click="DockerStopButton_OnClick" />
+                      <Button Grid.Column="3" x:Name="DockerRestartButton" Content="Restart" IsEnabled="False" Click="DockerRestartButton_OnClick" />
+                      <TextBlock Grid.Column="4" x:Name="DockerActionStatusText" Text="Select a container. Safe Mode is controlled on Services &amp; Actions." Classes="dim" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                    <ListBox x:Name="DockerList" Classes="dataList" MinHeight="430" SelectionChanged="DockerList_OnSelectionChanged">
+                      <ListBox.ItemTemplate>
+                        <DataTemplate x:CompileBindings="False">
+                          <Grid ColumnDefinitions="170,90,260,220,*" ColumnSpacing="12">
+                            <TextBlock Text="{ReflectionBinding Name}" FontWeight="SemiBold" />
+                            <TextBlock Grid.Column="1" Text="{ReflectionBinding State}" />
+                            <TextBlock Grid.Column="2" Text="{ReflectionBinding Image}" Classes="muted" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Image}" />
+                            <TextBlock Grid.Column="3" Text="{ReflectionBinding Status}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Status}" />
+                            <TextBlock Grid.Column="4" Text="{ReflectionBinding Ports}" Classes="dim" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Ports}" />
+                          </Grid>
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
                   </StackPanel>
                 </Border>
               </StackPanel>
             </ScrollViewer>
 
-            <!-- Storage -->
-            <ScrollViewer
-                x:Name="StoragePage"
-                IsVisible="False">
-
+<!-- Storage -->
+            <ScrollViewer x:Name="StoragePage" IsVisible="False">
               <StackPanel Spacing="18">
                 <Border Classes="card">
                   <StackPanel Spacing="12">
-                    <Grid ColumnDefinitions="*,Auto">
+                    <Grid ColumnDefinitions="*,320">
                       <StackPanel>
-                        <TextBlock
-                            Text="Local storage"
-                            Classes="sectionTitle" />
-                        <TextBlock
-                            Text="Operational mount view with tmpfs, devtmpfs, squashfs, and overlay filesystems suppressed."
-                            Classes="pageSubtitle"
-                            Margin="0,4,0,0" />
+                        <TextBlock Text="Local storage" Classes="sectionTitle" />
+                        <TextBlock Text="Warning at 85%, error at 90%, critical at 95%. efivarfs is removed from the operational view." Classes="pageSubtitle" Margin="0,4,0,0" />
                       </StackPanel>
-
-                      <TextBlock
-                          Grid.Column="1"
-                          x:Name="StorageSummaryText"
-                          Text="--"
-                          Classes="muted"
-                          VerticalAlignment="Center" />
+                      <TextBox Grid.Column="1" x:Name="StorageFilterText" Classes="filter" PlaceholderText="Filter mounts" TextChanged="StorageFilterText_OnTextChanged" />
                     </Grid>
-
-                    <ListBox
-                        x:Name="StorageList"
-                        Classes="dataList"
-                        MinHeight="420" />
+                    <TextBlock x:Name="StorageSummaryText" Text="--" Classes="muted" />
+                    <ListBox x:Name="StorageList" Classes="dataList" MinHeight="450">
+                      <ListBox.ItemTemplate>
+                        <DataTemplate x:CompileBindings="False">
+                          <Grid ColumnDefinitions="200,90,90,90,90,90,*" ColumnSpacing="12">
+                            <TextBlock Text="{ReflectionBinding Source}" FontFamily="DejaVu Sans Mono, monospace" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Source}" />
+                            <TextBlock Grid.Column="1" Text="{ReflectionBinding FileSystem}" Classes="muted" />
+                            <TextBlock Grid.Column="2" Text="{ReflectionBinding Size}" />
+                            <TextBlock Grid.Column="3" Text="{ReflectionBinding Used}" />
+                            <TextBlock Grid.Column="4" Text="{ReflectionBinding Available}" />
+                            <TextBlock Grid.Column="5" Text="{ReflectionBinding PercentUsed}" FontWeight="SemiBold" />
+                            <TextBlock Grid.Column="6" Text="{ReflectionBinding MountPoint}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding MountPoint}" />
+                          </Grid>
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
                   </StackPanel>
                 </Border>
               </StackPanel>
             </ScrollViewer>
 
-            <!-- Logs -->
-            <Grid
-                x:Name="LogsPage"
-                IsVisible="False">
-
+<!-- Logs -->
+            <Grid x:Name="LogsPage" IsVisible="False" RowDefinitions="1.2*,0.8*" RowSpacing="14">
               <Border Classes="card">
                 <StackPanel Spacing="12">
-                  <TextBlock
-                      Text="Recent warning journal"
-                      Classes="sectionTitle" />
-                  <TextBlock
-                      Text="The local provider requests warning-or-higher entries from journalctl. Visibility depends on the current user's journal permissions."
-                      Classes="pageSubtitle" />
-                  <TextBox
-                      x:Name="LogsText"
-                      Classes="console"
-                      IsReadOnly="True"
-                      AcceptsReturn="True"
-                      TextWrapping="NoWrap"
-                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                      ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel>
+                      <TextBlock Text="Grouped warning journal" Classes="sectionTitle" />
+                      <TextBlock Text="Repeated messages are collapsed so unique incidents and crashes remain visible." Classes="pageSubtitle" Margin="0,4,0,0" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="1" x:Name="LogsSummaryText" Text="--" Classes="muted" VerticalAlignment="Center" />
+                  </Grid>
+                  <ListBox x:Name="LogsList" Classes="dataList" SelectionChanged="LogsList_OnSelectionChanged">
+                    <ListBox.ItemTemplate>
+                      <DataTemplate x:CompileBindings="False">
+                        <Grid ColumnDefinitions="90,170,160,70,*" ColumnSpacing="12">
+                          <TextBlock Text="{ReflectionBinding Severity}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
+                          <TextBlock Grid.Column="1" Text="{ReflectionBinding Source}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Grid.Column="2" Text="{ReflectionBinding LastSeen, StringFormat='{}{0:g}'}" Classes="dim" />
+                          <TextBlock Grid.Column="3" Text="{ReflectionBinding Count, StringFormat='{}{0}x'}" />
+                          <TextBlock Grid.Column="4" Text="{ReflectionBinding Message}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Message}" />
+                        </Grid>
+                      </DataTemplate>
+                    </ListBox.ItemTemplate>
+                  </ListBox>
+                </StackPanel>
+              </Border>
+              <Border Grid.Row="1" Classes="card">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="Selected event detail" Classes="sectionTitle" />
+                  <TextBox x:Name="LogDetailText" Classes="console" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" ScrollViewer.VerticalScrollBarVisibility="Auto" />
                 </StackPanel>
               </Border>
             </Grid>
 
-            <!-- Intelligence -->
-            <ScrollViewer
-                x:Name="IntelligencePage"
-                IsVisible="False">
-
+<!-- Intelligence -->
+            <ScrollViewer x:Name="IntelligencePage" IsVisible="False">
               <StackPanel Spacing="18">
+                <Grid ColumnDefinitions="0.75*,1.25*" ColumnSpacing="14">
+                  <Border Classes="card">
+                    <StackPanel Spacing="12">
+                      <TextBlock Text="Control Plane Intelligence" Classes="sectionTitle" />
+                      <Border x:Name="IntelligenceSeverityBorder" Classes="badge" HorizontalAlignment="Left">
+                        <TextBlock x:Name="IntelligenceSeverityText" Text="WAITING" Classes="eyebrow" />
+                      </Border>
+                      <TextBlock x:Name="IntelligenceRootCauseText" Text="No analysis yet" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+                      <TextBlock x:Name="IntelligenceHeadlineText" Text="Refresh the environment to run analysis." Classes="muted" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+                  <Border Grid.Column="1" Classes="card">
+                    <StackPanel Spacing="10">
+                      <TextBlock Text="Dependency order" Classes="sectionTitle" />
+                      <TextBlock Text="Host → Storage → Docker → Discovery → Downloads → Arr → Processing → Library" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" />
+                      <TextBlock Text="Findings are ranked upstream-first so downstream symptoms do not trigger unnecessary restarts." Classes="pageSubtitle" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
                 <Border Classes="card">
                   <StackPanel Spacing="12">
-                    <TextBlock
-                        Text="Control Plane Intelligence"
-                        Classes="sectionTitle" />
-                    <TextBlock
-                        Text="The Windows intelligence engine must be extracted from WPF-specific state into GraveOps.Core before Linux can make equivalent impact-aware recommendations."
-                        Classes="muted"
-                        TextWrapping="Wrap" />
-                    <Border Classes="inset">
-                      <TextBlock
-                          Text="Scheduled parity work: shared environment impact model → dependency inspection order → provider-neutral recommendations."
-                          TextWrapping="Wrap" />
-                    </Border>
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="Ranked findings" Classes="sectionTitle" />
+                      <TextBlock Grid.Column="1" x:Name="IntelligenceCountText" Text="0 findings" Classes="muted" VerticalAlignment="Center" />
+                    </Grid>
+                    <ListBox x:Name="IntelligenceFindingsList" Classes="dataList" MinHeight="430">
+                      <ListBox.ItemTemplate>
+                        <DataTemplate x:CompileBindings="False">
+                          <Grid ColumnDefinitions="90,150,1.1*,1.1*,1.1*" ColumnSpacing="12">
+                            <TextBlock Text="{ReflectionBinding Severity}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
+                            <TextBlock Grid.Column="1" Text="{ReflectionBinding Component}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="2" Text="{ReflectionBinding Problem}" TextWrapping="Wrap" />
+                            <TextBlock Grid.Column="3" Text="{ReflectionBinding Impact}" Classes="muted" TextWrapping="Wrap" />
+                            <TextBlock Grid.Column="4" Text="{ReflectionBinding NextStep}" Classes="muted" TextWrapping="Wrap" />
+                          </Grid>
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
                   </StackPanel>
                 </Border>
               </StackPanel>
             </ScrollViewer>
 
-            <!-- Lifecycle -->
-            <ScrollViewer
-                x:Name="LifecyclePage"
-                IsVisible="False">
-
+<!-- Lifecycle -->
+            <ScrollViewer x:Name="LifecyclePage" IsVisible="False">
               <StackPanel Spacing="18">
                 <Border Classes="card">
                   <StackPanel Spacing="12">
-                    <TextBlock
-                        Text="Media lifecycle"
-                        Classes="sectionTitle" />
-                    <TextBlock
-                        Text="The first Linux lifecycle page will correlate Arr and downloader ownership from the same provider snapshots used by the Windows reference implementation."
-                        Classes="muted"
-                        TextWrapping="Wrap" />
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel>
+                        <TextBlock Text="Media lifecycle" Classes="sectionTitle" />
+                        <TextBlock Text="Readiness from the host through final library availability." Classes="pageSubtitle" Margin="0,4,0,0" />
+                      </StackPanel>
+                      <TextBlock Grid.Column="1" x:Name="LifecycleSummaryText" Text="Waiting for capture" Classes="muted" VerticalAlignment="Center" />
+                    </Grid>
+                    <ListBox x:Name="LifecycleStagesList" Classes="dataList" MinHeight="500">
+                      <ListBox.ItemTemplate>
+                        <DataTemplate x:CompileBindings="False">
+                          <Grid ColumnDefinitions="50,130,110,1.2*,1.2*,1.2*" ColumnSpacing="12">
+                            <TextBlock Text="{ReflectionBinding Order}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource DimBrush}" />
+                            <TextBlock Grid.Column="1" Text="{ReflectionBinding Stage}" FontWeight="SemiBold" />
+                            <TextBlock Grid.Column="2" Text="{ReflectionBinding State}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
+                            <TextBlock Grid.Column="3" Text="{ReflectionBinding Evidence}" TextWrapping="Wrap" />
+                            <TextBlock Grid.Column="4" Text="{ReflectionBinding Impact}" Classes="muted" TextWrapping="Wrap" />
+                            <TextBlock Grid.Column="5" Text="{ReflectionBinding NextStep}" Classes="muted" TextWrapping="Wrap" />
+                          </Grid>
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
                   </StackPanel>
                 </Border>
               </StackPanel>
             </ScrollViewer>
 
-            <!-- History -->
-            <ScrollViewer
-                x:Name="HistoryPage"
-                IsVisible="False">
-
+<!-- History -->
+            <ScrollViewer x:Name="HistoryPage" IsVisible="False">
               <StackPanel Spacing="18">
+                <Grid ColumnDefinitions="0.9*,1.1*" ColumnSpacing="14">
+                  <Border Classes="card">
+                    <StackPanel Spacing="12">
+                      <TextBlock Text="Current incident signals" Classes="sectionTitle" />
+                      <TextBlock Text="Current ranked findings are shown alongside persisted state transitions." Classes="pageSubtitle" />
+                      <ListBox x:Name="CurrentIncidentsList" Classes="dataList" MinHeight="300">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <StackPanel Spacing="4">
+                              <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{ReflectionBinding Severity}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
+                                <TextBlock Text="{ReflectionBinding Component}" FontWeight="SemiBold" />
+                              </StackPanel>
+                              <TextBlock Text="{ReflectionBinding Problem}" Classes="muted" TextWrapping="Wrap" />
+                            </StackPanel>
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+                    </StackPanel>
+                  </Border>
+                  <Border Grid.Column="1" Classes="card">
+                    <StackPanel Spacing="12">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock Text="Transition history" Classes="sectionTitle" />
+                          <TextBlock Text="Meaningful changes and guarded actions are persisted locally." Classes="pageSubtitle" Margin="0,4,0,0" />
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="Clear history" Classes="danger" Click="ClearHistoryButton_OnClick" />
+                      </Grid>
+                      <ListBox x:Name="HistoryList" Classes="dataList" MinHeight="360">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <Grid ColumnDefinitions="150,100,150,150,*" ColumnSpacing="10">
+                              <TextBlock Text="{ReflectionBinding Timestamp, StringFormat='{}{0:g}'}" Classes="dim" />
+                              <TextBlock Grid.Column="1" Text="{ReflectionBinding Severity}" FontWeight="SemiBold" />
+                              <TextBlock Grid.Column="2" Text="{ReflectionBinding Component}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                              <TextBlock Grid.Column="3" Text="{ReflectionBinding FromState, StringFormat='{}{0} →'}" Classes="muted" />
+                              <StackPanel Grid.Column="4" Spacing="3">
+                                <TextBlock Text="{ReflectionBinding ToState}" FontWeight="SemiBold" />
+                                <TextBlock Text="{ReflectionBinding Detail}" Classes="muted" TextWrapping="Wrap" />
+                              </StackPanel>
+                            </Grid>
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+                    </StackPanel>
+                  </Border>
+                </Grid>
+              </StackPanel>
+            </ScrollViewer>
+
+<!-- Backups -->
+            <ScrollViewer x:Name="BackupsPage" IsVisible="False">
+              <StackPanel Spacing="18">
+                <Grid ColumnDefinitions="0.75*,1.25*" ColumnSpacing="14">
+                  <Border Classes="card">
+                    <StackPanel Spacing="10">
+                      <TextBlock Text="Backup readiness" Classes="sectionTitle" />
+                      <Border x:Name="BackupStateBorder" Classes="badge" HorizontalAlignment="Left">
+                        <TextBlock x:Name="BackupStateText" Text="WAITING" Classes="eyebrow" />
+                      </Border>
+                      <TextBlock x:Name="BackupProviderText" Text="No provider captured" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+                      <TextBlock x:Name="BackupSummaryText" Text="Refresh the environment." Classes="muted" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+                  <Border Grid.Column="1" Classes="card">
+                    <StackPanel Spacing="10">
+                      <TextBlock Text="Readiness evidence" Classes="sectionTitle" />
+                      <ListBox x:Name="BackupEvidenceList" Classes="dataList" MinHeight="140" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
                 <Border Classes="card">
                   <StackPanel Spacing="12">
-                    <TextBlock
-                        Text="History &amp; incidents"
-                        Classes="sectionTitle" />
-                    <TextBlock
-                        Text="The Linux provider is live. Bounded transition history and incident replay will be ported after the shared history service is separated from the WPF dispatcher."
-                        Classes="muted"
-                        TextWrapping="Wrap" />
+                    <TextBlock Text="Backup schedules and units" Classes="sectionTitle" />
+                    <ListBox x:Name="BackupUnitsList" Classes="dataList" MinHeight="230">
+                      <ListBox.ItemTemplate>
+                        <DataTemplate x:CompileBindings="False">
+                          <Grid ColumnDefinitions="260,100,100,120,180,180,*" ColumnSpacing="10">
+                            <TextBlock Text="{ReflectionBinding Unit}" FontFamily="DejaVu Sans Mono, monospace" />
+                            <TextBlock Grid.Column="1" Text="{ReflectionBinding Active}" />
+                            <TextBlock Grid.Column="2" Text="{ReflectionBinding SubState}" Classes="muted" />
+                            <TextBlock Grid.Column="3" Text="{ReflectionBinding Enabled}" Classes="muted" />
+                            <TextBlock Grid.Column="4" Text="{ReflectionBinding LastRun}" Classes="dim" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="5" Text="{ReflectionBinding NextRun}" Classes="dim" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="6" Text="{ReflectionBinding Path}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Path}" />
+                          </Grid>
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
+                  </StackPanel>
+                </Border>
+                <Border Classes="card">
+                  <StackPanel Spacing="12">
+                    <TextBlock Text="Recent backup artifacts" Classes="sectionTitle" />
+                    <ListBox x:Name="BackupArtifactsList" Classes="dataList" MinHeight="200">
+                      <ListBox.ItemTemplate>
+                        <DataTemplate x:CompileBindings="False">
+                          <Grid ColumnDefinitions="*,110,180" ColumnSpacing="12">
+                            <TextBlock Text="{ReflectionBinding Path}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{ReflectionBinding Path}" />
+                            <TextBlock Grid.Column="1" Text="{ReflectionBinding Size}" Classes="muted" />
+                            <TextBlock Grid.Column="2" Text="{ReflectionBinding ModifiedAt, StringFormat='{}{0:g}'}" Classes="dim" />
+                          </Grid>
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
                   </StackPanel>
                 </Border>
               </StackPanel>
             </ScrollViewer>
 
-            <!-- Backups -->
-            <ScrollViewer
-                x:Name="BackupsPage"
-                IsVisible="False">
-
-              <StackPanel Spacing="18">
-                <Border Classes="card">
-                  <StackPanel Spacing="12">
-                    <TextBlock
-                        Text="Backup readiness"
-                        Classes="sectionTitle" />
-                    <TextBlock
-                        Text="Backup discovery and restore safety will use provider-neutral contracts. No destructive restore controls are exposed in this parity shell."
-                        Classes="muted"
-                        TextWrapping="Wrap" />
-                  </StackPanel>
-                </Border>
-              </StackPanel>
-            </ScrollViewer>
           </Grid>
         </Grid>
       </Grid>
