@@ -87,10 +87,10 @@ public partial class MainWindow : Window
             ["HistoryNav"] = new("HistoryPage", "History", "Health transitions, GraveOps activity and incident replay"),
             ["ServersNav"] = new("ServersPage", "Servers", "Selected-host identity, runtime and provider capability"),
             ["MediaHubNav"] = new("MediaHubPage", "Media Hub", "Verified media and acquisition integrations"),
-            ["DumbNav"] = new("MediaHubPage", "DUMB", "Stack orchestration and verified local interface"),
-            ["PlexNav"] = new("MediaHubPage", "Plex", "Library availability, playback endpoint and related findings"),
-            ["TautulliNav"] = new("MediaHubPage", "Tautulli", "Playback analytics and related findings"),
-            ["KometaNav"] = new("MediaHubPage", "Kometa", "Library metadata automation and related findings"),
+            ["DumbNav"] = new("ApplicationWorkspacePage", "DUMB", "Stack orchestration and verified local interface"),
+            ["PlexNav"] = new("ApplicationWorkspacePage", "Plex", "Library availability, playback endpoint and related findings"),
+            ["TautulliNav"] = new("ApplicationWorkspacePage", "Tautulli", "Playback analytics and related findings"),
+            ["KometaNav"] = new("ApplicationWorkspacePage", "Kometa", "Library metadata automation and related findings"),
             ["SonarrNav"] = new("ArrWorkspacePage", "Sonarr", "Configurable television acquisition workspace"),
             ["RadarrNav"] = new("ArrWorkspacePage", "Radarr", "Configurable movie acquisition workspace"),
             ["LidarrNav"] = new("ArrWorkspacePage", "Lidarr", "Configurable music acquisition workspace"),
@@ -99,11 +99,11 @@ public partial class MainWindow : Window
             ["WhisparrNav"] = new("ArrWorkspacePage", "Whisparr", "Version-aware configurable acquisition workspace"),
             ["Mylar3Nav"] = new("ArrWorkspacePage", "Mylar3", "Configurable comic acquisition workspace"),
             ["BazarrNav"] = new("ArrWorkspacePage", "Bazarr", "Configurable subtitle coverage workspace"),
-            ["SabnzbdNav"] = new("MediaHubPage", "SABnzbd", "Usenet download availability and related findings"),
-            ["QBittorrentNav"] = new("MediaHubPage", "qBittorrent", "Torrent download availability and related findings"),
-            ["DecypharrNav"] = new("MediaHubPage", "Decypharr", "Debrid processing and related findings"),
+            ["SabnzbdNav"] = new("ApplicationWorkspacePage", "SABnzbd", "Usenet download availability and related findings"),
+            ["QBittorrentNav"] = new("ApplicationWorkspacePage", "qBittorrent", "Torrent download availability and related findings"),
+            ["DecypharrNav"] = new("ApplicationWorkspacePage", "Decypharr", "Debrid processing and related findings"),
             ["RecyclarrNav"] = new("ArrWorkspacePage", "Recyclarr", "Configurable synchronization and drift workspace"),
-            ["ZurgNav"] = new("MediaHubPage", "Zurg", "Debrid mount availability and related findings"),
+            ["ZurgNav"] = new("ApplicationWorkspacePage", "Zurg", "Debrid mount availability and related findings"),
             ["ServicesNav"] = new("ServicesPage", "Services & Actions", "Native systemd inventory and guarded actions"),
             ["DockerNav"] = new("DockerPage", "Docker", "Containers, images, state, ports and guarded actions"),
             ["StorageNav"] = new("StoragePage", "Storage", "Operational filesystems and capacity health"),
@@ -279,6 +279,12 @@ public partial class MainWindow : Window
                     StringComparison.Ordinal))
             {
                 ActivateArrProduct(integrationName);
+            }
+            else if (target.PageName.Equals(
+                         "ApplicationWorkspacePage",
+                         StringComparison.Ordinal))
+            {
+                ActivateDirectIntegration(integrationName);
             }
             else
             {
@@ -1119,6 +1125,7 @@ public partial class MainWindow : Window
         PopulateServerPage();
         UpdateIntegrationNavigation();
         ApplyMediaFilter();
+        PopulateDirectIntegrationWorkspace();
         PopulateArrApplicationPage();
         ApplyServicesFilter();
         ApplyDockerFilter();
@@ -1218,6 +1225,7 @@ public partial class MainWindow : Window
     private void ActivateArrProduct(string productName)
     {
         _activeArrProduct = productName;
+        Get<TabControl>("ArrModuleTabs").SelectedIndex = 0;
         PopulateArrApplicationPage();
         _ = RefreshArrLiveTelemetryAsync();
     }
@@ -1472,19 +1480,14 @@ public partial class MainWindow : Window
         object? sender,
         RoutedEventArgs e)
     {
-        var panel =
-            Get<Border>("ArrCustomizationPanel");
-        panel.IsVisible = !panel.IsVisible;
-
-        if (panel.IsVisible)
-            PopulateArrCustomization();
+        Get<TabControl>("ArrModuleTabs").SelectedIndex = 2;
+        PopulateArrCustomization();
     }
 
     private void ArrCustomizeCloseButton_OnClick(
         object? sender,
         RoutedEventArgs e) =>
-        Get<Border>("ArrCustomizationPanel")
-            .IsVisible = false;
+        Get<TabControl>("ArrModuleTabs").SelectedIndex = 0;
 
     private void PopulateArrCustomizationInstances(
         IReadOnlyList<ArrWorkspaceView> instances)
