@@ -1770,151 +1770,503 @@
                 </Border>
               </Grid>
             </Grid>
-            <!-- First-class Arr application page -->
+            <!-- Windows-reference Arr application workspace -->
             <Grid
                 x:Name="ArrWorkspacePage"
-                IsVisible="False"
-                RowDefinitions="Auto,Auto,Auto,Auto,*"
-                RowSpacing="9">
+                IsVisible="False">
 
-              <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
-                <StackPanel>
-                  <TextBlock x:Name="ArrApplicationTitleText" Text="Arr application" Classes="sectionTitle" FontSize="18" />
-                  <TextBlock x:Name="ArrApplicationSubtitleText" Text="Application health, queue and operational tools." Classes="pageSubtitle" />
-                </StackPanel>
-                <TextBlock Grid.Column="1" x:Name="ArrLiveUpdatedText" Text="Waiting for live telemetry" Classes="dim" VerticalAlignment="Center" />
-                <Button Grid.Column="2" x:Name="ArrCustomizeButton" Content="Customize" Click="ArrCustomizeButton_OnClick" />
-                <Button Grid.Column="3" x:Name="ArrRefreshTelemetryButton" Content="Refresh" Classes="primary" Click="ArrRefreshTelemetryButton_OnClick" />
-              </Grid>
+              <ScrollViewer
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
 
-              <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
-                <Border Classes="metric"><StackPanel Spacing="3"><TextBlock Text="STATE" Classes="eyebrow" /><TextBlock x:Name="ArrStateMetricText" Text="WAITING" Classes="metricValue" /></StackPanel></Border>
-                <Border Grid.Column="1" Classes="metric"><StackPanel Spacing="3"><TextBlock Text="VERSION" Classes="eyebrow" /><TextBlock x:Name="ArrVersionMetricText" Text="--" Classes="metricValue" /></StackPanel></Border>
-                <Border Grid.Column="2" Classes="metric"><StackPanel Spacing="3"><TextBlock x:Name="ArrWorkMetricLabelText" Text="QUEUE" Classes="eyebrow" /><TextBlock x:Name="ArrWorkMetricText" Text="--" Classes="metricValue" /></StackPanel></Border>
-                <Border Grid.Column="3" Classes="metric"><StackPanel Spacing="3"><TextBlock Text="HEALTH ISSUES" Classes="eyebrow" /><TextBlock x:Name="ArrHealthMetricText" Text="--" Classes="metricValue" /></StackPanel></Border>
-              </Grid>
+                <StackPanel Spacing="12" Margin="0,0,4,4">
+                  <!-- MediaServiceView heading -->
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,1">
+                    <StackPanel>
+                      <TextBlock
+                          x:Name="ArrApplicationTitleText"
+                          Text="Arr application"
+                          Classes="pageTitle" />
+                      <TextBlock
+                          x:Name="ArrApplicationSubtitleText"
+                          Text="Application health, queue and operational tools."
+                          Classes="pageSubtitle"
+                          Margin="0,3,0,0" />
+                    </StackPanel>
 
-              <Border Grid.Row="2" Classes="module">
-                <Grid RowDefinitions="Auto,Auto" RowSpacing="6">
-                  <StackPanel>
-                    <TextBlock Text="Operations" Classes="sectionTitle" />
-                    <TextBlock x:Name="ArrOperationsSubtitleText" Text="Application and stack tools stay together." Classes="pageSubtitle" />
-                  </StackPanel>
-                  <WrapPanel Grid.Row="1">
-                    <WrapPanel x:Name="ArrOpenButtonsPanel" />
-                    <Button Content="Full queue drill-down" Margin="0,0,5,0" Click="ArrOpenNativeDetailButton_OnClick" />
-                    <Button Content="Docker / stack" Margin="0,0,5,0" Click="ArrDockerButton_OnClick" />
-                    <Button Content="Logs" Margin="0,0,5,0" Click="ArrLogsButton_OnClick" />
-                    <Button Content="Intelligence" Click="ArrWorkspaceIntelligenceButton_OnClick" />
-                  </WrapPanel>
-                </Grid>
-              </Border>
+                    <StackPanel
+                        Grid.Column="1"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        Spacing="9">
+                      <StackPanel VerticalAlignment="Center" Margin="0,0,3,0">
+                        <TextBlock
+                            x:Name="ArrInstanceCountText"
+                            Text="0 instances"
+                            HorizontalAlignment="Right"
+                            FontWeight="SemiBold" />
+                        <TextBlock
+                            x:Name="ArrLiveUpdatedText"
+                            Text="Waiting for live telemetry"
+                            Classes="dim"
+                            FontSize="10"
+                            HorizontalAlignment="Right"
+                            Margin="0,2,0,0" />
+                      </StackPanel>
+                      <Button
+                          x:Name="ArrCustomizeButton"
+                          Classes="compact"
+                          Content="Customize"
+                          Click="ArrCustomizeButton_OnClick" />
+                      <Button
+                          x:Name="ArrRefreshTelemetryButton"
+                          Classes="primary compact"
+                          Content="Refresh"
+                          MinWidth="96"
+                          Click="ArrRefreshTelemetryButton_OnClick" />
+                    </StackPanel>
+                  </Grid>
 
-              <Border Grid.Row="3" Classes="module">
-                <Grid RowDefinitions="Auto,*" RowSpacing="6">
-                  <Grid ColumnDefinitions="*,Auto">
+                  <!-- Windows four-card metric strip -->
+                  <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
+                    <Border Classes="flatCard arrMetric">
+                      <StackPanel>
+                        <TextBlock Text="STATE" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="ArrStateMetricText"
+                            Text="WAITING"
+                            Classes="metricValue"
+                            FontSize="23"
+                            Margin="0,8,0,0"
+                            TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Classes="flatCard arrMetric">
+                      <StackPanel>
+                        <TextBlock Text="VERSION" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="ArrVersionMetricText"
+                            Text="--"
+                            Classes="metricValue"
+                            FontSize="18"
+                            Margin="0,8,0,0"
+                            TextWrapping="Wrap"
+                            MaxHeight="48" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Classes="flatCard arrMetric">
+                      <StackPanel>
+                        <TextBlock
+                            x:Name="ArrWorkMetricLabelText"
+                            Text="QUEUE"
+                            Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="ArrWorkMetricText"
+                            Text="--"
+                            Classes="metricValue"
+                            FontSize="23"
+                            Margin="0,8,0,0" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="3" Classes="flatCard arrMetric">
+                      <StackPanel>
+                        <TextBlock Text="HEALTH ISSUES" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="ArrHealthMetricText"
+                            Text="--"
+                            Classes="metricValue"
+                            FontSize="23"
+                            Margin="0,8,0,0" />
+                      </StackPanel>
+                    </Border>
+                  </Grid>
+
+                  <!-- Exact Windows operations ownership strip -->
+                  <Border Classes="inset arrOperations">
+                    <StackPanel>
+                      <TextBlock Text="Operations" Classes="sectionTitle" />
+                      <TextBlock
+                          x:Name="ArrOperationsSubtitleText"
+                          Text="Application and stack tools stay together."
+                          Classes="pageSubtitle"
+                          Margin="0,4,0,10"
+                          TextWrapping="Wrap" />
+
+                      <WrapPanel>
+                        <WrapPanel x:Name="ArrOpenButtonsPanel" />
+                        <Button
+                            Classes="compact arrAction"
+                            Content="Full queue drill-down"
+                            Margin="0,0,8,8"
+                            Click="ArrOpenNativeDetailButton_OnClick" />
+                        <Button
+                            Classes="compact arrAction"
+                            Content="Docker / stack"
+                            Margin="0,0,8,8"
+                            Click="ArrDockerButton_OnClick" />
+                        <Button
+                            Classes="compact arrAction"
+                            Content="Logs"
+                            Margin="0,0,8,8"
+                            Click="ArrLogsButton_OnClick" />
+                        <Button
+                            Classes="compact arrAction"
+                            Content="Intelligence"
+                            Margin="0,0,8,8"
+                            Click="ArrWorkspaceIntelligenceButton_OnClick" />
+                      </WrapPanel>
+                    </StackPanel>
+                  </Border>
+
+                  <!-- Windows service telemetry header -->
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,-2">
                     <StackPanel>
                       <TextBlock Text="Service telemetry" Classes="sectionTitle" />
-                      <TextBlock Text="Current endpoint state, version, queue and health information." Classes="pageSubtitle" />
+                      <TextBlock
+                          Text="Current endpoint state, version, queue and health information."
+                          Classes="pageSubtitle"
+                          Margin="0,3,0,0" />
                     </StackPanel>
-                    <TextBlock Grid.Column="1" x:Name="ArrInstanceCountText" Text="0 instances" Classes="dim" VerticalAlignment="Center" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="Shared live application snapshot"
+                        Classes="dim"
+                        VerticalAlignment="Center" />
                   </Grid>
-                  <ListBox Grid.Row="1" x:Name="ArrInstanceTelemetryList" Classes="dataList" Height="74">
-                    <ListBox.ItemTemplate>
-                      <DataTemplate x:CompileBindings="False">
-                        <Grid ColumnDefinitions="170,180,110,110,110,*,90" ColumnSpacing="8">
-                          <TextBlock Text="{ReflectionBinding DisplayName}" FontWeight="SemiBold" />
-                          <TextBlock Grid.Column="1" Text="{ReflectionBinding Endpoint}" TextTrimming="CharacterEllipsis" />
-                          <TextBlock Grid.Column="2" Text="{ReflectionBinding Version}" />
-                          <TextBlock Grid.Column="3" Text="{ReflectionBinding Work}" />
-                          <TextBlock Grid.Column="4" Text="{ReflectionBinding Health}" />
-                          <TextBlock Grid.Column="5" Text="{ReflectionBinding Detail}" Classes="dim" TextTrimming="CharacterEllipsis" />
-                          <TextBlock Grid.Column="6" Text="{ReflectionBinding State}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
-                        </Grid>
-                      </DataTemplate>
-                    </ListBox.ItemTemplate>
-                  </ListBox>
-                </Grid>
-              </Border>
 
-              <Grid Grid.Row="4">
-                <Border Classes="module">
-                  <Grid RowDefinitions="Auto,*,Auto" RowSpacing="6">
-                    <Grid ColumnDefinitions="*,Auto">
-                      <StackPanel>
-                        <TextBlock x:Name="ArrWorkSectionTitleText" Text="Queue &amp; health" Classes="sectionTitle" />
-                        <TextBlock x:Name="ArrWorkSectionSubtitleText" Text="Item-level work and health messages." Classes="pageSubtitle" />
-                      </StackPanel>
-                      <Button Grid.Column="1" Content="Open full detail" Click="ArrOpenNativeDetailButton_OnClick" />
-                    </Grid>
-                    <ListBox Grid.Row="1" x:Name="ArrQueueHealthList" Classes="dataList">
+                  <!-- MediaServiceView-style telemetry cards -->
+                  <Grid>
+                    <ListBox
+                        x:Name="ArrInstanceTelemetryList"
+                        Classes="arrCards passive"
+                        MaxHeight="290">
                       <ListBox.ItemTemplate>
                         <DataTemplate x:CompileBindings="False">
-                          <Grid ColumnDefinitions="120,105,1.2*,110,90,90,1.1*" ColumnSpacing="8">
-                            <TextBlock Text="{ReflectionBinding Service}" FontWeight="SemiBold" />
-                            <TextBlock Grid.Column="1" Text="{ReflectionBinding Type}" />
-                            <TextBlock Grid.Column="2" Text="{ReflectionBinding ItemIssue}" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Grid.Column="3" Text="{ReflectionBinding State}" />
-                            <TextBlock Grid.Column="4" Text="{ReflectionBinding Progress}" />
-                            <TextBlock Grid.Column="5" Text="{ReflectionBinding Remaining}" />
-                            <TextBlock Grid.Column="6" Text="{ReflectionBinding Detail}" Classes="dim" TextTrimming="CharacterEllipsis" />
-                          </Grid>
+                          <Border Classes="flatCard arrServiceCard" Margin="0,0,0,8">
+                            <Grid ColumnDefinitions="1.15*,0.95*,0.8*,0.85*,2.15*,Auto" ColumnSpacing="12">
+                              <StackPanel VerticalAlignment="Center">
+                                <TextBlock
+                                    Text="{ReflectionBinding DisplayName}"
+                                    FontSize="15"
+                                    FontWeight="SemiBold"
+                                    TextTrimming="CharacterEllipsis" />
+                                <TextBlock
+                                    Text="{ReflectionBinding State}"
+                                    Foreground="{DynamicResource SuccessBrush}"
+                                    FontWeight="SemiBold"
+                                    FontSize="10"
+                                    Margin="0,3,0,0"
+                                    TextTrimming="CharacterEllipsis" />
+                              </StackPanel>
+
+                              <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="ENDPOINT" Classes="eyebrow" />
+                                <TextBlock
+                                    Text="{ReflectionBinding Endpoint}"
+                                    FontFamily="Cascadia Mono, Consolas, DejaVu Sans Mono, monospace"
+                                    FontSize="10.5"
+                                    TextTrimming="CharacterEllipsis" />
+                              </StackPanel>
+
+                              <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                <TextBlock Text="VERSION" Classes="eyebrow" />
+                                <TextBlock
+                                    Text="{ReflectionBinding Version}"
+                                    TextWrapping="Wrap"
+                                    MaxHeight="42" />
+                              </StackPanel>
+
+                              <StackPanel Grid.Column="3" VerticalAlignment="Center">
+                                <TextBlock Text="WORK" Classes="eyebrow" />
+                                <TextBlock Text="{ReflectionBinding Work}" />
+                                <TextBlock
+                                    Text="{ReflectionBinding Health}"
+                                    Classes="dim"
+                                    FontSize="10" />
+                              </StackPanel>
+
+                              <TextBlock
+                                  Grid.Column="4"
+                                  Text="{ReflectionBinding Detail}"
+                                  Classes="muted"
+                                  TextWrapping="Wrap"
+                                  MaxHeight="48"
+                                  VerticalAlignment="Center"
+                                  Margin="8,0" />
+
+                              <Border
+                                  Grid.Column="5"
+                                  Classes="statusBadge"
+                                  VerticalAlignment="Center">
+                                <TextBlock
+                                    Text="{ReflectionBinding State}"
+                                    Foreground="{DynamicResource SuccessBrush}"
+                                    FontSize="10"
+                                    FontWeight="SemiBold" />
+                              </Border>
+                            </Grid>
+                          </Border>
                         </DataTemplate>
                       </ListBox.ItemTemplate>
                     </ListBox>
-                    <TextBlock Grid.Row="2" x:Name="ArrQueueFooterText" Text="Waiting for live telemetry." Classes="dim" />
+
+                    <Border
+                        x:Name="ArrServiceEmptyStateText"
+                        Classes="emptyState"
+                        IsVisible="False">
+                      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Border
+                            Width="32"
+                            Height="32"
+                            CornerRadius="16"
+                            Background="{DynamicResource WarnTintBrush}"
+                            BorderBrush="#5B4A18"
+                            BorderThickness="1">
+                          <TextBlock
+                              Text="!"
+                              Foreground="{DynamicResource WarnBrush}"
+                              FontSize="17"
+                              FontWeight="SemiBold"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                          <TextBlock Text="No compatible instance detected" FontWeight="SemiBold" />
+                          <TextBlock
+                              Text="Verify the application service, container identity or published port."
+                              Classes="muted"
+                              FontSize="10"
+                              Margin="0,3,0,0"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Grid>
+                    </Border>
                   </Grid>
-                </Border>
 
-                <Border
-                    x:Name="ArrCustomizationPanel"
-                    Classes="module"
-                    Width="430"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Stretch"
-                    Background="{DynamicResource Surface2Brush}"
-                    IsVisible="False">
-                  <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto,Auto" RowSpacing="6">
-                    <Grid ColumnDefinitions="*,Auto">
-                      <StackPanel>
-                        <TextBlock Text="Customize workspace" Classes="sectionTitle" />
-                        <TextBlock Text="Instance name, role, config path and enabled modules." Classes="pageSubtitle" />
-                      </StackPanel>
-                      <Button Grid.Column="1" Content="Close" Classes="ghost" Click="ArrCustomizeCloseButton_OnClick" />
+                  <!-- Windows inline queue and health table -->
+                  <Border Classes="flatCard arrQueuePanel" Margin="0,2,0,0">
+                    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="9">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock
+                              x:Name="ArrWorkSectionTitleText"
+                              Text="Queue &amp; health"
+                              Classes="sectionTitle" />
+                          <TextBlock
+                              x:Name="ArrWorkSectionSubtitleText"
+                              Text="Item-level work and health messages."
+                              Classes="pageSubtitle"
+                              Margin="0,3,0,0" />
+                        </StackPanel>
+                        <Button
+                            Grid.Column="1"
+                            Classes="compact"
+                            Content="Open full detail"
+                            VerticalAlignment="Center"
+                            Click="ArrOpenNativeDetailButton_OnClick" />
+                      </Grid>
+
+                      <Border Grid.Row="1" Classes="arrTableHeader">
+                        <ScrollViewer HorizontalScrollBarVisibility="Hidden">
+                          <Grid MinWidth="1040" ColumnDefinitions="120,105,1.35*,105,90,100,1.25*" ColumnSpacing="10">
+                            <TextBlock Text="SERVICE" Classes="tableHeader" />
+                            <TextBlock Grid.Column="1" Text="TYPE" Classes="tableHeader" />
+                            <TextBlock Grid.Column="2" Text="ITEM / ISSUE" Classes="tableHeader" />
+                            <TextBlock Grid.Column="3" Text="STATE" Classes="tableHeader" />
+                            <TextBlock Grid.Column="4" Text="PROGRESS" Classes="tableHeader" />
+                            <TextBlock Grid.Column="5" Text="REMAINING" Classes="tableHeader" />
+                            <TextBlock Grid.Column="6" Text="DETAIL" Classes="tableHeader" />
+                          </Grid>
+                        </ScrollViewer>
+                      </Border>
+
+                      <Grid Grid.Row="2">
+                        <ListBox
+                            x:Name="ArrQueueHealthList"
+                            Classes="dataList arrTable"
+                            MinHeight="160"
+                            MaxHeight="330">
+                          <ListBox.ItemTemplate>
+                            <DataTemplate x:CompileBindings="False">
+                              <ScrollViewer
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Disabled">
+                                <Grid MinWidth="1040" ColumnDefinitions="120,105,1.35*,105,90,100,1.25*" ColumnSpacing="10">
+                                  <TextBlock
+                                      Text="{ReflectionBinding Service}"
+                                      FontWeight="SemiBold"
+                                      TextTrimming="CharacterEllipsis" />
+                                  <TextBlock
+                                      Grid.Column="1"
+                                      Text="{ReflectionBinding Type}"
+                                      Classes="muted"
+                                      TextTrimming="CharacterEllipsis" />
+                                  <TextBlock
+                                      Grid.Column="2"
+                                      Text="{ReflectionBinding ItemIssue}"
+                                      TextTrimming="CharacterEllipsis" />
+                                  <TextBlock
+                                      Grid.Column="3"
+                                      Text="{ReflectionBinding State}"
+                                      FontWeight="SemiBold"
+                                      TextTrimming="CharacterEllipsis" />
+                                  <TextBlock
+                                      Grid.Column="4"
+                                      Text="{ReflectionBinding Progress}"
+                                      TextTrimming="CharacterEllipsis" />
+                                  <TextBlock
+                                      Grid.Column="5"
+                                      Text="{ReflectionBinding Remaining}"
+                                      TextTrimming="CharacterEllipsis" />
+                                  <TextBlock
+                                      Grid.Column="6"
+                                      Text="{ReflectionBinding Detail}"
+                                      Classes="dim"
+                                      TextTrimming="CharacterEllipsis" />
+                                </Grid>
+                              </ScrollViewer>
+                            </DataTemplate>
+                          </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <Border
+                            x:Name="ArrQueueEmptyStateText"
+                            Classes="emptyState"
+                            IsVisible="False">
+                          <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock
+                                Text="No active queue or health items"
+                                FontWeight="SemiBold"
+                                HorizontalAlignment="Center" />
+                            <TextBlock
+                                Text="Live item detail will appear here automatically."
+                                Classes="muted"
+                                FontSize="10"
+                                Margin="0,3,0,0"
+                                HorizontalAlignment="Center" />
+                          </StackPanel>
+                        </Border>
+                      </Grid>
+
+                      <Border Grid.Row="3" Classes="arrStatusBar">
+                        <TextBlock
+                            x:Name="ArrQueueFooterText"
+                            Text="Waiting for live telemetry."
+                            Classes="muted"
+                            TextWrapping="Wrap" />
+                      </Border>
                     </Grid>
+                  </Border>
+                </StackPanel>
+              </ScrollViewer>
 
-                    <ComboBox Grid.Row="1" x:Name="ArrCustomizeInstanceComboBox" SelectionChanged="ArrCustomizeInstanceComboBox_OnSelectionChanged" />
-
-                    <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="6">
-                      <StackPanel><TextBlock Text="Friendly name" Classes="eyebrow" /><TextBox x:Name="ArrFriendlyNameTextBox" /></StackPanel>
-                      <StackPanel Grid.Column="1"><TextBlock Text="Role" Classes="eyebrow" /><TextBox x:Name="ArrRoleTextBox" /></StackPanel>
-                    </Grid>
-
-                    <StackPanel Grid.Row="3">
-                      <TextBlock Text="Config path" Classes="eyebrow" />
-                      <TextBox x:Name="ArrConfigPathTextBox" />
+              <!-- Windows-style customization slide-over; functionality preserved. -->
+              <Border
+                  x:Name="ArrCustomizationPanel"
+                  Classes="module arrCustomization"
+                  Width="430"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Stretch"
+                  Background="{DynamicResource Surface2Brush}"
+                  ZIndex="20"
+                  IsVisible="False">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto,Auto" RowSpacing="8">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel>
+                      <TextBlock Text="Customize workspace" Classes="sectionTitle" />
+                      <TextBlock
+                          Text="Instance name, role, config path and enabled modules."
+                          Classes="pageSubtitle"
+                          Margin="0,3,0,0" />
                     </StackPanel>
-
-                    <CheckBox Grid.Row="4" x:Name="ArrPrivacyModeCheckBox" Content="Privacy mode" />
-
-                    <StackPanel Grid.Row="5" x:Name="ArrWorkspaceModulesPanel" />
-
-                    <WrapPanel Grid.Row="6">
-                      <Button Content="Enable all" Margin="0,0,5,0" Click="EnableAllArrModulesButton_OnClick" />
-                      <Button Content="Disable all" Margin="0,0,5,0" Click="DisableAllArrModulesButton_OnClick" />
-                    </WrapPanel>
-
-                    <Grid Grid.Row="7" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="5">
-                      <Button x:Name="SaveArrWorkspaceButton" Content="Save" Classes="primary" Click="SaveArrWorkspaceButton_OnClick" />
-                      <Button Grid.Column="1" x:Name="ResetArrWorkspaceButton" Content="Reset" Click="ResetArrWorkspaceButton_OnClick" />
-                      <StackPanel Grid.Column="2">
-                        <TextBlock x:Name="ArrWorkspaceProfileStatusText" Text="No instance selected." Classes="dim" TextWrapping="Wrap" />
-                        <TextBlock x:Name="ArrWorkspaceConfigPathText" Text="--" Classes="dim" FontSize="8.5" TextWrapping="Wrap" />
-                      </StackPanel>
-                    </Grid>
+                    <Button
+                        Grid.Column="1"
+                        Classes="ghost compact"
+                        Content="Close"
+                        Click="ArrCustomizeCloseButton_OnClick" />
                   </Grid>
-                </Border>
-              </Grid>
+
+                  <ComboBox
+                      Grid.Row="1"
+                      x:Name="ArrCustomizeInstanceComboBox"
+                      SelectionChanged="ArrCustomizeInstanceComboBox_OnSelectionChanged" />
+
+                  <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="8">
+                    <StackPanel>
+                      <TextBlock Text="Friendly name" Classes="eyebrow" Margin="0,0,0,4" />
+                      <TextBox x:Name="ArrFriendlyNameTextBox" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                      <TextBlock Text="Role" Classes="eyebrow" Margin="0,0,0,4" />
+                      <TextBox x:Name="ArrRoleTextBox" />
+                    </StackPanel>
+                  </Grid>
+
+                  <StackPanel Grid.Row="3">
+                    <TextBlock Text="Config path" Classes="eyebrow" Margin="0,0,0,4" />
+                    <TextBox x:Name="ArrConfigPathTextBox" />
+                  </StackPanel>
+
+                  <CheckBox
+                      Grid.Row="4"
+                      x:Name="ArrPrivacyModeCheckBox"
+                      Content="Privacy mode" />
+
+                  <ScrollViewer
+                      Grid.Row="5"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel x:Name="ArrWorkspaceModulesPanel" />
+                  </ScrollViewer>
+
+                  <WrapPanel Grid.Row="6">
+                    <Button
+                        Classes="compact"
+                        Content="Enable all"
+                        Margin="0,0,8,0"
+                        Click="EnableAllArrModulesButton_OnClick" />
+                    <Button
+                        Classes="compact"
+                        Content="Disable all"
+                        Click="DisableAllArrModulesButton_OnClick" />
+                  </WrapPanel>
+
+                  <Grid Grid.Row="7" RowDefinitions="Auto,Auto" RowSpacing="7">
+                    <WrapPanel>
+                      <Button
+                          x:Name="SaveArrWorkspaceButton"
+                          Classes="primary compact"
+                          Content="Save"
+                          MinWidth="88"
+                          Margin="0,0,8,0"
+                          Click="SaveArrWorkspaceButton_OnClick" />
+                      <Button
+                          x:Name="ResetArrWorkspaceButton"
+                          Classes="compact"
+                          Content="Reset"
+                          MinWidth="88"
+                          Click="ResetArrWorkspaceButton_OnClick" />
+                    </WrapPanel>
+                    <StackPanel Grid.Row="1">
+                      <TextBlock
+                          x:Name="ArrWorkspaceProfileStatusText"
+                          Text="No instance selected."
+                          Classes="muted"
+                          TextWrapping="Wrap" />
+                      <TextBlock
+                          x:Name="ArrWorkspaceConfigPathText"
+                          Text="--"
+                          Classes="dim"
+                          FontSize="9"
+                          Margin="0,3,0,0"
+                          TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Grid>
+                </Grid>
+              </Border>
             </Grid>
             <!-- Services -->
             <Grid

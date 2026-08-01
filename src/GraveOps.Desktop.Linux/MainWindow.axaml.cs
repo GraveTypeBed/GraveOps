@@ -1291,8 +1291,12 @@ public partial class MainWindow : Window
                 Content = $"Open {instance.DisplayName}",
                 Tag = instance,
                 IsEnabled = url is not null,
-                Margin = new Thickness(0, 0, 8, 8)
+                Margin = new Thickness(0, 0, 8, 8),
+                Classes = { "compact", "arrAction" }
             };
+
+            if (panel.Children.Count == 0)
+                button.Classes.Add("primary");
 
             button.Click +=
                 ArrDynamicOpenButton_OnClick;
@@ -1343,8 +1347,14 @@ public partial class MainWindow : Window
                     instance.SeverityLabel))
             .ToArray();
 
-        Get<ListBox>("ArrInstanceTelemetryList")
-            .ItemsSource = services;
+        var serviceList =
+            Get<ListBox>("ArrInstanceTelemetryList");
+
+        serviceList.ItemsSource = services;
+        serviceList.IsVisible = services.Length > 0;
+
+        Get<Border>("ArrServiceEmptyStateText").IsVisible =
+            services.Length == 0;
 
         Get<ListBox>("ArrQueueHealthList")
             .ItemsSource =
@@ -1386,6 +1396,9 @@ public partial class MainWindow : Window
             "Waiting for the first live application probe.";
         Get<TextBlock>("ArrLiveUpdatedText").Text =
             "Waiting for live telemetry";
+
+        Get<ListBox>("ArrQueueHealthList").IsVisible = true;
+        Get<Border>("ArrQueueEmptyStateText").IsVisible = false;
     }
 
     private async Task RefreshArrLiveTelemetryAsync()
@@ -1459,10 +1472,21 @@ public partial class MainWindow : Window
         Get<TextBlock>("ArrLiveUpdatedText").Text =
             $"LIVE · updated {snapshot.CapturedAt:t}";
 
-        Get<ListBox>("ArrInstanceTelemetryList")
-            .ItemsSource = snapshot.Services;
-        Get<ListBox>("ArrQueueHealthList")
-            .ItemsSource = snapshot.WorkItems;
+        var serviceList =
+            Get<ListBox>("ArrInstanceTelemetryList");
+        serviceList.ItemsSource = snapshot.Services;
+        serviceList.IsVisible = snapshot.Services.Count > 0;
+
+        Get<Border>("ArrServiceEmptyStateText").IsVisible =
+            snapshot.Services.Count == 0;
+
+        var queueList =
+            Get<ListBox>("ArrQueueHealthList");
+        queueList.ItemsSource = snapshot.WorkItems;
+        queueList.IsVisible = snapshot.WorkItems.Count > 0;
+
+        Get<Border>("ArrQueueEmptyStateText").IsVisible =
+            snapshot.WorkItems.Count == 0;
 
         Get<TextBlock>("ArrQueueFooterText").Text =
             $"LIVE · updated {snapshot.CapturedAt:T} · " +

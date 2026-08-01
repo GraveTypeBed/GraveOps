@@ -439,5 +439,117 @@
       <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     </Style>
+
+    <!-- V4.4.1 Windows MediaServiceView translation for Arr workspaces. -->
+    <Style Selector="Border.arrMetric">
+      <Setter Property="MinHeight" Value="88" />
+      <Setter Property="Padding" Value="16" />
+    </Style>
+
+    <Style Selector="Border.arrOperations">
+      <Setter Property="Padding" Value="15" />
+      <Setter Property="CornerRadius" Value="10" />
+    </Style>
+
+    <Style Selector="Button.arrAction">
+      <Setter Property="MinWidth" Value="132" />
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="12,7" />
+    </Style>
+
+    <Style Selector="Border.arrServiceCard">
+      <Setter Property="Padding" Value="14" />
+      <Setter Property="CornerRadius" Value="10" />
+    </Style>
+
+    <Style Selector="Border.arrQueuePanel">
+      <Setter Property="Padding" Value="14" />
+      <Setter Property="CornerRadius" Value="10" />
+    </Style>
+
+    <Style Selector="Border.arrTableHeader">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="Padding" Value="10,7" />
+    </Style>
+
+    <Style Selector="TextBlock.tableHeader">
+      <Setter Property="FontSize" Value="9" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource DimBrush}" />
+    </Style>
+
+    <Style Selector="Border.arrStatusBar">
+      <Setter Property="Background" Value="#14171A" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="Padding" Value="10,8" />
+    </Style>
+
+    <Style Selector="Border.arrCustomization">
+      <Setter Property="Padding" Value="18" />
+      <Setter Property="CornerRadius" Value="12,0,0,12" />
+      <Setter Property="BorderThickness" Value="1,0,0,0" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
+    </Style>
+
+    <Style Selector="ListBox.arrCards">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <Style Selector="ListBox.arrCards ListBoxItem">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+
+    <Style Selector="ListBox.arrCards ListBoxItem:pointerover">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.arrCards ListBoxItem:selected">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.arrCards ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.arrTable">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="{DynamicResource ConsoleBrush}" />
+    </Style>
+
+    <Style Selector="ListBox.arrTable ListBoxItem">
+      <Setter Property="Padding" Value="10,7" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+
+    <Style Selector="ListBox.arrTable ListBoxItem:selected">
+      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="BorderThickness" Value="2,0,0,1" />
+    </Style>
+
+    <Style Selector="ListBox.dataList ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
+
+    <Style Selector="ListBox.arrTable ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
   </Application.Styles>
 </Application>
