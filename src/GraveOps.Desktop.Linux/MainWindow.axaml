@@ -512,6 +512,49 @@
                         Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
                   </Grid>
                 </Button>
+                <TextBlock
+                    Text="OPERATOR"
+                    Classes="eyebrow"
+                    Margin="10,15,0,6" />
+
+                <Button
+                    x:Name="SettingsNav"
+                    Classes="nav"
+                    Click="NavigationButton_OnClick">
+                  <Grid ColumnDefinitions="24,*">
+                    <Path
+                        Width="16"
+                        Height="16"
+                        Data="M8,2 A2,2 0 1 1 8,6 A2,2 0 1 1 8,2 M8,7 L8,14 M3,10 L13,10"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.2" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="Settings"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                  </Grid>
+                </Button>
+
+                <Button
+                    x:Name="ToolsNav"
+                    Classes="nav"
+                    Click="NavigationButton_OnClick">
+                  <Grid ColumnDefinitions="24,*">
+                    <Path
+                        Width="16"
+                        Height="16"
+                        Data="M3,3 L13,3 L13,13 L3,13 Z M5,6 L11,6 M5,9 L9,9"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.2" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="Operator Tools"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                  </Grid>
+                </Button>
+
               </StackPanel>
             </ScrollViewer>
 
@@ -1597,6 +1640,208 @@
                         </DataTemplate>
                       </ListBox.ItemTemplate>
                     </ListBox>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+
+
+            <!-- Settings -->
+            <ScrollViewer x:Name="SettingsPage" IsVisible="False">
+              <StackPanel Spacing="18">
+                <Grid ColumnDefinitions="1.05*,0.95*" ColumnSpacing="14">
+                  <Border Classes="card">
+                    <StackPanel Spacing="12">
+                      <TextBlock Text="Operator defaults" Classes="sectionTitle" />
+                      <TextBlock
+                          Text="Stored in operator-settings.json and applied when GraveOps starts."
+                          Classes="pageSubtitle"
+                          TextWrapping="Wrap" />
+
+                      <CheckBox x:Name="SettingsSafeModeCheckBox" Content="Start in Safe Mode" IsChecked="True" />
+                      <CheckBox x:Name="SettingsInformationalLogsCheckBox" Content="Show informational log observations by default" />
+                      <CheckBox x:Name="SettingsInformationalContainersCheckBox" Content="Show informational exited containers by default" />
+                      <CheckBox x:Name="SettingsOpenOverviewCheckBox" Content="Open Overview after startup" />
+
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Save settings" Classes="primary" Click="SaveOperatorSettingsButton_OnClick" />
+                        <Button Content="Restore defaults" Click="ResetOperatorSettingsButton_OnClick" />
+                      </StackPanel>
+
+                      <TextBlock x:Name="SettingsSaveStatusText" Text="Settings loaded." Classes="dim" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="1" Classes="card">
+                    <StackPanel Spacing="10">
+                      <TextBlock Text="Policy management" Classes="sectionTitle" />
+                      <TextBlock x:Name="SettingsPolicySummaryText" Text="Waiting for capture" FontWeight="SemiBold" TextWrapping="Wrap" />
+                      <TextBlock
+                          Text="Finding suppression stays on Dashboard and storage thresholds stay on Storage so the operational context is preserved."
+                          Classes="pageSubtitle"
+                          TextWrapping="Wrap" />
+
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Dashboard policies" Tag="DashboardNav" Click="SettingsNavigateButton_OnClick" />
+                        <Button Content="Storage thresholds" Tag="StorageNav" Click="SettingsNavigateButton_OnClick" />
+                      </StackPanel>
+
+                      <TextBlock x:Name="SettingsPolicyPathText" Text="--" Classes="dim" FontFamily="DejaVu Sans Mono, monospace" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
+
+                <Border Classes="card">
+                  <StackPanel Spacing="12">
+                    <TextBlock Text="Application paths" Classes="sectionTitle" />
+                    <TextBlock
+                        Text="Open GraveOps-owned locations without guessing Linux paths."
+                        Classes="pageSubtitle"
+                        TextWrapping="Wrap" />
+
+                    <Grid ColumnDefinitions="150,*,Auto,Auto" ColumnSpacing="10" RowSpacing="9">
+                      <TextBlock Text="Configuration" FontWeight="SemiBold" />
+                      <TextBlock Grid.Column="1" x:Name="SettingsConfigPathText" Text="--" Classes="dim" FontFamily="DejaVu Sans Mono, monospace" TextWrapping="Wrap" />
+                      <Button Grid.Column="2" Content="Open folder" Tag="config" Click="OpenOperatorPathButton_OnClick" />
+                      <Button Grid.Column="3" Content="Terminal" Tag="config" Click="OpenOperatorTerminalButton_OnClick" />
+
+                      <TextBlock Grid.Row="1" Text="Data / history" FontWeight="SemiBold" />
+                      <TextBlock Grid.Row="1" Grid.Column="1" x:Name="SettingsDataPathText" Text="--" Classes="dim" FontFamily="DejaVu Sans Mono, monospace" TextWrapping="Wrap" />
+                      <Button Grid.Row="1" Grid.Column="2" Content="Open folder" Tag="data" Click="OpenOperatorPathButton_OnClick" />
+
+                      <TextBlock Grid.Row="2" Text="Repository" FontWeight="SemiBold" />
+                      <TextBlock Grid.Row="2" Grid.Column="1" x:Name="SettingsRepositoryPathText" Text="--" Classes="dim" FontFamily="DejaVu Sans Mono, monospace" TextWrapping="Wrap" />
+                      <Button Grid.Row="2" Grid.Column="2" Content="Open folder" Tag="repo" Click="OpenOperatorPathButton_OnClick" />
+                      <Button Grid.Row="2" Grid.Column="3" Content="Terminal" Tag="repo" Click="OpenOperatorTerminalButton_OnClick" />
+
+                      <TextBlock Grid.Row="3" Text="Diagnostics" FontWeight="SemiBold" />
+                      <TextBlock Grid.Row="3" Grid.Column="1" x:Name="SettingsDiagnosticsPathText" Text="--" Classes="dim" FontFamily="DejaVu Sans Mono, monospace" TextWrapping="Wrap" />
+                      <Button Grid.Row="3" Grid.Column="2" Content="Open folder" Tag="diagnostics" Click="OpenOperatorPathButton_OnClick" />
+
+                      <TextBlock Grid.Row="4" Text="Policy file" FontWeight="SemiBold" />
+                      <TextBlock Grid.Row="4" Grid.Column="1" x:Name="SettingsPolicyFileText" Text="--" Classes="dim" FontFamily="DejaVu Sans Mono, monospace" TextWrapping="Wrap" />
+                      <Button Grid.Row="4" Grid.Column="2" Content="Open file" Tag="policy" Click="OpenOperatorPathButton_OnClick" />
+
+                      <TextBlock Grid.Row="5" Text="History file" FontWeight="SemiBold" />
+                      <TextBlock Grid.Row="5" Grid.Column="1" x:Name="SettingsHistoryFileText" Text="--" Classes="dim" FontFamily="DejaVu Sans Mono, monospace" TextWrapping="Wrap" />
+                      <Button Grid.Row="5" Grid.Column="2" Content="Open file" Tag="history" Click="OpenOperatorPathButton_OnClick" />
+                    </Grid>
+
+                    <TextBlock x:Name="SettingsPathStatusText" Text="No path action run." Classes="dim" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
+
+                <Border Classes="card">
+                  <StackPanel Spacing="12">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel>
+                        <TextBlock Text="Version and update state" Classes="sectionTitle" />
+                        <TextBlock
+                            Text="Local comparison with origin/linux-client; no network fetch is performed."
+                            Classes="pageSubtitle"
+                            Margin="0,4,0,0"
+                            TextWrapping="Wrap" />
+                      </StackPanel>
+                      <Button Grid.Column="1" Content="Refresh version info" Click="RefreshVersionInfoButton_OnClick" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="160,*" RowSpacing="7">
+                      <TextBlock Text="Branch" FontWeight="SemiBold" />
+                      <TextBlock Grid.Column="1" x:Name="SettingsBranchText" Text="--" />
+
+                      <TextBlock Grid.Row="1" Text="Commit" FontWeight="SemiBold" />
+                      <TextBlock Grid.Row="1" Grid.Column="1" x:Name="SettingsCommitText" Text="--" TextWrapping="Wrap" />
+
+                      <TextBlock Grid.Row="2" Text="Worktree" FontWeight="SemiBold" />
+                      <TextBlock Grid.Row="2" Grid.Column="1" x:Name="SettingsWorktreeText" Text="--" />
+
+                      <TextBlock Grid.Row="3" Text="Origin comparison" FontWeight="SemiBold" />
+                      <TextBlock Grid.Row="3" Grid.Column="1" x:Name="SettingsOriginText" Text="--" TextWrapping="Wrap" />
+
+                      <TextBlock Grid.Row="4" Text=".NET SDK" FontWeight="SemiBold" />
+                      <TextBlock Grid.Row="4" Grid.Column="1" x:Name="SettingsDotnetText" Text="--" />
+                    </Grid>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+
+            <!-- Operator Tools -->
+            <ScrollViewer x:Name="ToolsPage" IsVisible="False">
+              <StackPanel Spacing="18">
+                <Grid ColumnDefinitions="1.05*,0.95*" ColumnSpacing="14">
+                  <Border Classes="card">
+                    <StackPanel Spacing="12">
+                      <TextBlock Text="Diagnostics export" Classes="sectionTitle" />
+                      <TextBlock
+                          Text="Creates a local ZIP containing redacted environment, findings, lifecycle, integrations, grouped journal events, backup readiness and version state."
+                          Classes="pageSubtitle"
+                          TextWrapping="Wrap" />
+
+                      <Border Classes="inset">
+                        <TextBlock
+                            Text="Excluded: configuration contents, API keys, passwords, environment variables, browser data and media files. Home paths, IP addresses and common secret patterns are redacted."
+                            Classes="muted"
+                            TextWrapping="Wrap" />
+                      </Border>
+
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="CreateDiagnosticsButton" Content="Create diagnostics bundle" Classes="primary" IsEnabled="False" Click="CreateDiagnosticsButton_OnClick" />
+                        <Button Content="Open diagnostics folder" Tag="diagnostics" Click="OpenOperatorPathButton_OnClick" />
+                      </StackPanel>
+
+                      <TextBlock x:Name="DiagnosticsStatusText" Text="Refresh the environment before exporting." Classes="dim" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border Grid.Column="1" Classes="card">
+                    <StackPanel Spacing="12">
+                      <TextBlock Text="Safe terminal access" Classes="sectionTitle" />
+                      <TextBlock
+                          Text="These buttons only open a terminal in a known directory. GraveOps does not inject or execute a shell command."
+                          Classes="pageSubtitle"
+                          TextWrapping="Wrap" />
+
+                      <Button Content="Terminal in repository" Tag="repo" HorizontalAlignment="Left" Click="OpenOperatorTerminalButton_OnClick" />
+                      <Button Content="Terminal in configuration" Tag="config" HorizontalAlignment="Left" Click="OpenOperatorTerminalButton_OnClick" />
+
+                      <TextBlock x:Name="TerminalStatusText" Text="No terminal opened." Classes="dim" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
+
+                <Border Classes="card">
+                  <StackPanel Spacing="12">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel>
+                        <TextBlock Text="Read-only validation" Classes="sectionTitle" />
+                        <TextBlock
+                            Text="Checks paths, JSON stores, repository state, local origin comparison and required launchers without changing services or policies."
+                            Classes="pageSubtitle"
+                            Margin="0,4,0,0"
+                            TextWrapping="Wrap" />
+                      </StackPanel>
+                      <Button Grid.Column="1" x:Name="RunValidationButton" Content="Run validation" Click="RunValidationButton_OnClick" />
+                    </Grid>
+
+                    <TextBox
+                        x:Name="ValidationOutputText"
+                        Classes="console"
+                        IsReadOnly="True"
+                        AcceptsReturn="True"
+                        TextWrapping="Wrap"
+                        MinHeight="330"
+                        Text="Validation has not been run." />
+                  </StackPanel>
+                </Border>
+
+                <Border Classes="card">
+                  <StackPanel Spacing="10">
+                    <TextBlock Text="Scope boundaries" Classes="sectionTitle" />
+                    <TextBlock
+                        Text="Service and container actions remain on Services and Docker. Findings remain on Dashboard and Intelligence. Raw journal evidence remains on Logs. Operator decisions remain on History."
+                        Classes="muted"
+                        TextWrapping="Wrap" />
                   </StackPanel>
                 </Border>
               </StackPanel>

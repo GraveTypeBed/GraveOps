@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -23,6 +24,11 @@ public partial class MainWindow : Window
     private readonly LinuxHostActionService _actions = new();
     private readonly LinuxHistoryStore _history = new();
     private readonly LinuxFindingPolicyStore _findingPolicies = new();
+    private readonly LinuxOperatorSettingsStore _operatorSettingsStore = new();
+    private readonly string _repositoryPath =
+        LinuxOperatorTools.FindRepositoryRoot();
+    private LinuxOperatorSettings _operatorSettings =
+        LinuxOperatorSettings.Default;
 
     private static readonly IReadOnlyDictionary<string, int[]> KnownIntegrationPorts =
         new Dictionary<string, int[]>(StringComparer.OrdinalIgnoreCase)
@@ -88,7 +94,9 @@ public partial class MainWindow : Window
             ["DockerNav"] = new("DockerPage", "Docker", "Containers, images, state, ports and guarded actions"),
             ["StorageNav"] = new("StoragePage", "Storage", "Operational filesystems and capacity health"),
             ["LogsNav"] = new("LogsPage", "Logs", "Grouped warning journal and crash evidence"),
-            ["BackupsNav"] = new("BackupsPage", "Backups", "Schedule, artifact and restore-readiness evidence")
+            ["BackupsNav"] = new("BackupsPage", "Backups", "Schedule, artifact and restore-readiness evidence"),
+            ["SettingsNav"] = new("SettingsPage", "Settings", "Linux paths, operator defaults, policies and version state"),
+            ["ToolsNav"] = new("ToolsPage", "Operator Tools", "Redacted diagnostics, validation and safe local access")
         };
 
     private HostSnapshot? _snapshot;
@@ -106,10 +114,20 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        _operatorSettings = _operatorSettingsStore.Load();
+        ApplyOperatorSettingsToUi();
+
         Opened += async (_, _) =>
         {
             Navigate("DashboardNav");
             await RefreshAsync();
+            await RefreshVersionInfoAsync();
+
+            if (_operatorSettings.OpenOverviewAfterStartup)
+            {
+                Get<Border>("OverviewDrawer").IsVisible = true;
+                PopulateOperatorShell();
+            }
         };
     }
 
@@ -209,6 +227,9 @@ public partial class MainWindow : Window
         }
 
         CloseCommandPalette();
+
+        if (navigationName is "SettingsNav" or "ToolsNav")
+            PopulateSettingsAndTools();
     }
 
     private void SelectIntegrationByName(string integrationName)
@@ -570,6 +591,321 @@ public partial class MainWindow : Window
                   $"{top.Problem}";
     }
 
+    private void ApplyOperatorSettingsToUi()
+    {
+        Get<CheckBox>("SettingsSafeModeCheckBox").IsChecked =
+            _operatorSettings.StartInSafeMode;
+        Get<CheckBox>("SettingsInformationalLogsCheckBox").IsChecked =
+            _operatorSettings.ShowInformationalLogs;
+        Get<CheckBox>("SettingsInformationalContainersCheckBox").IsChecked =
+            _operatorSettings.ShowInformationalContainers;
+        Get<CheckBox>("SettingsOpenOverviewCheckBox").IsChecked =
+            _operatorSettings.OpenOverviewAfterStartup;
+
+        Get<CheckBox>("SafeModeCheckBox").IsChecked =
+            _operatorSettings.StartInSafeMode;
+        Get<CheckBox>("ShowInformationalLogsCheckBox").IsChecked =
+            _operatorSettings.ShowInformationalLogs;
+        Get<CheckBox>("ShowInformationalContainersCheckBox").IsChecked =
+            _operatorSettings.ShowInformationalContainers;
+
+        if (_snapshot is not null)
+        {
+            ApplyLogsFilter();
+            ApplyDockerFilter();
+            UpdateActionButtons();
+            PopulateOperatorShell();
+        }
+    }
+
+    private void PopulateSettingsAndTools()
+    {
+        Get<TextBlock>("SettingsConfigPathText").Text =
+            _operatorSettingsStore.ConfigDirectory;
+        Get<TextBlock>("SettingsDataPathText").Text =
+            _operatorSettingsStore.DataDirectory;
+        Get<TextBlock>("SettingsRepositoryPathText").Text =
+            _repositoryPath;
+        Get<TextBlock>("SettingsDiagnosticsPathText").Text =
+            _operatorSettingsStore.DiagnosticsDirectory;
+        Get<TextBlock>("SettingsPolicyFileText").Text =
+            _operatorSettingsStore.PolicyPath;
+        Get<TextBlock>("SettingsHistoryFileText").Text =
+            _operatorSettingsStore.HistoryPath;
+        Get<TextBlock>("SettingsPolicyPathText").Text =
+            _operatorSettingsStore.PolicyPath;
+
+        if (_policyEvaluation is null || _snapshot is null)
+        {
+            Get<TextBlock>("SettingsPolicySummaryText").Text =
+                "Waiting for environment capture";
+            Get<Button>("CreateDiagnosticsButton").IsEnabled =
+                false;
+            return;
+        }
+
+        var customPolicies =
+            LinuxOpsAnalyzer.OperationalStorage(_snapshot)
+                .Count(item =>
+                    _findingPolicies.HasCustomStorageThreshold(
+                        item.MountPoint));
+
+        Get<TextBlock>("SettingsPolicySummaryText").Text =
+            $"{_policyEvaluation.Active.Count} active · " +
+            $"{_policyEvaluation.Muted.Count} muted · " +
+            $"{customPolicies} custom storage " +
+            $"{(customPolicies == 1 ? "policy" : "policies")}";
+
+        Get<Button>("CreateDiagnosticsButton").IsEnabled =
+            true;
+        Get<TextBlock>("DiagnosticsStatusText").Text =
+            $"Ready to export capture " +
+            $"{_snapshot.CapturedAt.ToLocalTime():g}.";
+    }
+
+    private void SaveOperatorSettingsButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        try
+        {
+            _operatorSettings = new LinuxOperatorSettings(
+                Get<CheckBox>("SettingsSafeModeCheckBox")
+                    .IsChecked == true,
+                Get<CheckBox>("SettingsInformationalLogsCheckBox")
+                    .IsChecked == true,
+                Get<CheckBox>("SettingsInformationalContainersCheckBox")
+                    .IsChecked == true,
+                Get<CheckBox>("SettingsOpenOverviewCheckBox")
+                    .IsChecked == true);
+
+            _operatorSettingsStore.Save(_operatorSettings);
+            ApplyOperatorSettingsToUi();
+
+            Get<TextBlock>("SettingsSaveStatusText").Text =
+                $"Saved {_operatorSettingsStore.SettingsPath}";
+            _history.RecordPolicy(
+                "Operator settings",
+                "SAVED",
+                "Startup defaults and information-view preferences updated.");
+            PopulateHistory();
+        }
+        catch (Exception exception)
+        {
+            Get<TextBlock>("SettingsSaveStatusText").Text =
+                $"Could not save settings: {exception.Message}";
+        }
+    }
+
+    private void ResetOperatorSettingsButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        try
+        {
+            _operatorSettings =
+                _operatorSettingsStore.Reset();
+            ApplyOperatorSettingsToUi();
+
+            Get<TextBlock>("SettingsSaveStatusText").Text =
+                "Default operator settings restored.";
+            _history.RecordPolicy(
+                "Operator settings",
+                "DEFAULTS RESTORED",
+                "Safe Mode enabled; informational views disabled.");
+            PopulateHistory();
+        }
+        catch (Exception exception)
+        {
+            Get<TextBlock>("SettingsSaveStatusText").Text =
+                $"Could not restore defaults: {exception.Message}";
+        }
+    }
+
+    private void SettingsNavigateButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        if (sender is Button button &&
+            button.Tag is string navigationName)
+        {
+            Navigate(navigationName);
+        }
+    }
+
+    private void OpenOperatorPathButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        if (sender is not Button button ||
+            button.Tag is not string key)
+        {
+            return;
+        }
+
+        var path = ResolveOperatorPath(key);
+
+        if (key is "config" or "data" or "diagnostics")
+            Directory.CreateDirectory(path);
+
+        var status =
+            Get<TextBlock>("SettingsPathStatusText");
+
+        if (LinuxOperatorTools.OpenPath(path, out var error))
+            status.Text = $"Opened {path}";
+        else
+            status.Text = error;
+    }
+
+    private void OpenOperatorTerminalButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        if (sender is not Button button ||
+            button.Tag is not string key)
+        {
+            return;
+        }
+
+        var path = ResolveOperatorPath(key);
+        Directory.CreateDirectory(path);
+
+        var status =
+            Get<TextBlock>("TerminalStatusText");
+
+        if (LinuxOperatorTools.OpenTerminal(path, out var error))
+            status.Text = $"Opened terminal in {path}";
+        else
+            status.Text = error;
+    }
+
+    private string ResolveOperatorPath(string key) =>
+        key switch
+        {
+            "config" =>
+                _operatorSettingsStore.ConfigDirectory,
+            "data" =>
+                _operatorSettingsStore.DataDirectory,
+            "diagnostics" =>
+                _operatorSettingsStore.DiagnosticsDirectory,
+            "policy" =>
+                File.Exists(_operatorSettingsStore.PolicyPath)
+                    ? _operatorSettingsStore.PolicyPath
+                    : _operatorSettingsStore.ConfigDirectory,
+            "history" =>
+                File.Exists(_operatorSettingsStore.HistoryPath)
+                    ? _operatorSettingsStore.HistoryPath
+                    : _operatorSettingsStore.DataDirectory,
+            "repo" =>
+                _repositoryPath,
+            _ =>
+                _repositoryPath
+        };
+
+    private async void RefreshVersionInfoButton_OnClick(
+        object? sender,
+        RoutedEventArgs e) =>
+        await RefreshVersionInfoAsync();
+
+    private async Task RefreshVersionInfoAsync()
+    {
+        var version =
+            await LinuxOperatorTools.CaptureVersionAsync(
+                _repositoryPath);
+
+        Get<TextBlock>("SettingsBranchText").Text =
+            version.Branch;
+        Get<TextBlock>("SettingsCommitText").Text =
+            $"{version.Commit} · {version.Subject}";
+        Get<TextBlock>("SettingsWorktreeText").Text =
+            version.Worktree;
+        Get<TextBlock>("SettingsOriginText").Text =
+            version.OriginComparison;
+        Get<TextBlock>("SettingsDotnetText").Text =
+            version.DotnetVersion;
+    }
+
+    private async void RunValidationButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        var button = Get<Button>("RunValidationButton");
+        button.IsEnabled = false;
+        button.Content = "Validating...";
+
+        try
+        {
+            Get<TextBox>("ValidationOutputText").Text =
+                await LinuxOperatorTools.ValidateAsync(
+                    _repositoryPath,
+                    _operatorSettingsStore);
+        }
+        catch (Exception exception)
+        {
+            Get<TextBox>("ValidationOutputText").Text =
+                $"Validation failed: {exception}";
+        }
+        finally
+        {
+            button.IsEnabled = true;
+            button.Content = "Run validation";
+        }
+    }
+
+    private async void CreateDiagnosticsButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        if (_snapshot is null ||
+            _analysis is null ||
+            _backup is null ||
+            _policyEvaluation is null)
+        {
+            Get<TextBlock>("DiagnosticsStatusText").Text =
+                "Refresh the environment before exporting.";
+            return;
+        }
+
+        var button =
+            Get<Button>("CreateDiagnosticsButton");
+        button.IsEnabled = false;
+        button.Content = "Creating bundle...";
+
+        try
+        {
+            var archivePath =
+                await LinuxOperatorTools.CreateDiagnosticsAsync(
+                    _repositoryPath,
+                    _operatorSettingsStore,
+                    _snapshot,
+                    _analysis,
+                    _lifecycle,
+                    _integrations,
+                    _logs,
+                    _backup,
+                    _policyEvaluation,
+                    _operatorSettings);
+
+            Get<TextBlock>("DiagnosticsStatusText").Text =
+                $"Created {archivePath}";
+            _history.RecordPolicy(
+                "Diagnostics",
+                "EXPORTED",
+                archivePath);
+            PopulateHistory();
+        }
+        catch (Exception exception)
+        {
+            Get<TextBlock>("DiagnosticsStatusText").Text =
+                $"Diagnostics export failed: {exception.Message}";
+        }
+        finally
+        {
+            button.IsEnabled = true;
+            button.Content = "Create diagnostics bundle";
+        }
+    }
+
     private async void RefreshButton_OnClick(object? sender, RoutedEventArgs e) => await RefreshAsync();
 
     private async Task RefreshAsync()
@@ -676,6 +1012,7 @@ public partial class MainWindow : Window
         PopulateBackups();
         UpdateActionButtons();
         PopulateOperatorShell();
+        PopulateSettingsAndTools();
         RebuildCommandPalette();
     }
 
