@@ -78,7 +78,7 @@ public sealed record ModularApplicationDescriptor(
 
 public sealed class ModularLayoutContract
 {
-    public string Version { get; set; } = "4.5.0";
+    public string Version { get; set; } = "4.5.2";
     public bool ViewportFirst { get; set; } = true;
     public bool PageLevelScrollDisabled { get; set; } = false;
     public bool DirectAppsUseDedicatedWorkspace { get; set; } = true;
@@ -97,6 +97,10 @@ public sealed class ModularLayoutContract
     public bool NativeDownloadClientTelemetry { get; set; } = true;
     public bool ProtectedLocalClientProbes { get; set; } = true;
     public bool DenseDownloadClientTables { get; set; } = true;
+    public bool ClientSpecificDownloadSchemas { get; set; } = true;
+    public bool FixedDownloadColumnGeometry { get; set; } = true;
+    public bool DownloadNameTooltips { get; set; } = true;
+    public bool DownloadUnitNormalization { get; set; } = true;
     public int PrimaryReferenceWidth { get; set; } = 1920;
     public int PrimaryReferenceHeight { get; set; } = 1040;
     public int SidebarWidth { get; set; } = 260;

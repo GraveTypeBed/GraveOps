@@ -552,7 +552,7 @@
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
     </Style>
 
-    <!-- V4.5.0 Windows DownloadClientView translation. -->
+    <!-- V4.5.2 client-specific downloader table engine. -->
     <Style Selector="Border.downloadMetric">
       <Setter Property="MinHeight" Value="98" />
       <Setter Property="Padding" Value="16" />
@@ -586,10 +586,39 @@
 
     <Style Selector="Border.downloadTableHeader">
       <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="7" />
-      <Setter Property="Padding" Value="10,7" />
+      <Setter Property="Padding" Value="10,8" />
+    </Style>
+
+    <Style Selector="TextBlock.downloadHeader">
+      <Setter Property="Foreground" Value="#AEB5BD" />
+      <Setter Property="FontSize" Value="10" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style Selector="TextBlock.downloadHeaderNumeric">
+      <Setter Property="HorizontalAlignment" Value="Right" />
+    </Style>
+
+    <Style Selector="TextBlock.downloadCell">
+      <Setter Property="FontSize" Value="10.5" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style Selector="TextBlock.downloadNameCell">
+      <Setter Property="FontSize" Value="10.5" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style Selector="TextBlock.downloadNumericCell">
+      <Setter Property="HorizontalAlignment" Value="Right" />
     </Style>
 
     <Style Selector="Border.downloadEmpty">
@@ -617,11 +646,13 @@
     </Style>
 
     <Style Selector="ListBox.downloadTable ListBoxItem">
+      <Setter Property="MinHeight" Value="38" />
       <Setter Property="Padding" Value="10,7" />
       <Setter Property="Margin" Value="0" />
       <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
       <Setter Property="BorderThickness" Value="0,0,0,1" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
 
     <Style Selector="ListBox.downloadTable ListBoxItem:pointerover">

@@ -357,6 +357,14 @@ def fmt_kb_rate(v):
         return text(v)
 
 
+def fmt_gb(v):
+    try:
+        return f"{max(0.0,float(v or 0)):.1f} GB"
+    except Exception:
+        value=text(v)
+        return value if any(ch.isalpha() for ch in value) else value + " GB"
+
+
 def progress_number(v):
     try:
         return max(0.0,min(100.0,float(v)))
@@ -414,7 +422,7 @@ snapshot["connection"]=f"localhost:{port}"
 snapshot["downloadSpeed"]=fmt_kb_rate(q.get("kbpersec")) if q.get("kbpersec") not in (None,"") else text(q.get("speed"))
 snapshot["remaining"]=text(q.get("sizeleft"))
 snapshot["eta"]=text(q.get("timeleft"))
-snapshot["diskFree"]=text(q.get("diskspace1") or q.get("diskspace2"))
+snapshot["diskFree"]=fmt_gb(q.get("diskspace1") or q.get("diskspace2"))
 snapshot["rateLimit"]=text(q.get("speedlimit_abs") or q.get("speedlimit"))
 snapshot["totalCount"]=number(q.get("noofslots"),len(slots))
 

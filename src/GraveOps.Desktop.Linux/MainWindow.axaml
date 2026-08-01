@@ -2070,21 +2070,28 @@
                       <ScrollViewer
                           HorizontalScrollBarVisibility="Auto"
                           VerticalScrollBarVisibility="Disabled">
-                        <StackPanel MinWidth="1320" Spacing="0">
+                        <Grid>
+
+                          <!-- qBittorrent keeps torrent-specific columns while sharing the table engine. -->
+                        <StackPanel
+                            x:Name="DownloadClientQbitQueueTable"
+                            MinWidth="1640"
+                            Spacing="0">
+
                           <Border Classes="downloadTableHeader">
-                            <Grid ColumnDefinitions="2.6*,0.9*,0.85*,1.05*,0.8*,0.85*,0.75*,0.75*,0.65*,0.58*,0.8*,1.0*" ColumnSpacing="10">
-                              <TextBlock Text="ITEM" Classes="tableHeader" />
-                              <TextBlock Grid.Column="1" Text="CATEGORY" Classes="tableHeader" />
-                              <TextBlock Grid.Column="2" Text="STATE" Classes="tableHeader" />
-                              <TextBlock Grid.Column="3" Text="PROGRESS" Classes="tableHeader" />
-                              <TextBlock Grid.Column="4" Text="SIZE" Classes="tableHeader" />
-                              <TextBlock Grid.Column="5" Text="REMAINING" Classes="tableHeader" />
-                              <TextBlock Grid.Column="6" Text="DOWN" Classes="tableHeader" />
-                              <TextBlock Grid.Column="7" Text="UP" Classes="tableHeader" />
-                              <TextBlock Grid.Column="8" Text="ETA" Classes="tableHeader" />
-                              <TextBlock Grid.Column="9" Text="RATIO" Classes="tableHeader" />
-                              <TextBlock Grid.Column="10" Text="SEEDS/PEERS" Classes="tableHeader" />
-                              <TextBlock Grid.Column="11" Text="ADDED" Classes="tableHeader" />
+                            <Grid ColumnDefinitions="390,120,110,140,100,115,100,100,85,75,110,135" ColumnSpacing="10">
+                              <TextBlock Text="ITEM" Classes="downloadHeader" />
+                              <TextBlock Grid.Column="1" Text="CATEGORY" Classes="downloadHeader" />
+                              <TextBlock Grid.Column="2" Text="STATE" Classes="downloadHeader" />
+                              <TextBlock Grid.Column="3" Text="PROGRESS" Classes="downloadHeader" />
+                              <TextBlock Grid.Column="4" Text="SIZE" Classes="downloadHeader downloadHeaderNumeric" />
+                              <TextBlock Grid.Column="5" Text="REMAINING" Classes="downloadHeader downloadHeaderNumeric" />
+                              <TextBlock Grid.Column="6" Text="DOWN" Classes="downloadHeader downloadHeaderNumeric" />
+                              <TextBlock Grid.Column="7" Text="UP" Classes="downloadHeader downloadHeaderNumeric" />
+                              <TextBlock Grid.Column="8" Text="ETA" Classes="downloadHeader downloadHeaderNumeric" />
+                              <TextBlock Grid.Column="9" Text="RATIO" Classes="downloadHeader downloadHeaderNumeric" />
+                              <TextBlock Grid.Column="10" Text="SEEDS/PEERS" Classes="downloadHeader downloadHeaderNumeric" />
+                              <TextBlock Grid.Column="11" Text="ADDED" Classes="downloadHeader" />
                             </Grid>
                           </Border>
 
@@ -2094,42 +2101,97 @@
                               MaxHeight="340">
                             <ListBox.ItemTemplate>
                               <DataTemplate x:CompileBindings="False">
-                                <Grid ColumnDefinitions="2.6*,0.9*,0.85*,1.05*,0.8*,0.85*,0.75*,0.75*,0.65*,0.58*,0.8*,1.0*" ColumnSpacing="10">
+                                <Grid ColumnDefinitions="390,120,110,140,100,115,100,100,85,75,110,135" ColumnSpacing="10">
                                   <TextBlock
                                       Text="{ReflectionBinding Name}"
-                                      FontWeight="SemiBold"
+                                      ToolTip.Tip="{ReflectionBinding Name}"
+                                      Classes="downloadNameCell"
                                       TextTrimming="CharacterEllipsis" />
                                   <TextBlock
                                       Grid.Column="1"
                                       Text="{ReflectionBinding Category}"
-                                      Classes="muted"
+                                      ToolTip.Tip="{ReflectionBinding Category}"
+                                      Classes="downloadCell muted"
                                       TextTrimming="CharacterEllipsis" />
                                   <TextBlock
                                       Grid.Column="2"
                                       Text="{ReflectionBinding State}"
+                                      ToolTip.Tip="{ReflectionBinding State}"
+                                      Classes="downloadCell"
                                       TextTrimming="CharacterEllipsis" />
-                                  <StackPanel Grid.Column="3" Spacing="4">
+                                  <StackPanel Grid.Column="3" Spacing="4" VerticalAlignment="Center">
                                     <TextBlock
                                         Text="{ReflectionBinding Progress}"
-                                        FontSize="10" />
+                                        Classes="downloadCell" />
                                     <ProgressBar
                                         Classes="downloadProgress"
                                         Value="{ReflectionBinding ProgressPercent}"
                                         Maximum="100" />
                                   </StackPanel>
-                                  <TextBlock Grid.Column="4" Text="{ReflectionBinding Size}" TextTrimming="CharacterEllipsis" />
-                                  <TextBlock Grid.Column="5" Text="{ReflectionBinding Remaining}" TextTrimming="CharacterEllipsis" />
-                                  <TextBlock Grid.Column="6" Text="{ReflectionBinding DownloadSpeed}" TextTrimming="CharacterEllipsis" />
-                                  <TextBlock Grid.Column="7" Text="{ReflectionBinding UploadSpeed}" TextTrimming="CharacterEllipsis" />
-                                  <TextBlock Grid.Column="8" Text="{ReflectionBinding Eta}" TextTrimming="CharacterEllipsis" />
-                                  <TextBlock Grid.Column="9" Text="{ReflectionBinding Ratio}" TextTrimming="CharacterEllipsis" />
-                                  <TextBlock Grid.Column="10" Text="{ReflectionBinding Peers}" TextTrimming="CharacterEllipsis" />
-                                  <TextBlock Grid.Column="11" Text="{ReflectionBinding Added}" Classes="dim" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="4" Text="{ReflectionBinding Size}" Classes="downloadCell downloadNumericCell" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="5" Text="{ReflectionBinding Remaining}" Classes="downloadCell downloadNumericCell" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="6" Text="{ReflectionBinding DownloadSpeed}" Classes="downloadCell downloadNumericCell" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="7" Text="{ReflectionBinding UploadSpeed}" Classes="downloadCell downloadNumericCell" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="8" Text="{ReflectionBinding Eta}" Classes="downloadCell downloadNumericCell" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="9" Text="{ReflectionBinding Ratio}" Classes="downloadCell downloadNumericCell" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="10" Text="{ReflectionBinding Peers}" Classes="downloadCell downloadNumericCell" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="11" Text="{ReflectionBinding Added}" Classes="downloadCell dim" TextTrimming="CharacterEllipsis" />
                                 </Grid>
                               </DataTemplate>
                             </ListBox.ItemTemplate>
                           </ListBox>
                         </StackPanel>
+
+                        <!-- SABnzbd uses only queue-owned data; torrent-only columns are removed. -->
+                        <StackPanel
+                            x:Name="DownloadClientSabQueueTable"
+                            MinWidth="1510"
+                            Spacing="0"
+                            IsVisible="False">
+
+                          <Border Classes="downloadTableHeader">
+                            <Grid ColumnDefinitions="430,110,110,140,100,115,100,95,390" ColumnSpacing="10">
+                              <TextBlock Text="ITEM" Classes="downloadHeader" />
+                              <TextBlock Grid.Column="1" Text="CATEGORY" Classes="downloadHeader" />
+                              <TextBlock Grid.Column="2" Text="STATUS" Classes="downloadHeader" />
+                              <TextBlock Grid.Column="3" Text="PROGRESS" Classes="downloadHeader" />
+                              <TextBlock Grid.Column="4" Text="SIZE" Classes="downloadHeader downloadHeaderNumeric" />
+                              <TextBlock Grid.Column="5" Text="REMAINING" Classes="downloadHeader downloadHeaderNumeric" />
+                              <TextBlock Grid.Column="6" Text="DOWNLOAD" Classes="downloadHeader downloadHeaderNumeric" />
+                              <TextBlock Grid.Column="7" Text="ETA" Classes="downloadHeader downloadHeaderNumeric" />
+                              <TextBlock Grid.Column="8" Text="DETAIL" Classes="downloadHeader" />
+                            </Grid>
+                          </Border>
+
+                          <ListBox
+                              x:Name="DownloadClientSabQueueList"
+                              Classes="downloadTable"
+                              MaxHeight="340">
+                            <ListBox.ItemTemplate>
+                              <DataTemplate x:CompileBindings="False">
+                                <Grid ColumnDefinitions="430,110,110,140,100,115,100,95,390" ColumnSpacing="10">
+                                  <TextBlock
+                                      Text="{ReflectionBinding Name}"
+                                      ToolTip.Tip="{ReflectionBinding Name}"
+                                      Classes="downloadNameCell"
+                                      TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="1" Text="{ReflectionBinding Category}" ToolTip.Tip="{ReflectionBinding Category}" Classes="downloadCell muted" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="2" Text="{ReflectionBinding State}" ToolTip.Tip="{ReflectionBinding State}" Classes="downloadCell" TextTrimming="CharacterEllipsis" />
+                                  <StackPanel Grid.Column="3" Spacing="4" VerticalAlignment="Center">
+                                    <TextBlock Text="{ReflectionBinding Progress}" Classes="downloadCell" />
+                                    <ProgressBar Classes="downloadProgress" Value="{ReflectionBinding ProgressPercent}" Maximum="100" />
+                                  </StackPanel>
+                                  <TextBlock Grid.Column="4" Text="{ReflectionBinding Size}" Classes="downloadCell downloadNumericCell" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="5" Text="{ReflectionBinding Remaining}" Classes="downloadCell downloadNumericCell" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="6" Text="{ReflectionBinding DownloadSpeed}" Classes="downloadCell downloadNumericCell" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="7" Text="{ReflectionBinding Eta}" Classes="downloadCell downloadNumericCell" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="8" Text="{ReflectionBinding Detail}" ToolTip.Tip="{ReflectionBinding Detail}" Classes="downloadCell muted" TextTrimming="CharacterEllipsis" />
+                                </Grid>
+                              </DataTemplate>
+                            </ListBox.ItemTemplate>
+                          </ListBox>
+                        </StackPanel>
+                        </Grid>
                       </ScrollViewer>
 
                       <Border
@@ -2183,16 +2245,20 @@
                       <ScrollViewer
                           HorizontalScrollBarVisibility="Auto"
                           VerticalScrollBarVisibility="Disabled">
-                        <StackPanel MinWidth="1120" Spacing="0">
+                        <StackPanel MinWidth="1515" Spacing="0">
                           <Border Classes="downloadTableHeader">
-                            <Grid ColumnDefinitions="2.7*,0.9*,0.9*,0.8*,1.1*,0.8*,2*" ColumnSpacing="10">
-                              <TextBlock Text="ITEM" Classes="tableHeader" />
-                              <TextBlock Grid.Column="1" Text="CATEGORY" Classes="tableHeader" />
-                              <TextBlock Grid.Column="2" Text="STATE" Classes="tableHeader" />
-                              <TextBlock Grid.Column="3" Text="SIZE" Classes="tableHeader" />
-                              <TextBlock Grid.Column="4" Text="COMPLETED" Classes="tableHeader" />
-                              <TextBlock Grid.Column="5" Text="TIME" Classes="tableHeader" />
-                              <TextBlock Grid.Column="6" Text="DETAIL" Classes="tableHeader" />
+                            <Grid ColumnDefinitions="430,115,115,105,155,100,430" ColumnSpacing="10">
+                              <TextBlock Text="ITEM" Classes="downloadHeader" />
+                              <TextBlock Grid.Column="1" Text="CATEGORY" Classes="downloadHeader" />
+                              <TextBlock Grid.Column="2" Text="STATUS" Classes="downloadHeader" />
+                              <TextBlock Grid.Column="3" Text="SIZE" Classes="downloadHeader downloadHeaderNumeric" />
+                              <TextBlock Grid.Column="4" Text="COMPLETED" Classes="downloadHeader" />
+                              <TextBlock Grid.Column="5" Text="DURATION" Classes="downloadHeader downloadHeaderNumeric" />
+                              <TextBlock
+                                  Grid.Column="6"
+                                  x:Name="DownloadClientHistoryDetailHeaderText"
+                                  Text="SOURCE / DETAIL"
+                                  Classes="downloadHeader" />
                             </Grid>
                           </Border>
 
@@ -2202,17 +2268,18 @@
                               MaxHeight="260">
                             <ListBox.ItemTemplate>
                               <DataTemplate x:CompileBindings="False">
-                                <Grid ColumnDefinitions="2.7*,0.9*,0.9*,0.8*,1.1*,0.8*,2*" ColumnSpacing="10">
+                                <Grid ColumnDefinitions="430,115,115,105,155,100,430" ColumnSpacing="10">
                                   <TextBlock
                                       Text="{ReflectionBinding Name}"
-                                      FontWeight="SemiBold"
+                                      ToolTip.Tip="{ReflectionBinding Name}"
+                                      Classes="downloadNameCell"
                                       TextTrimming="CharacterEllipsis" />
-                                  <TextBlock Grid.Column="1" Text="{ReflectionBinding Category}" Classes="muted" TextTrimming="CharacterEllipsis" />
-                                  <TextBlock Grid.Column="2" Text="{ReflectionBinding State}" TextTrimming="CharacterEllipsis" />
-                                  <TextBlock Grid.Column="3" Text="{ReflectionBinding Size}" TextTrimming="CharacterEllipsis" />
-                                  <TextBlock Grid.Column="4" Text="{ReflectionBinding Completed}" Classes="dim" TextTrimming="CharacterEllipsis" />
-                                  <TextBlock Grid.Column="5" Text="{ReflectionBinding Duration}" TextTrimming="CharacterEllipsis" />
-                                  <TextBlock Grid.Column="6" Text="{ReflectionBinding Detail}" Classes="muted" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="1" Text="{ReflectionBinding Category}" ToolTip.Tip="{ReflectionBinding Category}" Classes="downloadCell muted" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="2" Text="{ReflectionBinding State}" ToolTip.Tip="{ReflectionBinding State}" Classes="downloadCell" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="3" Text="{ReflectionBinding Size}" Classes="downloadCell downloadNumericCell" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="4" Text="{ReflectionBinding Completed}" Classes="downloadCell dim" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="5" Text="{ReflectionBinding Duration}" Classes="downloadCell downloadNumericCell" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="6" Text="{ReflectionBinding Detail}" ToolTip.Tip="{ReflectionBinding Detail}" Classes="downloadCell muted" TextTrimming="CharacterEllipsis" />
                                 </Grid>
                               </DataTemplate>
                             </ListBox.ItemTemplate>

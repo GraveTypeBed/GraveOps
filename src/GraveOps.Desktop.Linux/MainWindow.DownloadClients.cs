@@ -210,6 +210,23 @@ public partial class MainWindow
             isQbit
                 ? "Most recently completed torrents still present in qBittorrent."
                 : "Recent completed and failed SABnzbd jobs.";
+
+        Get<StackPanel>(
+                "DownloadClientQbitQueueTable")
+            .IsVisible =
+            isQbit;
+
+        Get<StackPanel>(
+                "DownloadClientSabQueueTable")
+            .IsVisible =
+            !isQbit;
+
+        Get<TextBlock>(
+                "DownloadClientHistoryDetailHeaderText")
+            .Text =
+            isQbit
+                ? "DETAIL"
+                : "SOURCE / DETAIL";
     }
 
     private void SetDownloadClientLoadingState()
@@ -509,14 +526,35 @@ public partial class MainWindow
             snapshot?.History ??
             new List<LinuxDownloadHistoryRow>();
 
-        var queueList =
+        var isQbit =
+            _activeDownloadClient.Equals(
+                "qBittorrent",
+                StringComparison.OrdinalIgnoreCase);
+
+        var qbitQueueList =
             Get<ListBox>(
                 "DownloadClientQueueList");
 
-        queueList.ItemsSource =
-            queue;
+        var sabQueueList =
+            Get<ListBox>(
+                "DownloadClientSabQueueList");
 
-        queueList.IsVisible =
+        qbitQueueList.ItemsSource =
+            isQbit
+                ? queue
+                : Array.Empty<LinuxDownloadQueueRow>();
+
+        sabQueueList.ItemsSource =
+            isQbit
+                ? Array.Empty<LinuxDownloadQueueRow>()
+                : queue;
+
+        qbitQueueList.IsVisible =
+            isQbit &&
+            queue.Count > 0;
+
+        sabQueueList.IsVisible =
+            !isQbit &&
             queue.Count > 0;
 
         var queueEmpty =
