@@ -172,13 +172,33 @@
 
                 <Border
                     Classes="inset"
-                    Padding="10,8">
+                    Padding="8">
+                  <StackPanel Spacing="7">
+                    <ComboBox
+                        x:Name="ActiveTargetComboBox"
+                        MinWidth="200"
+                        SelectionChanged="ActiveTargetComboBox_OnSelectionChanged">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate x:CompileBindings="False">
+                          <StackPanel Spacing="2">
+                            <TextBlock
+                                Text="{ReflectionBinding DisplayName}"
+                                FontWeight="SemiBold"
+                                TextTrimming="CharacterEllipsis" />
+                            <TextBlock
+                                Text="{ReflectionBinding ConnectionSummary}"
+                                Classes="dim"
+                                FontSize="9"
+                                TextTrimming="CharacterEllipsis" />
+                          </StackPanel>
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
 
-                  <StackPanel>
                     <TextBlock
                         x:Name="SidebarHostname"
                         Text="Loading..."
-                        FontSize="12"
+                        FontSize="11"
                         FontWeight="SemiBold"
                         TextTrimming="CharacterEllipsis" />
 
@@ -186,9 +206,8 @@
                         x:Name="SidebarOperatingSystem"
                         Text="Linux"
                         Classes="dim"
-                        FontSize="10"
-                        Margin="0,3,0,0"
-                        TextTrimming="CharacterEllipsis" />
+                        FontSize="9"
+                        TextWrapping="Wrap" />
                   </StackPanel>
                 </Border>
               </StackPanel>
@@ -626,6 +645,23 @@
                   FontSize="11"
                   VerticalAlignment="Center" />
 
+
+              <Button
+                  x:Name="JobsButton"
+                  Content="Jobs"
+                  Click="JobsButton_OnClick" />
+
+              <Button
+                  x:Name="ActivityButton"
+                  Content="Activity"
+                  Click="ActivityButton_OnClick" />
+
+              <Button
+                  x:Name="MaintenanceButton"
+                  Content="Maintenance"
+                  Click="MaintenanceButton_OnClick" />
+
+
               <Button
                   x:Name="CommandPaletteButton"
                   Content="Search · Ctrl+K"
@@ -1032,10 +1068,311 @@
                 IsVisible="False">
 
               <StackPanel Spacing="18">
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                <Grid
+                    ColumnDefinitions="0.72*,1.28*"
+                    ColumnSpacing="14">
+
+                  <Border Classes="card">
+                    <StackPanel Spacing="12">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock
+                              Text="Saved targets"
+                              Classes="sectionTitle" />
+                          <TextBlock
+                              x:Name="ServerProfilesSummaryText"
+                              Text="Loading host profiles"
+                              Classes="pageSubtitle"
+                              Margin="0,4,0,0" />
+                        </StackPanel>
+
+                        <Button
+                            Grid.Column="1"
+                            Content="Discover LAN"
+                            Click="DiscoverLanButton_OnClick" />
+                      </Grid>
+
+                      <ListBox
+                          x:Name="ServerProfilesList"
+                          Classes="dataList"
+                          MinHeight="310"
+                          SelectionChanged="ServerProfilesList_OnSelectionChanged">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <StackPanel Spacing="4">
+                              <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock
+                                    Text="{ReflectionBinding DisplayName}"
+                                    FontWeight="SemiBold"
+                                    TextTrimming="CharacterEllipsis" />
+                                <TextBlock
+                                    Grid.Column="1"
+                                    Text="{ReflectionBinding KindLabel}"
+                                    Classes="dim"
+                                    FontSize="9" />
+                              </Grid>
+                              <TextBlock
+                                  Text="{ReflectionBinding ConnectionSummary}"
+                                  Classes="muted"
+                                  FontSize="10"
+                                  TextWrapping="Wrap" />
+                              <TextBlock
+                                  Text="{ReflectionBinding AuthenticationLabel}"
+                                  Classes="dim"
+                                  FontSize="9" />
+                            </StackPanel>
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+
+                      <Grid
+                          ColumnDefinitions="Auto,Auto,Auto,*"
+                          ColumnSpacing="8">
+                        <Button
+                            Content="New"
+                            Click="NewServerButton_OnClick" />
+                        <Button
+                            Grid.Column="1"
+                            x:Name="DeleteServerButton"
+                            Content="Delete"
+                            IsEnabled="False"
+                            Click="DeleteServerButton_OnClick" />
+                        <Button
+                            Grid.Column="2"
+                            x:Name="SetActiveServerButton"
+                            Content="Set active"
+                            IsEnabled="False"
+                            Click="SetActiveServerButton_OnClick" />
+                      </Grid>
+
+                      <TextBlock
+                          Text="LAN candidates"
+                          Classes="sectionTitle"
+                          Margin="0,8,0,0" />
+
+                      <ListBox
+                          x:Name="ServerLanCandidatesList"
+                          Classes="dataList"
+                          MinHeight="125"
+                          MaxHeight="190"
+                          SelectionChanged="ServerLanCandidatesList_OnSelectionChanged">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <TextBlock
+                                Text="{ReflectionBinding Summary}"
+                                TextWrapping="Wrap" />
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+                    </StackPanel>
+                  </Border>
+
+                  <Border
+                      Grid.Column="1"
+                      Classes="card">
+                    <StackPanel Spacing="13">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock
+                              Text="Host profile"
+                              Classes="sectionTitle" />
+                          <TextBlock
+                              Text="Remote Linux uses fingerprint-pinned OpenSSH. Passwords and key passphrases can be stored only through Secret Service."
+                              Classes="pageSubtitle"
+                              Margin="0,4,0,0"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <TextBlock
+                            Grid.Column="1"
+                            x:Name="ServerKeyringStatusText"
+                            Text="Checking keyring"
+                            Classes="muted"
+                            VerticalAlignment="Center"
+                            TextWrapping="Wrap" />
+                      </Grid>
+
+                      <TextBlock
+                          x:Name="ServerEditingIdText"
+                          IsVisible="False" />
+
+                      <Grid
+                          ColumnDefinitions="145,*"
+                          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                          ColumnSpacing="11"
+                          RowSpacing="9">
+
+                        <TextBlock
+                            Text="Display name"
+                            VerticalAlignment="Center" />
+                        <TextBox
+                            Grid.Column="1"
+                            x:Name="ServerNameTextBox"
+                            PlaceholderText="Media server" />
+
+                        <TextBlock
+                            Grid.Row="1"
+                            Text="Role"
+                            VerticalAlignment="Center" />
+                        <TextBox
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            x:Name="ServerRoleTextBox"
+                            PlaceholderText="Primary, backup, remote, lab..." />
+
+                        <TextBlock
+                            Grid.Row="2"
+                            Text="Connection"
+                            VerticalAlignment="Center" />
+                        <ComboBox
+                            Grid.Row="2"
+                            Grid.Column="1"
+                            x:Name="ServerConnectionTypeComboBox"
+                            SelectionChanged="ServerConnectionTypeComboBox_OnSelectionChanged" />
+
+                        <TextBlock
+                            Grid.Row="3"
+                            Text="Host / IP"
+                            VerticalAlignment="Center" />
+                        <Grid
+                            Grid.Row="3"
+                            Grid.Column="1"
+                            ColumnDefinitions="*,90"
+                            ColumnSpacing="8">
+                          <TextBox
+                              x:Name="ServerHostTextBox"
+                              PlaceholderText="192.168.1.50 or host name" />
+                          <TextBox
+                              Grid.Column="1"
+                              x:Name="ServerPortTextBox"
+                              Text="22"
+                              PlaceholderText="Port" />
+                        </Grid>
+
+                        <TextBlock
+                            Grid.Row="4"
+                            Text="Username"
+                            VerticalAlignment="Center" />
+                        <TextBox
+                            Grid.Row="4"
+                            Grid.Column="1"
+                            x:Name="ServerUsernameTextBox" />
+
+                        <TextBlock
+                            Grid.Row="5"
+                            Text="Authentication"
+                            VerticalAlignment="Center" />
+                        <ComboBox
+                            Grid.Row="5"
+                            Grid.Column="1"
+                            x:Name="ServerAuthenticationComboBox"
+                            SelectionChanged="ServerAuthenticationComboBox_OnSelectionChanged" />
+
+                        <TextBlock
+                            Grid.Row="6"
+                            Text="Private key"
+                            VerticalAlignment="Center" />
+                        <Grid
+                            Grid.Row="6"
+                            Grid.Column="1"
+                            ColumnDefinitions="*,Auto"
+                            ColumnSpacing="8">
+                          <TextBox
+                              x:Name="ServerPrivateKeyPathTextBox"
+                              FontFamily="DejaVu Sans Mono, monospace"
+                              PlaceholderText="Optional key path" />
+                          <Button
+                              Grid.Column="1"
+                              x:Name="BrowsePrivateKeyButton"
+                              Content="Browse"
+                              Click="BrowsePrivateKeyButton_OnClick" />
+                        </Grid>
+
+                        <TextBlock
+                            Grid.Row="7"
+                            Text="Pinned fingerprint"
+                            VerticalAlignment="Center" />
+                        <Grid
+                            Grid.Row="7"
+                            Grid.Column="1"
+                            ColumnDefinitions="*,Auto"
+                            ColumnSpacing="8">
+                          <TextBox
+                              x:Name="ServerFingerprintTextBox"
+                              FontFamily="DejaVu Sans Mono, monospace"
+                              PlaceholderText="SHA256:..." />
+                          <Button
+                              Grid.Column="1"
+                              x:Name="ScanFingerprintButton"
+                              Content="Scan"
+                              Click="ScanFingerprintButton_OnClick" />
+                        </Grid>
+
+                        <TextBlock
+                            Grid.Row="8"
+                            Text="Password / passphrase"
+                            VerticalAlignment="Center" />
+                        <Grid
+                            Grid.Row="8"
+                            Grid.Column="1"
+                            ColumnDefinitions="*,Auto"
+                            ColumnSpacing="8">
+                          <TextBox
+                              x:Name="ServerSecretTextBox"
+                              PasswordChar="●"
+                              PlaceholderText="Never redisplayed" />
+                          <CheckBox
+                              Grid.Column="1"
+                              x:Name="ServerSaveSecretCheckBox"
+                              Content="Save in keyring"
+                              VerticalAlignment="Center" />
+                        </Grid>
+                      </Grid>
+
+                      <WrapPanel>
+                        <Button
+                            Content="Save profile"
+                            Classes="primary"
+                            Margin="0,0,8,8"
+                            Click="SaveServerButton_OnClick" />
+                        <Button
+                            Content="Test connection"
+                            Margin="0,0,8,8"
+                            Click="TestServerButton_OnClick" />
+                        <Button
+                            Content="Detect integrations"
+                            Margin="0,0,8,8"
+                            Click="DetectServerButton_OnClick" />
+                      </WrapPanel>
+
+                      <TextBlock
+                          x:Name="ServerProfileStatusText"
+                          Text="Select or create a host profile."
+                          Classes="muted"
+                          TextWrapping="Wrap" />
+
+                      <TextBlock
+                          Text="Detected integrations"
+                          Classes="sectionTitle"
+                          Margin="0,4,0,0" />
+
+                      <ListBox
+                          x:Name="ServerDetectedIntegrationsList"
+                          Classes="dataList passive"
+                          MinHeight="120"
+                          MaxHeight="220" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
+
+                <Grid
+                    ColumnDefinitions="*,*"
+                    ColumnSpacing="14">
                   <Border Classes="card">
                     <StackPanel Spacing="10">
-                      <TextBlock Text="Selected host" Classes="sectionTitle" />
+                      <TextBlock
+                          Text="Active target identity"
+                          Classes="sectionTitle" />
                       <TextBlock
                           x:Name="ServerIdentityText"
                           Text="--"
@@ -1056,9 +1393,13 @@
                     </StackPanel>
                   </Border>
 
-                  <Border Grid.Column="1" Classes="card">
+                  <Border
+                      Grid.Column="1"
+                      Classes="card">
                     <StackPanel Spacing="10">
-                      <TextBlock Text="Runtime" Classes="sectionTitle" />
+                      <TextBlock
+                          Text="Active target runtime"
+                          Classes="sectionTitle" />
                       <TextBlock
                           x:Name="ServerCpuText"
                           Text="--"
@@ -1076,12 +1417,12 @@
                 </Grid>
 
                 <Border Classes="card">
-                  <StackPanel Spacing="12">
+                  <StackPanel Spacing="8">
                     <TextBlock
-                        Text="Provider capability"
+                        Text="Provider boundary"
                         Classes="sectionTitle" />
                     <TextBlock
-                        Text="This Linux client is reading the local machine directly. It does not SSH back into itself. Remote-host routing will reuse the shared host-provider model."
+                        Text="Local targets use the native provider. Remote Linux targets use fingerprint-pinned OpenSSH for read-only capture. Service, Docker and backup mutations remain disabled while a remote target is active."
                         Classes="muted"
                         TextWrapping="Wrap" />
                   </StackPanel>
@@ -2003,6 +2344,23 @@
                       <CheckBox x:Name="SettingsInformationalContainersCheckBox" Content="Show informational exited containers by default" />
                       <CheckBox x:Name="SettingsOpenOverviewCheckBox" Content="Open Overview after startup" />
 
+                      <Grid ColumnDefinitions="190,*" ColumnSpacing="10">
+                        <TextBlock
+                            Text="Background refresh seconds"
+                            VerticalAlignment="Center" />
+                        <TextBox
+                            Grid.Column="1"
+                            x:Name="SettingsBackgroundRefreshSecondsTextBox"
+                            Text="60"
+                            Width="110"
+                            HorizontalAlignment="Left" />
+                      </Grid>
+
+                      <CheckBox
+                          x:Name="SettingsDesktopNotificationsCheckBox"
+                          Content="Show desktop notifications for new error-level incidents"
+                          IsChecked="True" />
+
                       <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button Content="Save settings" Classes="primary" Click="SaveOperatorSettingsButton_OnClick" />
                         <Button Content="Restore defaults" Click="ResetOperatorSettingsButton_OnClick" />
@@ -2252,6 +2610,228 @@
               </StackPanel>
             </Grid>
           </Border>
+
+
+          <Border
+              x:Name="JobsDrawer"
+              Grid.RowSpan="3"
+              ZIndex="92"
+              Width="500"
+              HorizontalAlignment="Right"
+              Background="{DynamicResource SurfaceBrush}"
+              BorderBrush="{DynamicResource BorderStrongBrush}"
+              BorderThickness="1,0,0,0"
+              IsVisible="False">
+
+            <Grid
+                RowDefinitions="Auto,Auto,*,Auto"
+                Margin="18">
+
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel>
+                  <TextBlock
+                      Text="Background Jobs"
+                      FontSize="20"
+                      FontWeight="SemiBold" />
+                  <TextBlock
+                      Text="Long-running and background control-plane work survives page navigation."
+                      Classes="muted"
+                      FontSize="10"
+                      Margin="0,3,0,0"
+                      TextWrapping="Wrap" />
+                </StackPanel>
+
+                <Button
+                    Grid.Column="1"
+                    Content="×"
+                    Width="36"
+                    Height="32"
+                    Click="JobsCloseButton_OnClick" />
+              </Grid>
+
+              <TextBlock
+                  Grid.Row="1"
+                  x:Name="JobsSummaryText"
+                  Text="0 running"
+                  Classes="muted"
+                  Margin="0,14,0,8" />
+
+              <ListBox
+                  Grid.Row="2"
+                  x:Name="JobsList"
+                  Classes="dataList passive">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:CompileBindings="False">
+                    <StackPanel Spacing="5">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock
+                            Text="{ReflectionBinding Name}"
+                            FontWeight="SemiBold"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            Grid.Column="1"
+                            Text="{ReflectionBinding State}"
+                            Foreground="{DynamicResource AccentBrush}"
+                            FontWeight="SemiBold" />
+                      </Grid>
+
+                      <TextBlock
+                          Text="{ReflectionBinding Target}"
+                          Classes="muted"
+                          FontSize="10"
+                          TextWrapping="Wrap" />
+
+                      <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="9">
+                        <TextBlock
+                            Text="{ReflectionBinding ProgressText}"
+                            Classes="dim"
+                            FontSize="9" />
+                        <TextBlock
+                            Grid.Column="1"
+                            Text="{ReflectionBinding DurationText}"
+                            Classes="dim"
+                            FontSize="9" />
+                        <TextBlock
+                            Grid.Column="2"
+                            Text="{ReflectionBinding DisplayTime}"
+                            Classes="dim"
+                            FontSize="9"
+                            HorizontalAlignment="Right" />
+                      </Grid>
+
+                      <TextBlock
+                          Text="{ReflectionBinding Detail}"
+                          Classes="muted"
+                          FontSize="10"
+                          TextWrapping="Wrap" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+
+              <Button
+                  Grid.Row="3"
+                  Content="Clear completed"
+                  HorizontalAlignment="Left"
+                  Margin="0,12,0,0"
+                  Click="ClearCompletedJobsButton_OnClick" />
+            </Grid>
+          </Border>
+
+          <Border
+              x:Name="ActivityDrawer"
+              Grid.RowSpan="3"
+              ZIndex="93"
+              Width="560"
+              HorizontalAlignment="Right"
+              Background="{DynamicResource SurfaceBrush}"
+              BorderBrush="{DynamicResource BorderStrongBrush}"
+              BorderThickness="1,0,0,0"
+              IsVisible="False">
+
+            <Grid
+                RowDefinitions="Auto,Auto,*,Auto"
+                Margin="18">
+
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel>
+                  <TextBlock
+                      Text="Activity &amp; Notifications"
+                      FontSize="20"
+                      FontWeight="SemiBold" />
+                  <TextBlock
+                      Text="Targets, actions, failures, notifications and operator decisions."
+                      Classes="muted"
+                      FontSize="10"
+                      Margin="0,3,0,0"
+                      TextWrapping="Wrap" />
+                </StackPanel>
+
+                <Button
+                    Grid.Column="1"
+                    Content="×"
+                    Width="36"
+                    Height="32"
+                    Click="ActivityCloseButton_OnClick" />
+              </Grid>
+
+              <Grid
+                  Grid.Row="1"
+                  ColumnDefinitions="220,*,Auto"
+                  ColumnSpacing="8"
+                  Margin="0,14,0,8">
+                <ComboBox
+                    x:Name="ActivityFilterComboBox"
+                    SelectionChanged="ActivityFilterComboBox_OnSelectionChanged" />
+                <TextBlock
+                    Grid.Column="1"
+                    x:Name="ActivitySummaryText"
+                    Text="0 retained"
+                    Classes="muted"
+                    VerticalAlignment="Center" />
+                <Button
+                    Grid.Column="2"
+                    Content="Mark read"
+                    Click="MarkActivityReadButton_OnClick" />
+              </Grid>
+
+              <ListBox
+                  Grid.Row="2"
+                  x:Name="ActivityList"
+                  Classes="dataList"
+                  DoubleTapped="ActivityList_OnDoubleTapped">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:CompileBindings="False">
+                    <StackPanel Spacing="5">
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                        <TextBlock
+                            Text="{ReflectionBinding ReadState}"
+                            Foreground="{DynamicResource AccentBrush}"
+                            FontSize="9"
+                            FontWeight="SemiBold"
+                            VerticalAlignment="Center" />
+                        <TextBlock
+                            Grid.Column="1"
+                            Text="{ReflectionBinding Title}"
+                            FontWeight="SemiBold"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            Grid.Column="2"
+                            Text="{ReflectionBinding Kind}"
+                            Classes="dim"
+                            FontSize="9" />
+                      </Grid>
+
+                      <TextBlock
+                          Text="{ReflectionBinding Target}"
+                          Classes="muted"
+                          FontSize="10"
+                          TextWrapping="Wrap" />
+
+                      <TextBlock
+                          Text="{ReflectionBinding Detail}"
+                          Classes="muted"
+                          FontSize="10"
+                          TextWrapping="Wrap" />
+
+                      <TextBlock
+                          Text="{ReflectionBinding DisplayTime}"
+                          Classes="dim"
+                          FontSize="9" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+
+              <Button
+                  Grid.Row="3"
+                  Content="Clear activity"
+                  HorizontalAlignment="Left"
+                  Margin="0,12,0,0"
+                  Click="ClearActivityButton_OnClick" />
+            </Grid>
+          </Border>
+
 
           <Border
               x:Name="OverviewDrawer"

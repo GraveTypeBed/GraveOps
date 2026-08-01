@@ -11,10 +11,12 @@ public sealed record LinuxOperatorSettings(
     bool StartInSafeMode,
     bool ShowInformationalLogs,
     bool ShowInformationalContainers,
-    bool OpenOverviewAfterStartup)
+    bool OpenOverviewAfterStartup,
+    int BackgroundRefreshSeconds = 60,
+    bool DesktopNotifications = true)
 {
     public static LinuxOperatorSettings Default =>
-        new(true, false, false, false);
+        new(true, false, false, false, 60, true);
 }
 
 public sealed class LinuxOperatorSettingsStore

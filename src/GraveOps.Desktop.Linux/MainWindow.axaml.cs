@@ -138,6 +138,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         _operatorSettings = _operatorSettingsStore.Load();
         ApplyOperatorSettingsToUi();
+        InitializeControlPlaneFoundation();
 
         _arrLiveTimer = new DispatcherTimer
         {
@@ -168,6 +169,7 @@ public partial class MainWindow : Window
     {
         _arrLiveTimer.Stop();
         _arrTelemetry.Dispose();
+        DisposeControlPlaneFoundation();
         base.OnClosed(e);
     }
 
@@ -258,6 +260,15 @@ public partial class MainWindow : Window
 
         Get<TextBlock>("PageTitleText").Text = target.Title;
         Get<TextBlock>("PageSubtitleText").Text = target.Subtitle;
+
+        _controlPlane.State.RecordActivity(
+            "Navigation",
+            _controlPlane.ActiveProfile.DisplayName,
+            $"Opened {target.Title}",
+            target.Subtitle,
+            navigationName,
+            unread: false);
+        PopulateControlPlaneFoundation();
 
         if (IntegrationNavigationTargets.TryGetValue(
                 navigationName,
@@ -386,7 +397,7 @@ public partial class MainWindow : Window
         if (e.Key == Key.Escape)
         {
             CloseCommandPalette();
-            Get<Border>("OverviewDrawer").IsVisible = false;
+            CloseControlPlaneDrawers();
             e.Handled = true;
         }
     }
@@ -401,6 +412,8 @@ public partial class MainWindow : Window
         RoutedEventArgs e)
     {
         CloseCommandPalette();
+        CloseControlPlaneDrawers(
+            except: "OverviewDrawer");
         var drawer = Get<Border>("OverviewDrawer");
         drawer.IsVisible = !drawer.IsVisible;
 
@@ -435,7 +448,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        Get<Border>("OverviewDrawer").IsVisible = false;
+        CloseControlPlaneDrawers();
         RebuildCommandPalette();
 
         var box = Get<TextBox>("CommandPaletteTextBox");
@@ -662,6 +675,13 @@ public partial class MainWindow : Window
             _operatorSettings.ShowInformationalContainers;
         Get<CheckBox>("SettingsOpenOverviewCheckBox").IsChecked =
             _operatorSettings.OpenOverviewAfterStartup;
+        Get<TextBox>("SettingsBackgroundRefreshSecondsTextBox").Text =
+            NormalizeBackgroundRefreshSeconds(
+                _operatorSettings.BackgroundRefreshSeconds)
+                .ToString(CultureInfo.InvariantCulture);
+        Get<CheckBox>("SettingsDesktopNotificationsCheckBox").IsChecked =
+            _operatorSettings.DesktopNotifications;
+        ApplyControlPlanePreferences();
 
         Get<CheckBox>("SafeModeCheckBox").IsChecked =
             _operatorSettings.StartInSafeMode;
@@ -730,6 +750,12 @@ public partial class MainWindow : Window
     {
         try
         {
+            if (!TryReadBackgroundRefreshSeconds(
+                    out var backgroundRefreshSeconds))
+            {
+                return;
+            }
+
             _operatorSettings = new LinuxOperatorSettings(
                 Get<CheckBox>("SettingsSafeModeCheckBox")
                     .IsChecked == true,
@@ -738,6 +764,9 @@ public partial class MainWindow : Window
                 Get<CheckBox>("SettingsInformationalContainersCheckBox")
                     .IsChecked == true,
                 Get<CheckBox>("SettingsOpenOverviewCheckBox")
+                    .IsChecked == true,
+                backgroundRefreshSeconds,
+                Get<CheckBox>("SettingsDesktopNotificationsCheckBox")
                     .IsChecked == true);
 
             _operatorSettingsStore.Save(_operatorSettings);
@@ -971,18 +1000,27 @@ public partial class MainWindow : Window
 
     private async Task RefreshAsync()
     {
+        if (_controlPlaneCaptureBusy)
+            return;
+
         var refresh = Get<Button>("RefreshButton");
-        refresh.IsEnabled = false;
-        refresh.Content = "Refreshing environment...";
+        var background = _controlPlaneBackgroundRefresh;
+
+        if (!background)
+        {
+            refresh.IsEnabled = false;
+            refresh.Content = "Refreshing environment...";
+        }
+
         SetControlPlaneState(
             OpsSeverity.Info,
             "REFRESHING",
-            "Capturing local telemetry");
+            $"Capturing {_controlPlane.ActiveProfile.ConnectionSummary}");
 
         try
         {
-            _snapshot = await _hostProbe.CaptureAsync();
-            _backup = await _backupProbe.CaptureAsync();
+            _snapshot = await CaptureActiveTargetAsync();
+            _backup = await CaptureTargetBackupAsync();
             _integrations = LinuxOpsAnalyzer.EnrichIntegrations(_snapshot);
             _logs = LinuxOpsAnalyzer.GroupLogs(_snapshot.RecentLogs);
             _rawAnalysis = LinuxOpsAnalyzer.Analyze(
@@ -1002,6 +1040,16 @@ public partial class MainWindow : Window
                 _backup,
                 _findingPolicies.EvaluateStorageSeverity);
             PopulateAll();
+            RecordRefreshSuccessAndNotify();
+
+            if (!background)
+            {
+                _nextBackgroundRefreshAt =
+                    DateTimeOffset.Now +
+                    TimeSpan.FromSeconds(
+                        NormalizeBackgroundRefreshSeconds(
+                            _operatorSettings.BackgroundRefreshSeconds));
+            }
         }
         catch (Exception exception)
         {
@@ -1011,11 +1059,15 @@ public partial class MainWindow : Window
                 "Provider capture failed");
             Get<TextBlock>("LastUpdatedText").Text =
                 $"Capture failed · {exception.Message}";
+            RecordRefreshFailure(exception);
         }
         finally
         {
-            refresh.IsEnabled = true;
-            refresh.Content = "Refresh environment";
+            if (!background)
+            {
+                refresh.IsEnabled = true;
+                refresh.Content = "Refresh environment";
+            }
         }
     }
 
@@ -1057,7 +1109,7 @@ public partial class MainWindow : Window
         SetControlPlaneState(
             OpsSeverity.Healthy,
             "ONLINE",
-            "Native Linux provider");
+            ControlPlaneConnectionDetail());
 
         PopulateDashboard();
         PopulateIntelligence();
@@ -1076,6 +1128,7 @@ public partial class MainWindow : Window
         PopulateOperatorShell();
         PopulateSettingsAndTools();
         RebuildCommandPalette();
+        PopulateControlPlaneFoundation();
     }
 
     private void PopulateDashboard()
@@ -1430,6 +1483,12 @@ public partial class MainWindow : Window
 
         if (!page.IsVisible)
             return;
+
+        if (!_controlPlane.ActiveProfile.IsLocal)
+        {
+            ApplyRemoteArrTelemetryBoundary();
+            return;
+        }
 
         var instances = ActiveArrInstances();
 
@@ -2618,7 +2677,7 @@ public partial class MainWindow : Window
         return "Detected integration";
     }
 
-    private static string? ResolveIntegrationUrl(
+    private string? ResolveIntegrationUrl(
         OpsIntegration integration)
     {
         var detectedPorts = Regex.Matches(
@@ -2650,7 +2709,7 @@ public partial class MainWindow : Window
             ? "/web"
             : string.Empty;
 
-        return $"http://127.0.0.1:{port}{suffix}";
+        return $"http://{ActiveTargetUrlHost()}:{port}{suffix}";
     }
 
     private static string FormatPolicyFree(double value) =>
@@ -2682,6 +2741,7 @@ public partial class MainWindow : Window
     {
         UpdateActionButtons();
         PopulateOperatorShell();
+        PopulateControlPlaneFoundation();
     }
 
     private void UpdateServiceDetail()
@@ -2750,13 +2810,14 @@ public partial class MainWindow : Window
         var service = Get<ListBox>("ServicesList").SelectedItem is ServiceSnapshot;
         var container = Get<ListBox>("DockerList").SelectedItem is DockerContainerSnapshot;
         var safe = Get<CheckBox>("SafeModeCheckBox").IsChecked == true;
+        var local = CanRunLocalMutations();
 
-        Get<Button>("ServiceStartButton").IsEnabled = service;
-        Get<Button>("ServiceStopButton").IsEnabled = service && !safe;
-        Get<Button>("ServiceRestartButton").IsEnabled = service && !safe;
-        Get<Button>("DockerStartButton").IsEnabled = container;
-        Get<Button>("DockerStopButton").IsEnabled = container && !safe;
-        Get<Button>("DockerRestartButton").IsEnabled = container && !safe;
+        Get<Button>("ServiceStartButton").IsEnabled = service && local;
+        Get<Button>("ServiceStopButton").IsEnabled = service && local && !safe;
+        Get<Button>("ServiceRestartButton").IsEnabled = service && local && !safe;
+        Get<Button>("DockerStartButton").IsEnabled = container && local;
+        Get<Button>("DockerStopButton").IsEnabled = container && local && !safe;
+        Get<Button>("DockerRestartButton").IsEnabled = container && local && !safe;
     }
 
     private async void ServiceStartButton_OnClick(object? sender, RoutedEventArgs e) => await RunServiceActionAsync("start");
@@ -2770,6 +2831,12 @@ public partial class MainWindow : Window
     {
         if (Get<ListBox>("ServicesList").SelectedItem is not ServiceSnapshot service)
             return;
+        if (!CanRunLocalMutations())
+        {
+            Get<TextBlock>("ServiceActionStatusText").Text =
+                "Remote service mutations are disabled in the V4.2 provider foundation.";
+            return;
+        }
         if (BlockedBySafeMode(action))
         {
             Get<TextBlock>("ServiceActionStatusText").Text = "Disable Safe Mode to stop or restart services.";
@@ -2782,6 +2849,12 @@ public partial class MainWindow : Window
         Get<TextBlock>("ServiceActionStatusText").Text = $"{action} in progress...";
         var result = await _actions.ServiceAsync(service.Unit, action);
         _history.RecordAction(service.Unit, action, result);
+        _controlPlane.State.RecordActivity(
+            "Action",
+            _controlPlane.ActiveProfile.DisplayName,
+            $"{action} {service.Unit}",
+            result.Summary,
+            "ServicesNav");
         Get<TextBlock>("ServiceActionStatusText").Text = result.Summary;
         await RefreshAsync();
     }
@@ -2790,6 +2863,12 @@ public partial class MainWindow : Window
     {
         if (Get<ListBox>("DockerList").SelectedItem is not DockerContainerSnapshot container)
             return;
+        if (!CanRunLocalMutations())
+        {
+            Get<TextBlock>("DockerActionStatusText").Text =
+                "Remote Docker mutations are disabled in the V4.2 provider foundation.";
+            return;
+        }
         if (BlockedBySafeMode(action))
         {
             Get<TextBlock>("DockerActionStatusText").Text = "Disable Safe Mode to stop or restart containers.";
@@ -2802,6 +2881,12 @@ public partial class MainWindow : Window
         Get<TextBlock>("DockerActionStatusText").Text = $"{action} in progress...";
         var result = await _actions.ContainerAsync(container.Name, action);
         _history.RecordAction(container.Name, action, result);
+        _controlPlane.State.RecordActivity(
+            "Action",
+            _controlPlane.ActiveProfile.DisplayName,
+            $"{action} {container.Name}",
+            result.Summary,
+            "DockerNav");
         Get<TextBlock>("DockerActionStatusText").Text = result.Summary;
         await RefreshAsync();
     }
