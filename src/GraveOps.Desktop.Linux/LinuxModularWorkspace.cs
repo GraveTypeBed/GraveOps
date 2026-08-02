@@ -78,7 +78,7 @@ public sealed record ModularApplicationDescriptor(
 
 public sealed class ModularLayoutContract
 {
-    public string Version { get; set; } = "4.5.2";
+    public string Version { get; set; } = "4.6.0";
     public bool ViewportFirst { get; set; } = true;
     public bool PageLevelScrollDisabled { get; set; } = false;
     public bool DirectAppsUseDedicatedWorkspace { get; set; } = true;
@@ -101,6 +101,11 @@ public sealed class ModularLayoutContract
     public bool FixedDownloadColumnGeometry { get; set; } = true;
     public bool DownloadNameTooltips { get; set; } = true;
     public bool DownloadUnitNormalization { get; set; } = true;
+    public bool WindowsMediaHubWorkspace { get; set; } = true;
+    public bool DetectedMediaLauncherSettings { get; set; } = true;
+    public bool DedicatedPlexWorkspace { get; set; } = true;
+    public bool ProtectedPlexSessionTelemetry { get; set; } = true;
+    public bool GuardedPlexRestart { get; set; } = true;
     public int PrimaryReferenceWidth { get; set; } = 1920;
     public int PrimaryReferenceHeight { get; set; } = 1040;
     public int SidebarWidth { get; set; } = 260;

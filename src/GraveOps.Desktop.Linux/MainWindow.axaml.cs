@@ -88,7 +88,7 @@ public partial class MainWindow : Window
             ["ServersNav"] = new("ServersPage", "Servers", "Local and remote host profiles, capabilities and secure credentials"),
             ["MediaHubNav"] = new("MediaHubPage", "Media Hub", "Fleet health, launcher configuration and all media applications"),
             ["DumbNav"] = new("ApplicationWorkspacePage", "DUMB", "Stack orchestration and verified local interface"),
-            ["PlexNav"] = new("ApplicationWorkspacePage", "Plex", "Library availability, playback endpoint and related findings"),
+            ["PlexNav"] = new("PlexWorkspacePage", "Plex", "Library availability, live sessions, playback decisions and guarded operations"),
             ["TautulliNav"] = new("ApplicationWorkspacePage", "Tautulli", "Playback analytics and related findings"),
             ["KometaNav"] = new("ApplicationWorkspacePage", "Kometa", "Library metadata automation and related findings"),
             ["SonarrNav"] = new("ArrWorkspacePage", "Sonarr", "Configurable television acquisition workspace"),
@@ -140,6 +140,8 @@ public partial class MainWindow : Window
         ApplyOperatorSettingsToUi();
         InitializeControlPlaneFoundation();
         InitializeDownloadClientWorkspace();
+        InitializeMediaWorkspace();
+        InitializePlexWorkspace();
 
         _arrLiveTimer = new DispatcherTimer
         {
@@ -288,6 +290,12 @@ public partial class MainWindow : Window
                 ActivateDownloadClient(integrationName);
             }
             else if (target.PageName.Equals(
+                         "PlexWorkspacePage",
+                         StringComparison.Ordinal))
+            {
+                ActivatePlexWorkspace();
+            }
+            else if (target.PageName.Equals(
                          "ApplicationWorkspacePage",
                          StringComparison.Ordinal))
             {
@@ -310,20 +318,12 @@ public partial class MainWindow : Window
             return;
 
         var filter = Get<TextBox>("MediaFilterText");
+
         if (!string.IsNullOrWhiteSpace(filter.Text))
             filter.Text = string.Empty;
 
-        var integration = _integrations.FirstOrDefault(item =>
-            item.Name.Equals(
-                integrationName,
-                StringComparison.OrdinalIgnoreCase));
-
-        if (integration is null)
-            return;
-
-        Get<ListBox>("IntegrationsList").SelectedItem =
-            integration;
-        PopulateIntegrationWorkspace();
+        SelectMediaIntegrationByName(
+            integrationName);
     }
 
     private void UpdateIntegrationNavigation()
@@ -1132,6 +1132,7 @@ public partial class MainWindow : Window
         PopulateServerPage();
         UpdateIntegrationNavigation();
         ApplyMediaFilter();
+        PopulatePlexWorkspace();
         PopulateDirectIntegrationWorkspace();
         PopulateDownloadClientWorkspace();
         PopulateArrApplicationPage();
@@ -1915,68 +1916,7 @@ public partial class MainWindow : Window
 
     private void ApplyMediaFilter()
     {
-        var list = Get<ListBox>("IntegrationsList");
-        var selectedName =
-            (list.SelectedItem as OpsIntegration)?.Name;
-        var filter = Get<TextBox>("MediaFilterText").Text?.Trim();
-
-        var rows = _integrations
-            .Where(item => Matches(
-                filter,
-                item.Name,
-                item.Kind,
-                item.State,
-                item.Evidence,
-                item.Endpoint))
-            .ToArray();
-
-        list.ItemsSource = rows;
-        list.SelectedItem = rows.FirstOrDefault(item =>
-            item.Name.Equals(
-                selectedName,
-                StringComparison.OrdinalIgnoreCase));
-
-        if (list.SelectedItem is null && rows.Length > 0)
-            list.SelectedIndex = 0;
-
-        Get<TextBlock>("MediaHubSummaryText").Text =
-            $"{rows.Length} shown · {_integrations.Count} detected";
-
-        var offline = _integrations.Count(item =>
-            item.Severity >= OpsSeverity.Error ||
-            item.State.Contains(
-                "offline",
-                StringComparison.OrdinalIgnoreCase) ||
-            item.State.Contains(
-                "unavailable",
-                StringComparison.OrdinalIgnoreCase) ||
-            item.State.Contains(
-                "not detected",
-                StringComparison.OrdinalIgnoreCase));
-
-        var attention = _integrations.Count(item =>
-            item.Severity == OpsSeverity.Warning &&
-            !item.State.Contains(
-                "offline",
-                StringComparison.OrdinalIgnoreCase) &&
-            !item.State.Contains(
-                "unavailable",
-                StringComparison.OrdinalIgnoreCase));
-
-        var healthy = Math.Max(
-            0,
-            _integrations.Count - offline - attention);
-
-        Get<TextBlock>("MediaHealthyMetricText").Text =
-            healthy.ToString();
-        Get<TextBlock>("MediaAttentionMetricText").Text =
-            attention.ToString();
-        Get<TextBlock>("MediaOfflineMetricText").Text =
-            offline.ToString();
-        Get<TextBlock>("MediaTargetMetricText").Text =
-            _controlPlane.ActiveProfile.DisplayName;
-
-        PopulateIntegrationWorkspace();
+        PopulateMediaHub();
     }
 
     private void ApplyServicesFilter()
@@ -2435,8 +2375,7 @@ public partial class MainWindow : Window
     private void PopulateIntegrationWorkspace()
     {
         var selected =
-            Get<ListBox>("IntegrationsList").SelectedItem
-            as OpsIntegration;
+            SelectedMediaIntegration();
 
         var name = Get<TextBlock>("IntegrationNameText");
         var runtime = Get<TextBlock>("IntegrationRuntimeText");
@@ -2525,11 +2464,11 @@ public partial class MainWindow : Window
         object? sender,
         RoutedEventArgs e)
     {
-        if (Get<ListBox>("IntegrationsList").SelectedItem
-            is not OpsIntegration selected)
-        {
+        var selected =
+            SelectedMediaIntegration();
+
+        if (selected is null)
             return;
-        }
 
         var url = ResolveIntegrationUrl(selected);
         if (url is null)
@@ -2656,6 +2595,22 @@ public partial class MainWindow : Window
     private string? ResolveIntegrationUrl(
         OpsIntegration integration)
     {
+        var overrideUrl =
+            _mediaLauncherStore.ResolveUrl(
+                integration.Name);
+
+        if (!string.IsNullOrWhiteSpace(
+                overrideUrl) &&
+            Uri.TryCreate(
+                overrideUrl,
+                UriKind.Absolute,
+                out var overrideUri) &&
+            (overrideUri.Scheme == Uri.UriSchemeHttp ||
+             overrideUri.Scheme == Uri.UriSchemeHttps))
+        {
+            return overrideUri.ToString();
+        }
+
         var detectedPorts = Regex.Matches(
                 integration.Endpoint ?? string.Empty,
                 @"(?<!\d)\d{2,5}(?!\d)")
@@ -2716,6 +2671,7 @@ public partial class MainWindow : Window
         RoutedEventArgs e)
     {
         UpdateActionButtons();
+        UpdatePlexOperationState();
         PopulateOperatorShell();
         PopulateControlPlaneFoundation();
     }

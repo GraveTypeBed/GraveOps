@@ -1607,91 +1607,841 @@
                 </Grid>
               </Border>
             </Grid>
-            <!-- Media Hub -->
+            <!-- Windows-reference Media Hub -->
             <Grid
                 x:Name="MediaHubPage"
-                IsVisible="False"
-                RowDefinitions="Auto,Auto,*"
-                RowSpacing="10">
+                IsVisible="False">
 
-              <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
-                <StackPanel>
-                  <TextBlock Text="Media operations" Classes="sectionTitle" />
-                  <TextBlock Text="Live application health, launch ownership and media-stack context from one surface." Classes="pageSubtitle" />
-                </StackPanel>
-                <TextBox Grid.Column="1" x:Name="MediaFilterText" Classes="filter" Width="210" PlaceholderText="Filter applications" TextChanged="MediaFilterText_OnTextChanged" />
-                <TextBlock Grid.Column="2" x:Name="MediaHubSummaryText" Text="0 detected" Classes="dim" VerticalAlignment="Center" />
-              </Grid>
+              <ScrollViewer
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
 
-              <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
-                <Border Classes="metric">
-                  <StackPanel Spacing="3"><TextBlock Text="HEALTHY" Classes="eyebrow" /><TextBlock x:Name="MediaHealthyMetricText" Text="0" Classes="metricValue" Foreground="{DynamicResource SuccessBrush}" /><TextBlock Text="Applications operating normally" Classes="dim" FontSize="8.5" /></StackPanel>
-                </Border>
-                <Border Grid.Column="1" Classes="metric">
-                  <StackPanel Spacing="3"><TextBlock Text="DEGRADED / BUSY" Classes="eyebrow" /><TextBlock x:Name="MediaAttentionMetricText" Text="0" Classes="metricValue" Foreground="{DynamicResource WarnBrush}" /><TextBlock Text="Reachable but needs attention" Classes="dim" FontSize="8.5" /></StackPanel>
-                </Border>
-                <Border Grid.Column="2" Classes="metric">
-                  <StackPanel Spacing="3"><TextBlock Text="OFFLINE" Classes="eyebrow" /><TextBlock x:Name="MediaOfflineMetricText" Text="0" Classes="metricValue" Foreground="{DynamicResource DangerBrush}" /><TextBlock Text="No verified application response" Classes="dim" FontSize="8.5" /></StackPanel>
-                </Border>
-                <Border Grid.Column="3" Classes="metric">
-                  <StackPanel Spacing="3"><TextBlock Text="TARGET" Classes="eyebrow" /><TextBlock x:Name="MediaTargetMetricText" Text="--" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" /><TextBlock Text="Uses active control-plane context" Classes="dim" FontSize="8.5" /></StackPanel>
-                </Border>
-              </Grid>
+                <StackPanel Spacing="12" Margin="0,0,4,4">
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,1">
+                    <StackPanel>
+                      <TextBlock Text="Media operations" Classes="pageTitle" />
+                      <TextBlock
+                          Text="Live application health and launcher ownership from the active server."
+                          Classes="pageSubtitle"
+                          Margin="0,3,0,0" />
+                    </StackPanel>
 
-              <Grid Grid.Row="2" RowDefinitions="Auto,*" RowSpacing="6">
-                <TextBlock Text="Application health" Classes="sectionTitle" />
-                <ListBox
-                    Grid.Row="1"
-                    x:Name="IntegrationsList"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Padding="0"
-                    SelectionChanged="IntegrationsList_OnSelectionChanged">
-                  <ListBox.ItemsPanel>
-                    <ItemsPanelTemplate>
-                      <WrapPanel Orientation="Horizontal" />
-                    </ItemsPanelTemplate>
-                  </ListBox.ItemsPanel>
-                  <ListBox.ItemTemplate>
-                    <DataTemplate x:CompileBindings="False">
-                      <Border Classes="module" Width="205" Height="160" Margin="0,0,7,7">
-                        <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="6">
-                          <Grid ColumnDefinitions="*,Auto">
-                            <StackPanel>
-                              <TextBlock Text="{ReflectionBinding Name}" FontWeight="SemiBold" FontSize="13" />
-                              <TextBlock Text="{ReflectionBinding Kind}" Classes="dim" FontSize="8.5" />
-                            </StackPanel>
-                            <TextBlock Grid.Column="1" Text="{ReflectionBinding Severity}" Foreground="{DynamicResource SuccessBrush}" FontWeight="SemiBold" />
-                          </Grid>
-                          <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="6">
-                            <StackPanel><TextBlock Text="STATE" Classes="eyebrow" /><TextBlock Text="{ReflectionBinding State}" TextTrimming="CharacterEllipsis" /></StackPanel>
-                            <StackPanel Grid.Column="1"><TextBlock Text="ENDPOINT" Classes="eyebrow" /><TextBlock Text="{ReflectionBinding Endpoint}" TextTrimming="CharacterEllipsis" /></StackPanel>
-                          </Grid>
-                          <TextBlock Grid.Row="2" Text="{ReflectionBinding Evidence}" Classes="muted" TextWrapping="Wrap" MaxHeight="46" />
-                          <TextBlock Grid.Row="3" Text="Open" HorizontalAlignment="Center" FontWeight="SemiBold" />
+                    <StackPanel
+                        Grid.Column="1"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        Spacing="8">
+                      <TextBlock
+                          x:Name="MediaHubSampleAgeText"
+                          Text="Waiting for environment capture"
+                          Classes="dim"
+                          VerticalAlignment="Center"
+                          Margin="0,0,4,0" />
+                      <Button
+                          x:Name="MediaModeFleetButton"
+                          Classes="mediaMode selected"
+                          Content="Fleet overview"
+                          Click="MediaModeFleetButton_OnClick" />
+                      <Button
+                          x:Name="MediaModeLauncherButton"
+                          Classes="mediaMode"
+                          Content="Launcher settings"
+                          Click="MediaModeLauncherButton_OnClick" />
+                      <Button
+                          x:Name="MediaHubRefreshButton"
+                          Classes="primary compact"
+                          Content="Refresh telemetry"
+                          MinWidth="130"
+                          Click="MediaHubRefreshButton_OnClick" />
+                    </StackPanel>
+                  </Grid>
+
+                  <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
+                    <Border Classes="flatCard mediaMetric">
+                      <StackPanel>
+                        <TextBlock Text="HEALTHY" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="MediaHealthyMetricText"
+                            Text="0"
+                            FontSize="28"
+                            FontWeight="SemiBold"
+                            Foreground="{DynamicResource SuccessBrush}"
+                            Margin="0,7,0,0" />
+                        <TextBlock
+                            Text="Applications operating normally"
+                            Classes="muted"
+                            FontSize="10"
+                            Margin="0,2,0,0" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Classes="flatCard mediaMetric">
+                      <StackPanel>
+                        <TextBlock Text="DEGRADED / BUSY" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="MediaAttentionMetricText"
+                            Text="0"
+                            FontSize="28"
+                            FontWeight="SemiBold"
+                            Foreground="{DynamicResource WarnBrush}"
+                            Margin="0,7,0,0" />
+                        <TextBlock
+                            Text="Reachable but needs attention"
+                            Classes="muted"
+                            FontSize="10"
+                            Margin="0,2,0,0" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Classes="flatCard mediaMetric">
+                      <StackPanel>
+                        <TextBlock Text="OFFLINE" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="MediaOfflineMetricText"
+                            Text="0"
+                            FontSize="28"
+                            FontWeight="SemiBold"
+                            Foreground="{DynamicResource DangerBrush}"
+                            Margin="0,7,0,0" />
+                        <TextBlock
+                            Text="No verified application response"
+                            Classes="muted"
+                            FontSize="10"
+                            Margin="0,2,0,0" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="3" Classes="flatCard mediaMetric">
+                      <StackPanel>
+                        <TextBlock Text="TARGET" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="MediaTargetMetricText"
+                            Text="--"
+                            FontSize="17"
+                            FontWeight="SemiBold"
+                            Margin="0,7,0,0"
+                            TextWrapping="Wrap"
+                            MaxHeight="48" />
+                        <TextBlock
+                            Text="Uses active control-plane context"
+                            Classes="muted"
+                            FontSize="10"
+                            Margin="0,2,0,0" />
+                      </StackPanel>
+                    </Border>
+                  </Grid>
+
+                  <Grid
+                      x:Name="MediaFleetOverviewPanel"
+                      RowDefinitions="Auto,*"
+                      RowSpacing="10">
+
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                      <StackPanel>
+                        <TextBlock Text="Application health" Classes="sectionTitle" />
+                        <TextBlock
+                            Text="Detected media applications use the same card composition as the Windows control center."
+                            Classes="pageSubtitle"
+                            Margin="0,3,0,0" />
+                      </StackPanel>
+
+                      <TextBox
+                          Grid.Column="1"
+                          x:Name="MediaFilterText"
+                          Classes="filter"
+                          Width="240"
+                          PlaceholderText="Filter applications"
+                          TextChanged="MediaFilterText_OnTextChanged" />
+
+                      <Button
+                          Grid.Column="2"
+                          x:Name="MediaHubShowHiddenButton"
+                          Classes="compact"
+                          Content="Show hidden"
+                          Click="MediaHubShowHiddenButton_OnClick" />
+                    </Grid>
+
+                    <ListBox
+                        Grid.Row="1"
+                        x:Name="IntegrationsList"
+                        Classes="mediaCards"
+                        MinHeight="190"
+                        SelectionChanged="IntegrationsList_OnSelectionChanged">
+                      <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                      </ListBox.ItemsPanel>
+                      <ListBox.ItemTemplate>
+                        <DataTemplate x:CompileBindings="False">
+                          <Border Classes="mediaCard">
+                            <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="9">
+                              <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel>
+                                  <TextBlock
+                                      Text="{ReflectionBinding DisplayName}"
+                                      FontSize="16"
+                                      FontWeight="SemiBold"
+                                      TextTrimming="CharacterEllipsis"
+                                      ToolTip.Tip="{ReflectionBinding DisplayName}" />
+                                  <TextBlock
+                                      Text="{ReflectionBinding Category}"
+                                      Classes="muted"
+                                      FontSize="10.5"
+                                      TextTrimming="CharacterEllipsis"
+                                      ToolTip.Tip="{ReflectionBinding Category}" />
+                                </StackPanel>
+
+                                <Border
+                                    Grid.Column="1"
+                                    Classes="badge"
+                                    Background="{ReflectionBinding StateBackground}">
+                                  <TextBlock
+                                      Text="{ReflectionBinding StateLabel}"
+                                      Foreground="{ReflectionBinding StateForeground}"
+                                      FontSize="10"
+                                      FontWeight="SemiBold" />
+                                </Border>
+                              </Grid>
+
+                              <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="12">
+                                <StackPanel>
+                                  <TextBlock Text="RUNTIME" Classes="eyebrow" />
+                                  <TextBlock
+                                      Text="{ReflectionBinding RuntimeText}"
+                                      FontSize="15"
+                                      FontWeight="SemiBold"
+                                      TextTrimming="CharacterEllipsis"
+                                      ToolTip.Tip="{ReflectionBinding RuntimeText}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                  <TextBlock Text="ENDPOINT" Classes="eyebrow" />
+                                  <TextBlock
+                                      Text="{ReflectionBinding EndpointText}"
+                                      FontSize="15"
+                                      FontWeight="SemiBold"
+                                      TextTrimming="CharacterEllipsis"
+                                      ToolTip.Tip="{ReflectionBinding EndpointText}" />
+                                </StackPanel>
+                              </Grid>
+
+                              <StackPanel Grid.Row="2" Spacing="3">
+                                <TextBlock
+                                    Text="{ReflectionBinding Evidence}"
+                                    Classes="muted"
+                                    FontSize="10.5"
+                                    TextWrapping="Wrap"
+                                    MaxHeight="38"
+                                    ToolTip.Tip="{ReflectionBinding Evidence}" />
+                                <TextBlock
+                                    Text="{ReflectionBinding VisibilityText}"
+                                    Classes="dim"
+                                    FontSize="9.5" />
+                              </StackPanel>
+
+                              <Button
+                                  Grid.Row="3"
+                                  Classes="mediaCardAction"
+                                  Content="{ReflectionBinding OpenLabel}"
+                                  Tag="{ReflectionBinding IntegrationName}"
+                                  Click="MediaCardOpenButton_OnClick" />
+                            </Grid>
+                          </Border>
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <Border
+                        Grid.Row="1"
+                        x:Name="MediaHubEmptyState"
+                        Classes="plexEmpty"
+                        IsVisible="False"
+                        VerticalAlignment="Top">
+                      <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBlock
+                            Text="✓"
+                            Foreground="{DynamicResource SuccessBrush}"
+                            FontSize="22"
+                            VerticalAlignment="Center" />
+                        <StackPanel>
+                          <TextBlock Text="No matching applications" FontWeight="SemiBold" />
+                          <TextBlock
+                              Text="Clear the filter or show hidden launchers to restore the full fleet."
+                              Classes="muted"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                      </StackPanel>
+                    </Border>
+                  </Grid>
+
+                  <Grid
+                      x:Name="MediaLauncherSettingsPanel"
+                      IsVisible="False"
+                      ColumnDefinitions="*,390"
+                      ColumnSpacing="10"
+                      MinHeight="510">
+
+                    <Border Classes="flatCard mediaLauncherPanel">
+                      <Grid RowDefinitions="Auto,*" RowSpacing="10">
+                        <Grid ColumnDefinitions="*,Auto">
+                          <StackPanel>
+                            <TextBlock Text="Launcher settings" Classes="sectionTitle" />
+                            <TextBlock
+                                Text="Override display names, categories and local URLs without changing detection ownership."
+                                Classes="pageSubtitle"
+                                Margin="0,3,0,0" />
+                          </StackPanel>
+                          <TextBlock
+                              Grid.Column="1"
+                              x:Name="MediaLauncherStorePathText"
+                              Text="--"
+                              Classes="dim"
+                              FontSize="9.5"
+                              VerticalAlignment="Center"
+                              TextTrimming="CharacterEllipsis"
+                              MaxWidth="420" />
                         </Grid>
-                      </Border>
-                    </DataTemplate>
-                  </ListBox.ItemTemplate>
-                </ListBox>
 
-                <Border IsVisible="False">
-                  <StackPanel>
-                    <TextBlock x:Name="IntegrationNameText" />
-                    <TextBlock x:Name="IntegrationRuntimeText" />
-                    <Border x:Name="IntegrationStateBorder"><TextBlock x:Name="IntegrationStateText" /></Border>
-                    <TextBlock x:Name="IntegrationKindText" />
-                    <TextBlock x:Name="IntegrationEndpointText" />
-                    <TextBlock x:Name="IntegrationRoleText" />
-                    <TextBlock x:Name="IntegrationFindingsSummaryText" />
-                    <TextBlock x:Name="IntegrationEvidenceText" />
-                    <TextBlock x:Name="IntegrationFindingsText" />
-                    <Button x:Name="OpenIntegrationButton" Click="OpenIntegrationButton_OnClick" />
-                    <Button x:Name="IntegrationFindingsButton" Click="IntegrationFindingsButton_OnClick" />
-                    <TextBlock x:Name="IntegrationActionStatusText" />
-                  </StackPanel>
-                </Border>
-              </Grid>
+                        <ListBox
+                            Grid.Row="1"
+                            x:Name="MediaLauncherSettingsList"
+                            Classes="mediaLauncherList"
+                            SelectionChanged="MediaLauncherSettingsList_OnSelectionChanged">
+                          <ListBox.ItemTemplate>
+                            <DataTemplate x:CompileBindings="False">
+                              <Grid ColumnDefinitions="1.1*,0.8*,1.6*,Auto" ColumnSpacing="10">
+                                <TextBlock
+                                    Text="{ReflectionBinding DisplayName}"
+                                    FontWeight="SemiBold"
+                                    TextTrimming="CharacterEllipsis"
+                                    ToolTip.Tip="{ReflectionBinding DisplayName}" />
+                                <TextBlock
+                                    Grid.Column="1"
+                                    Text="{ReflectionBinding Category}"
+                                    Classes="muted"
+                                    TextTrimming="CharacterEllipsis"
+                                    ToolTip.Tip="{ReflectionBinding Category}" />
+                                <TextBlock
+                                    Grid.Column="2"
+                                    Text="{ReflectionBinding Url}"
+                                    Classes="dim"
+                                    TextTrimming="CharacterEllipsis"
+                                    ToolTip.Tip="{ReflectionBinding Url}" />
+                                <TextBlock
+                                    Grid.Column="3"
+                                    Text="{ReflectionBinding VisibilityText}"
+                                    Foreground="{DynamicResource AccentBrush}" />
+                              </Grid>
+                            </DataTemplate>
+                          </ListBox.ItemTemplate>
+                        </ListBox>
+                      </Grid>
+                    </Border>
+
+                    <Border Grid.Column="1" Classes="flatCard mediaLauncherPanel">
+                      <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*,Auto" RowSpacing="8">
+                        <StackPanel>
+                          <TextBlock Text="Edit launcher" Classes="sectionTitle" />
+                          <TextBlock
+                              x:Name="MediaLauncherSelectedText"
+                              Text="Select a detected application."
+                              Classes="muted"
+                              Margin="0,3,0,0"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="1">
+                          <TextBlock Text="Display name" Classes="eyebrow" Margin="0,0,0,4" />
+                          <TextBox x:Name="MediaLauncherDisplayNameTextBox" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="2">
+                          <TextBlock Text="URL override" Classes="eyebrow" Margin="0,0,0,4" />
+                          <TextBox
+                              x:Name="MediaLauncherUrlTextBox"
+                              PlaceholderText="Leave blank to use detected endpoint" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="3">
+                          <TextBlock Text="Category" Classes="eyebrow" Margin="0,0,0,4" />
+                          <TextBox x:Name="MediaLauncherCategoryTextBox" />
+                        </StackPanel>
+
+                        <CheckBox
+                            Grid.Row="4"
+                            x:Name="MediaLauncherVisibleCheckBox"
+                            Content="Show card in Fleet overview"
+                            IsChecked="True" />
+
+                        <Border Grid.Row="5" Classes="inset">
+                          <StackPanel Spacing="4">
+                            <TextBlock Text="DETECTED CONTEXT" Classes="eyebrow" />
+                            <TextBlock
+                                x:Name="MediaLauncherDetectedText"
+                                Text="--"
+                                Classes="muted"
+                                TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Border>
+
+                        <TextBlock
+                            Grid.Row="6"
+                            x:Name="MediaLauncherStatusText"
+                            Text="Select an application to edit its launcher."
+                            Classes="dim"
+                            TextWrapping="Wrap" />
+
+                        <WrapPanel Grid.Row="7">
+                          <Button
+                              x:Name="MediaLauncherSaveButton"
+                              Classes="primary compact"
+                              Content="Save"
+                              MinWidth="88"
+                              Margin="0,0,8,0"
+                              Click="MediaLauncherSaveButton_OnClick" />
+                          <Button
+                              x:Name="MediaLauncherResetButton"
+                              Classes="compact"
+                              Content="Reset"
+                              MinWidth="88"
+                              Margin="0,0,8,0"
+                              Click="MediaLauncherResetButton_OnClick" />
+                          <Button
+                              x:Name="MediaLauncherOpenButton"
+                              Classes="compact"
+                              Content="Open selected"
+                              Click="MediaLauncherOpenButton_OnClick" />
+                        </WrapPanel>
+                      </Grid>
+                    </Border>
+                  </Grid>
+
+                  <!-- Existing integration detail contract remains available to generic code. -->
+                  <Border IsVisible="False">
+                    <StackPanel>
+                      <TextBlock x:Name="MediaHubSummaryText" />
+                      <TextBlock x:Name="IntegrationNameText" />
+                      <TextBlock x:Name="IntegrationRuntimeText" />
+                      <Border x:Name="IntegrationStateBorder"><TextBlock x:Name="IntegrationStateText" /></Border>
+                      <TextBlock x:Name="IntegrationKindText" />
+                      <TextBlock x:Name="IntegrationEndpointText" />
+                      <TextBlock x:Name="IntegrationRoleText" />
+                      <TextBlock x:Name="IntegrationFindingsSummaryText" />
+                      <TextBlock x:Name="IntegrationEvidenceText" />
+                      <TextBlock x:Name="IntegrationFindingsText" />
+                      <Button x:Name="OpenIntegrationButton" Click="OpenIntegrationButton_OnClick" />
+                      <Button x:Name="IntegrationFindingsButton" Click="IntegrationFindingsButton_OnClick" />
+                      <TextBlock x:Name="IntegrationActionStatusText" />
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+              </ScrollViewer>
+            </Grid>
+
+            <!-- Dedicated Windows-reference Plex workspace -->
+            <Grid
+                x:Name="PlexWorkspacePage"
+                IsVisible="False">
+
+              <ScrollViewer
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+
+                <StackPanel Spacing="12" Margin="0,0,4,4">
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,1">
+                    <StackPanel>
+                      <TextBlock Text="Plex" Classes="pageTitle" />
+                      <TextBlock
+                          Text="Library availability, live sessions, playback decisions and guarded operations."
+                          Classes="pageSubtitle"
+                          Margin="0,3,0,0" />
+                    </StackPanel>
+
+                    <StackPanel
+                        Grid.Column="1"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        Spacing="10">
+                      <StackPanel VerticalAlignment="Center" Margin="0,0,3,0">
+                        <TextBlock
+                            x:Name="PlexTargetText"
+                            Text="--"
+                            HorizontalAlignment="Right"
+                            FontWeight="SemiBold" />
+                        <TextBlock
+                            x:Name="PlexFreshnessText"
+                            Text="CHECKING..."
+                            Classes="dim"
+                            FontSize="10"
+                            HorizontalAlignment="Right"
+                            Margin="0,2,0,0" />
+                      </StackPanel>
+
+                      <Button
+                          x:Name="PlexRefreshButton"
+                          Classes="primary compact"
+                          Content="Refresh"
+                          MinWidth="96"
+                          Click="PlexRefreshButton_OnClick" />
+                    </StackPanel>
+                  </Grid>
+
+                  <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
+                    <Border Classes="flatCard plexMetric">
+                      <StackPanel>
+                        <TextBlock Text="SERVICE" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="PlexServiceText"
+                            Text="CHECKING"
+                            FontSize="23"
+                            FontWeight="SemiBold"
+                            Margin="0,8,0,0"
+                            TextTrimming="CharacterEllipsis" />
+                        <TextBlock
+                            x:Name="PlexServiceDetailText"
+                            Text="systemd or container ownership"
+                            Classes="dim"
+                            FontSize="10"
+                            Margin="0,3,0,0"
+                            TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Classes="flatCard plexMetric">
+                      <StackPanel>
+                        <TextBlock Text="PLEX VERSION" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="PlexVersionText"
+                            Text="--"
+                            FontSize="20"
+                            FontWeight="SemiBold"
+                            Margin="0,8,0,0"
+                            TextTrimming="CharacterEllipsis" />
+                        <TextBlock
+                            Text="From the local Plex identity endpoint"
+                            Classes="dim"
+                            FontSize="10"
+                            Margin="0,3,0,0"
+                            TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Classes="flatCard plexMetric">
+                      <StackPanel>
+                        <TextBlock Text="ENDPOINT" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="PlexEndpointText"
+                            Text="--"
+                            FontSize="20"
+                            FontWeight="SemiBold"
+                            Margin="0,8,0,0"
+                            TextTrimming="CharacterEllipsis"
+                            ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                        <TextBlock
+                            x:Name="PlexConnectionText"
+                            Text="Waiting for identity probe"
+                            Classes="dim"
+                            FontSize="10"
+                            Margin="0,3,0,0"
+                            TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="3" Classes="flatCard plexMetric">
+                      <StackPanel>
+                        <TextBlock Text="DEPENDENCY" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="PlexDependencyText"
+                            Text="--"
+                            FontSize="17"
+                            FontWeight="SemiBold"
+                            Margin="0,8,0,0"
+                            TextWrapping="Wrap"
+                            MaxHeight="48" />
+                        <TextBlock
+                            Text="DUMB and library-path context"
+                            Classes="dim"
+                            FontSize="10"
+                            Margin="0,3,0,0" />
+                      </StackPanel>
+                    </Border>
+                  </Grid>
+
+                  <Border Classes="inset plexOperations">
+                    <StackPanel Spacing="10">
+                      <StackPanel>
+                        <TextBlock Text="Plex operations" Classes="sectionTitle" />
+                        <TextBlock
+                            Text="Routine Plex management stays inline. Restart remains confirmation-gated and respects Safe Mode."
+                            Classes="pageSubtitle"
+                            Margin="0,3,0,0"
+                            TextWrapping="Wrap" />
+                      </StackPanel>
+
+                      <WrapPanel>
+                        <Button
+                            x:Name="PlexOpenButton"
+                            Classes="primary plexAction"
+                            Content="Open Plex"
+                            Margin="0,0,8,0"
+                            Click="PlexOpenButton_OnClick" />
+                        <Button
+                            x:Name="PlexRestartButton"
+                            Classes="plexAction"
+                            Content="Restart Plex"
+                            Margin="0,0,8,0"
+                            Click="PlexRestartButton_OnClick" />
+                        <Button
+                            Classes="plexAction"
+                            Content="Plex logs"
+                            Margin="0,0,8,0"
+                            Click="PlexLogsButton_OnClick" />
+                        <Button
+                            Classes="plexAction"
+                            Content="SSH terminal"
+                            Margin="0,0,8,0"
+                            Click="PlexTerminalButton_OnClick" />
+                        <Button
+                            Classes="plexAction"
+                            Content="Intelligence"
+                            Click="PlexIntelligenceButton_OnClick" />
+                      </WrapPanel>
+
+                      <TextBlock
+                          x:Name="PlexOperationsStatusText"
+                          Text="Waiting for Plex discovery."
+                          Classes="dim"
+                          TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+
+                  <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
+                    <Border Classes="inset">
+                      <StackPanel>
+                        <TextBlock Text="ACTIVE SESSIONS" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="PlexActiveSessionsText"
+                            Text="--"
+                            FontSize="22"
+                            FontWeight="SemiBold"
+                            Margin="0,6,0,0" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Classes="inset">
+                      <StackPanel>
+                        <TextBlock Text="DIRECT PLAY" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="PlexDirectPlayText"
+                            Text="--"
+                            FontSize="22"
+                            FontWeight="SemiBold"
+                            Foreground="{DynamicResource SuccessBrush}"
+                            Margin="0,6,0,0" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Classes="inset">
+                      <StackPanel>
+                        <TextBlock Text="TRANSCODING" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="PlexTranscodeText"
+                            Text="--"
+                            FontSize="22"
+                            FontWeight="SemiBold"
+                            Foreground="{DynamicResource WarnBrush}"
+                            Margin="0,6,0,0" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="3" Classes="inset">
+                      <StackPanel>
+                        <TextBlock Text="LIBRARIES" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="PlexLibrariesText"
+                            Text="--"
+                            FontSize="22"
+                            FontWeight="SemiBold"
+                            Margin="0,6,0,0" />
+                      </StackPanel>
+                    </Border>
+                  </Grid>
+
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <Border Classes="flatCard plexAnalytics">
+                      <StackPanel>
+                        <TextBlock Text="Playback analytics" Classes="sectionTitle" />
+                        <TextBlock
+                            x:Name="PlexPlaybackAnalyticsText"
+                            Text="Waiting for live session telemetry..."
+                            Classes="muted"
+                            Margin="0,8,0,0"
+                            TextWrapping="Wrap"
+                            LineHeight="20" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Classes="flatCard plexAnalytics">
+                      <StackPanel>
+                        <TextBlock Text="Server context" Classes="sectionTitle" />
+                        <TextBlock
+                            x:Name="PlexServerContextText"
+                            Text="Waiting for Plex identity and library context..."
+                            Classes="muted"
+                            Margin="0,8,0,0"
+                            TextWrapping="Wrap"
+                            LineHeight="20" />
+                      </StackPanel>
+                    </Border>
+                  </Grid>
+
+                  <Border Classes="flatCard plexSessionPanel">
+                    <StackPanel Spacing="10">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock Text="Session analytics" Classes="sectionTitle" />
+                          <TextBlock
+                              Text="Current viewers, players, progress, playback decisions, bandwidth and transcode context."
+                              Classes="pageSubtitle"
+                              Margin="0,3,0,0" />
+                        </StackPanel>
+                        <TextBlock
+                            Grid.Column="1"
+                            x:Name="PlexSessionCountText"
+                            Text="--"
+                            Classes="dim"
+                            VerticalAlignment="Center" />
+                      </Grid>
+
+                      <ScrollViewer
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Disabled">
+                        <StackPanel MinWidth="1420" Spacing="0">
+                          <Border Classes="plexTableHeader">
+                            <Grid ColumnDefinitions="330,130,180,90,110,115,115,110,250" ColumnSpacing="10">
+                              <TextBlock Text="ITEM" Classes="downloadHeader" />
+                              <TextBlock Grid.Column="1" Text="USER" Classes="downloadHeader" />
+                              <TextBlock Grid.Column="2" Text="PLAYER" Classes="downloadHeader" />
+                              <TextBlock Grid.Column="3" Text="STATE" Classes="downloadHeader" />
+                              <TextBlock Grid.Column="4" Text="PROGRESS" Classes="downloadHeader downloadHeaderNumeric" />
+                              <TextBlock Grid.Column="5" Text="VIDEO" Classes="downloadHeader" />
+                              <TextBlock Grid.Column="6" Text="AUDIO" Classes="downloadHeader" />
+                              <TextBlock Grid.Column="7" Text="BANDWIDTH" Classes="downloadHeader downloadHeaderNumeric" />
+                              <TextBlock Grid.Column="8" Text="DETAIL" Classes="downloadHeader" />
+                            </Grid>
+                          </Border>
+
+                          <ListBox
+                              x:Name="PlexSessionsList"
+                              Classes="plexSessions"
+                              MaxHeight="330">
+                            <ListBox.ItemTemplate>
+                              <DataTemplate x:CompileBindings="False">
+                                <Grid ColumnDefinitions="330,130,180,90,110,115,115,110,250" ColumnSpacing="10">
+                                  <TextBlock
+                                      Text="{ReflectionBinding Title}"
+                                      ToolTip.Tip="{ReflectionBinding Title}"
+                                      Classes="downloadNameCell"
+                                      TextTrimming="CharacterEllipsis" />
+                                  <TextBlock
+                                      Grid.Column="1"
+                                      Text="{ReflectionBinding User}"
+                                      ToolTip.Tip="{ReflectionBinding User}"
+                                      Classes="downloadCell muted"
+                                      TextTrimming="CharacterEllipsis" />
+                                  <TextBlock
+                                      Grid.Column="2"
+                                      Text="{ReflectionBinding Player}"
+                                      ToolTip.Tip="{ReflectionBinding Player}"
+                                      Classes="downloadCell"
+                                      TextTrimming="CharacterEllipsis" />
+                                  <TextBlock
+                                      Grid.Column="3"
+                                      Text="{ReflectionBinding State}"
+                                      Classes="downloadCell"
+                                      TextTrimming="CharacterEllipsis" />
+                                  <TextBlock
+                                      Grid.Column="4"
+                                      Text="{ReflectionBinding Progress}"
+                                      Classes="downloadCell downloadNumericCell"
+                                      TextTrimming="CharacterEllipsis" />
+                                  <TextBlock
+                                      Grid.Column="5"
+                                      Text="{ReflectionBinding VideoDecision}"
+                                      Classes="downloadCell"
+                                      TextTrimming="CharacterEllipsis" />
+                                  <TextBlock
+                                      Grid.Column="6"
+                                      Text="{ReflectionBinding AudioDecision}"
+                                      Classes="downloadCell"
+                                      TextTrimming="CharacterEllipsis" />
+                                  <TextBlock
+                                      Grid.Column="7"
+                                      Text="{ReflectionBinding Bandwidth}"
+                                      Classes="downloadCell downloadNumericCell"
+                                      TextTrimming="CharacterEllipsis" />
+                                  <TextBlock
+                                      Grid.Column="8"
+                                      Text="{ReflectionBinding Detail}"
+                                      ToolTip.Tip="{ReflectionBinding Detail}"
+                                      Classes="downloadCell muted"
+                                      TextTrimming="CharacterEllipsis" />
+                                </Grid>
+                              </DataTemplate>
+                            </ListBox.ItemTemplate>
+                          </ListBox>
+                        </StackPanel>
+                      </ScrollViewer>
+
+                      <Border
+                          x:Name="PlexSessionsEmptyState"
+                          Classes="plexEmpty">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                          <TextBlock
+                              Text="✓"
+                              Foreground="{DynamicResource SuccessBrush}"
+                              FontSize="22"
+                              VerticalAlignment="Center" />
+                          <StackPanel>
+                            <TextBlock Text="No active Plex sessions" FontWeight="SemiBold" />
+                            <TextBlock
+                                x:Name="PlexSessionsEmptyText"
+                                Text="No viewers are currently streaming from this Plex server."
+                                Classes="muted"
+                                TextWrapping="Wrap" />
+                          </StackPanel>
+                        </StackPanel>
+                      </Border>
+                    </StackPanel>
+                  </Border>
+
+                  <Border Classes="plexStatus">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel>
+                        <TextBlock
+                            x:Name="PlexSecurityText"
+                            Text="Session telemetry uses a token only on the target Linux host; the token is never returned to GraveOps."
+                            Classes="muted"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            x:Name="PlexStatusText"
+                            Text="Waiting for Plex telemetry."
+                            Classes="dim"
+                            FontSize="10"
+                            Margin="0,3,0,0"
+                            TextWrapping="Wrap" />
+                      </StackPanel>
+                      <TextBlock
+                          Grid.Column="1"
+                          Text="READ-ONLY SESSION DATA"
+                          Classes="eyebrow"
+                          Foreground="{DynamicResource AccentBrush}"
+                          VerticalAlignment="Center"
+                          Margin="16,0,0,0" />
+                    </Grid>
+                  </Border>
+                </StackPanel>
+              </ScrollViewer>
             </Grid>
 
             <!-- Dedicated direct application workspace -->
