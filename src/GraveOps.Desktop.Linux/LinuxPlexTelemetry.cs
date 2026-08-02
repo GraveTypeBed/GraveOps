@@ -238,8 +238,56 @@ def read_text(path):
     try:
         return Path(path).read_text(errors="replace")
     except Exception:
-        code, output, _ = run(["sudo", "-n", "cat", path])
-        return output if code == 0 else ""
+        return ""
+
+def graveops_secret_path():
+    config_home = (
+        os.environ.get("XDG_CONFIG_HOME")
+        or str(Path.home() / ".config")
+    )
+
+    return (
+        Path(config_home)
+        / "GraveOps"
+        / "secrets"
+        / "plex-token"
+    )
+
+def read_secret_token(path):
+    try:
+        candidate = Path(path)
+
+        if (
+            not candidate.is_file()
+            or candidate.is_symlink()
+        ):
+            return ""
+
+        metadata = candidate.stat()
+
+        if metadata.st_uid != os.geteuid():
+            return ""
+
+        if metadata.st_mode & 0o077:
+            return ""
+
+        value = candidate.read_text(
+            encoding="utf-8",
+            errors="strict",
+        )
+
+        if "\n" in value or "\r" in value:
+            return ""
+
+        value = value.strip()
+
+        return (
+            value
+            if 8 <= len(value) <= 512
+            else ""
+        )
+    except Exception:
+        return ""
 
 def docker_names():
     code, output, _ = run(
@@ -266,6 +314,13 @@ def discover_token(container):
     ).strip()
     if environment_token:
         return environment_token, "environment"
+
+    secret_token = read_secret_token(
+        graveops_secret_path()
+    )
+
+    if secret_token:
+        return secret_token, "GraveOps secret file"
 
     candidates = [
         "/var/lib/plexmediaserver/Library/Application Support/Plex Media Server/Preferences.xml",

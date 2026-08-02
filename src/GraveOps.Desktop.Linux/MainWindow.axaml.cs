@@ -1011,6 +1011,31 @@ public partial class MainWindow : Window
 
     private async void RefreshButton_OnClick(object? sender, RoutedEventArgs e) => await RefreshAsync();
 
+    private static bool IsPlexTokenProbePrivilegeNoise(
+        OpsLogGroup log)
+    {
+        var source =
+            log.Source ?? string.Empty;
+        var message =
+            log.Message ?? string.Empty;
+
+        return
+            source.Equals(
+                "sudo",
+                StringComparison.OrdinalIgnoreCase) &&
+            message.Contains(
+                "a password is required",
+                StringComparison.OrdinalIgnoreCase) &&
+            (
+                message.Contains(
+                    "Plex Media Server/Preferences.xml",
+                    StringComparison.OrdinalIgnoreCase) ||
+                message.Contains(
+                    "plexmediaserver/Library/Application Support",
+                    StringComparison.OrdinalIgnoreCase)
+            );
+    }
+
     private async Task RefreshAsync()
     {
         if (_controlPlaneCaptureBusy)
@@ -1035,7 +1060,12 @@ public partial class MainWindow : Window
             _snapshot = await CaptureActiveTargetAsync();
             _backup = await CaptureTargetBackupAsync();
             _integrations = LinuxOpsAnalyzer.EnrichIntegrations(_snapshot);
-            _logs = LinuxOpsAnalyzer.GroupLogs(_snapshot.RecentLogs);
+            _logs =
+                LinuxOpsAnalyzer
+                    .GroupLogs(_snapshot.RecentLogs)
+                    .Where(item =>
+                        !IsPlexTokenProbePrivilegeNoise(item))
+                    .ToArray();
             _rawAnalysis = LinuxOpsAnalyzer.Analyze(
                 _snapshot,
                 _backup,
