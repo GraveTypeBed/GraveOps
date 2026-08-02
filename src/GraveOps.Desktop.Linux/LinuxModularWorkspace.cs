@@ -78,7 +78,7 @@ public sealed record ModularApplicationDescriptor(
 
 public sealed class ModularLayoutContract
 {
-    public string Version { get; set; } = "4.6.1";
+    public string Version { get; set; } = "4.6.2";
     public bool ViewportFirst { get; set; } = true;
     public bool PageLevelScrollDisabled { get; set; } = false;
     public bool DirectAppsUseDedicatedWorkspace { get; set; } = true;
@@ -109,6 +109,12 @@ public sealed class ModularLayoutContract
     public bool PersistentPlexSecretFile { get; set; } = true;
     public bool PrivilegeFreePlexProbe { get; set; } = true;
     public bool PlexProbeNoiseSuppression { get; set; } = true;
+    public bool PlexSessionBandwidthParsing { get; set; } = true;
+    public bool PlexForegroundLivePolling { get; set; } = true;
+    public bool PlexBackgroundPolling { get; set; } = true;
+    public bool PlexMinimizedPolling { get; set; } = true;
+    public bool PlexSnapshotFailureRetention { get; set; } = true;
+    public bool SharedPlexMediaHubSnapshot { get; set; } = true;
     public int PrimaryReferenceWidth { get; set; } = 1920;
     public int PrimaryReferenceHeight { get; set; } = 1040;
     public int SidebarWidth { get; set; } = 260;

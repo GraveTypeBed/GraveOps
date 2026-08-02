@@ -11,12 +11,24 @@ public partial class MainWindow
         _plexTelemetry =
             new();
 
+    private static readonly TimeSpan
+        PlexForegroundRefreshInterval =
+            TimeSpan.FromSeconds(5);
+
+    private static readonly TimeSpan
+        PlexBackgroundRefreshInterval =
+            TimeSpan.FromSeconds(15);
+
+    private static readonly TimeSpan
+        PlexMinimizedRefreshInterval =
+            TimeSpan.FromSeconds(45);
+
     private readonly DispatcherTimer
         _plexTimer =
             new()
             {
                 Interval =
-                    TimeSpan.FromSeconds(10)
+                    PlexForegroundRefreshInterval
             };
 
     private readonly Dictionary<
@@ -33,22 +45,50 @@ public partial class MainWindow
         _plexTimer.Tick +=
             async (_, _) =>
             {
-                if (Get<Control>(
-                        "PlexWorkspacePage")
-                    .IsVisible)
-                {
-                    await RefreshPlexTelemetryAsync(
-                        showStatus: false);
-                }
+                UpdatePlexTimerCadence();
+
+                await RefreshPlexTelemetryAsync(
+                    showStatus: false);
             };
 
         Opened +=
             (_, _) =>
+            {
+                UpdatePlexTimerCadence();
                 _plexTimer.Start();
+            };
 
         Closed +=
             (_, _) =>
                 _plexTimer.Stop();
+    }
+
+    private void UpdatePlexTimerCadence()
+    {
+        var interval =
+            WindowState == WindowState.Minimized
+                ? PlexMinimizedRefreshInterval
+                : Get<Control>("PlexWorkspacePage")
+                    .IsVisible
+                    ? PlexForegroundRefreshInterval
+                    : PlexBackgroundRefreshInterval;
+
+        if (_plexTimer.Interval != interval)
+        {
+            _plexTimer.Interval =
+                interval;
+        }
+    }
+
+    private string PlexCadenceLabel()
+    {
+        if (WindowState == WindowState.Minimized)
+            return "45s minimized";
+
+        return Get<Control>("PlexWorkspacePage")
+            .IsVisible
+            ? "5s live"
+            : "15s background";
     }
 
     private void ActivatePlexWorkspace()
@@ -57,6 +97,7 @@ public partial class MainWindow
             "Plex");
 
         PopulatePlexWorkspace();
+        UpdatePlexTimerCadence();
 
         _ =
             RefreshPlexTelemetryAsync(
@@ -302,7 +343,7 @@ public partial class MainWindow
 
         Get<TextBlock>("PlexFreshnessText")
             .Text =
-            $"LIVE · updated " +
+            $"LIVE · {PlexCadenceLabel()} · updated " +
             $"{snapshot.SampledAt.ToLocalTime():h:mm:ss tt}";
 
         Get<TextBlock>("PlexOperationsStatusText")
@@ -312,6 +353,12 @@ public partial class MainWindow
                 : "Plex is reachable. Session analytics and guarded operations are ready.";
 
         UpdatePlexOperationState();
+
+        if (Get<Control>("MediaHubPage")
+            .IsVisible)
+        {
+            PopulateMediaHub();
+        }
     }
 
     private async Task RefreshPlexTelemetryAsync(
@@ -323,15 +370,29 @@ public partial class MainWindow
         _plexBusy =
             true;
 
+        UpdatePlexTimerCadence();
+
+        var targetId =
+            _controlPlane.ActiveProfile.Id;
+
+        var hasCachedSnapshot =
+            _plexCache.TryGetValue(
+                targetId,
+                out var cachedSnapshot);
+
         var button =
             Get<Button>("PlexRefreshButton");
 
         button.IsEnabled =
             false;
 
-        Get<TextBlock>("PlexFreshnessText")
-            .Text =
-            "CHECKING...";
+        if (showStatus ||
+            !hasCachedSnapshot)
+        {
+            Get<TextBlock>("PlexFreshnessText")
+                .Text =
+                "CHECKING...";
+        }
 
         if (showStatus)
         {
@@ -342,9 +403,6 @@ public partial class MainWindow
 
         try
         {
-            var targetId =
-                _controlPlane.ActiveProfile.Id;
-
             var snapshot =
                 await _plexTelemetry.CaptureAsync(
                     _controlPlane);
@@ -362,29 +420,48 @@ public partial class MainWindow
         }
         catch (Exception exception)
         {
-            var state =
-                Get<TextBlock>("PlexServiceText");
+            if (hasCachedSnapshot &&
+                cachedSnapshot is not null)
+            {
+                ApplyPlexSnapshot(
+                    cachedSnapshot);
 
-            state.Text =
-                "UNAVAILABLE";
+                Get<TextBlock>("PlexFreshnessText")
+                    .Text =
+                    $"STALE · {PlexCadenceLabel()} · retrying";
 
-            state.Foreground =
-                OpsPalette.Foreground(
-                    OpsSeverity.Error);
+                Get<TextBlock>("PlexStatusText")
+                    .Text =
+                    showStatus
+                        ? $"Last live snapshot retained · {exception.Message}"
+                        : "Last live snapshot retained while Plex telemetry retries.";
+            }
+            else
+            {
+                var state =
+                    Get<TextBlock>("PlexServiceText");
 
-            Get<TextBlock>("PlexFreshnessText")
-                .Text =
-                "PROBE FAILED";
+                state.Text =
+                    "UNAVAILABLE";
 
-            Get<TextBlock>("PlexStatusText")
-                .Text =
-                exception.Message;
+                state.Foreground =
+                    OpsPalette.Foreground(
+                        OpsSeverity.Error);
 
-            Get<TextBlock>("PlexOperationsStatusText")
-                .Text =
-                "Plex telemetry failed. Logs and dependency pages remain available.";
+                Get<TextBlock>("PlexFreshnessText")
+                    .Text =
+                    "PROBE FAILED";
 
-            UpdatePlexOperationState();
+                Get<TextBlock>("PlexStatusText")
+                    .Text =
+                    exception.Message;
+
+                Get<TextBlock>("PlexOperationsStatusText")
+                    .Text =
+                    "Plex telemetry failed. Logs and dependency pages remain available.";
+
+                UpdatePlexOperationState();
+            }
         }
         finally
         {

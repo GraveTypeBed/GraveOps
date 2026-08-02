@@ -519,14 +519,26 @@ if token:
             else:
                 direct_play += 1
 
+            session_node = node.find("Session")
+
             bandwidth = 0
-            if transcode_node is not None:
+            for candidate in (
+                attr(session_node, "bandwidth", "")
+                if session_node is not None
+                else "",
+                attr(transcode_node, "bandwidth", "")
+                if transcode_node is not None
+                else "",
+            ):
                 try:
-                    bandwidth = int(
-                        float(attr(transcode_node, "bandwidth", "0"))
-                    )
+                    parsed = int(float(candidate))
                 except Exception:
-                    bandwidth = 0
+                    continue
+
+                if parsed > 0:
+                    bandwidth = parsed
+                    break
+
             total_bandwidth += bandwidth
 
             player = "Unknown player"

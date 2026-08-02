@@ -214,6 +214,53 @@ public partial class MainWindow
             ResolveIntegrationUrl(
                 integration);
 
+        LinuxPlexSnapshot? plexSnapshot =
+            null;
+
+        if (integration.Name.Equals(
+                "Plex",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            _plexCache.TryGetValue(
+                _controlPlane.ActiveProfile.Id,
+                out plexSnapshot);
+        }
+
+        var liveSeverity =
+            plexSnapshot is null
+                ? integration.Severity
+                : PlexSeverity(
+                    plexSnapshot.State);
+
+        var runtimeText =
+            plexSnapshot is null
+                ? string.IsNullOrWhiteSpace(
+                    integration.Kind)
+                    ? "Detected"
+                    : integration.Kind
+                : $"{plexSnapshot.Service} · " +
+                  $"{plexSnapshot.ActiveSessions} active";
+
+        var endpointText =
+            url ??
+            (plexSnapshot is null
+                ? string.IsNullOrWhiteSpace(
+                    integration.Endpoint)
+                    ? "No verified endpoint"
+                    : integration.Endpoint
+                : plexSnapshot.Endpoint);
+
+        var evidence =
+            plexSnapshot is null
+                ? string.IsNullOrWhiteSpace(
+                    integration.Evidence)
+                    ? "Detected without additional provider evidence."
+                    : integration.Evidence
+                : $"Live Plex · " +
+                  $"{plexSnapshot.ActiveSessions} sessions · " +
+                  $"{plexSnapshot.TotalBandwidth} · " +
+                  $"{plexSnapshot.LibraryCount} libraries";
+
         return new LinuxMediaApplicationRow
         {
             Integration =
@@ -225,21 +272,11 @@ public partial class MainWindow
             Category =
                 category,
             RuntimeText =
-                string.IsNullOrWhiteSpace(
-                    integration.Kind)
-                    ? "Detected"
-                    : integration.Kind,
+                runtimeText,
             EndpointText =
-                url ??
-                (string.IsNullOrWhiteSpace(
-                    integration.Endpoint)
-                    ? "No verified endpoint"
-                    : integration.Endpoint),
+                endpointText,
             Evidence =
-                string.IsNullOrWhiteSpace(
-                    integration.Evidence)
-                    ? "Detected without additional provider evidence."
-                    : integration.Evidence,
+                evidence,
             OpenLabel =
                 NavigationForIntegration(
                     integration.Name) is null
@@ -254,13 +291,13 @@ public partial class MainWindow
                 "No verified URL",
             StateLabel =
                 LinuxOpsAnalyzer.SeverityLabel(
-                    integration.Severity),
+                    liveSeverity),
             StateForeground =
                 OpsPalette.Foreground(
-                    integration.Severity),
+                    liveSeverity),
             StateBackground =
                 OpsPalette.Background(
-                    integration.Severity),
+                    liveSeverity),
             IsVisible =
                 profile?.IsVisible != false
         };
