@@ -230,10 +230,19 @@ public partial class MainWindow : Window
         string panelName,
         string glyphName)
     {
-        var panel = Get<StackPanel>(panelName);
-        panel.IsVisible = !panel.IsVisible;
-        Get<TextBlock>(glyphName).Text =
-            panel.IsVisible ? "▾" : "▸";
+        var panel =
+            Get<StackPanel>(panelName);
+
+        panel.IsVisible =
+            !panel.IsVisible;
+
+        Get<Avalonia.Controls.Shapes.Path>(
+                glyphName)
+            .Data =
+            Geometry.Parse(
+                panel.IsVisible
+                    ? "M2,4 L6,8 L10,4"
+                    : "M4,2 L8,6 L4,10");
     }
 
     private void Navigate(string navigationName)

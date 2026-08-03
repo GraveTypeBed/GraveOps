@@ -365,7 +365,16 @@ public partial class MainWindow
         bool showStatus)
     {
         if (_plexBusy)
+        {
+            if (showStatus)
+            {
+                Get<TextBlock>("PlexFreshnessText")
+                    .Text =
+                    $"UPDATING · {PlexCadenceLabel()}";
+            }
+
             return;
+        }
 
         _plexBusy =
             true;
@@ -380,19 +389,11 @@ public partial class MainWindow
                 targetId,
                 out var cachedSnapshot);
 
-        var button =
-            Get<Button>("PlexRefreshButton");
-
-        button.IsEnabled =
-            false;
-
-        if (showStatus ||
-            !hasCachedSnapshot)
-        {
-            Get<TextBlock>("PlexFreshnessText")
-                .Text =
-                "CHECKING...";
-        }
+        Get<TextBlock>("PlexFreshnessText")
+            .Text =
+            hasCachedSnapshot
+                ? $"LIVE · {PlexCadenceLabel()} · updating"
+                : $"UPDATING · {PlexCadenceLabel()}";
 
         if (showStatus)
         {
@@ -467,9 +468,6 @@ public partial class MainWindow
         {
             _plexBusy =
                 false;
-
-            button.IsEnabled =
-                true;
         }
     }
 
