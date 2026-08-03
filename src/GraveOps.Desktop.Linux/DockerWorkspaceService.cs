@@ -386,15 +386,6 @@ public sealed class DockerWorkspaceService
         string workingDirectory,
         CancellationToken cancellationToken = default)
     {
-        if (!project.Equals("dumb", StringComparison.OrdinalIgnoreCase))
-        {
-            return new DockerWorkspaceCommandResult(
-                false,
-                -1,
-                "Only the detected DUMB Compose project is allowed by this action.",
-                "DUMB project restart was blocked.");
-        }
-
         if (!ComposeProjectRegex.IsMatch(project))
         {
             return new DockerWorkspaceCommandResult(
@@ -524,11 +515,16 @@ public sealed class DockerWorkspaceService
                 health.Equals("unhealthy", StringComparison.OrdinalIgnoreCase) ||
                 status.Equals("dead", StringComparison.OrdinalIgnoreCase) ||
                 (!running && exitCode != 0);
-            var group = project.Equals("dumb", StringComparison.OrdinalIgnoreCase)
-                ? "DUMB"
-                : project == "--"
-                    ? "Standalone"
-                    : project;
+            var group =
+                IsDumbContainerIdentity(
+                    name,
+                    image,
+                    service,
+                    labels)
+                    ? "DUMB"
+                    : project == "--"
+                        ? "Standalone"
+                        : project;
 
             rows.Add(
                 new DockerFleetRow(
@@ -570,6 +566,33 @@ public sealed class DockerWorkspaceService
             .ThenBy(item => item.Group, StringComparer.OrdinalIgnoreCase)
             .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
             .ToArray();
+    }
+
+    private static bool IsDumbContainerIdentity(
+        string name,
+        string image,
+        string service,
+        IReadOnlyDictionary<string, string> labels)
+    {
+        var explicitIdentity =
+            ValueOr(
+                labels,
+                "io.github.gravetypebed.graveops.application",
+                string.Empty);
+
+        return
+            explicitIdentity.Equals(
+                "DUMB",
+                StringComparison.OrdinalIgnoreCase) ||
+            name.Equals(
+                "DUMB",
+                StringComparison.OrdinalIgnoreCase) ||
+            image.Contains(
+                "iampuid0/dumb",
+                StringComparison.OrdinalIgnoreCase) ||
+            service.Equals(
+                "dumb",
+                StringComparison.OrdinalIgnoreCase);
     }
 
     private static Dictionary<string, Dictionary<string, string>> ParseJsonLines(

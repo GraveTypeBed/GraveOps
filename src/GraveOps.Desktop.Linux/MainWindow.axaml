@@ -2213,7 +2213,7 @@
                       <Button
                           x:Name="MediaModeLauncherButton"
                           Classes="mediaMode"
-                          Content="Launcher settings"
+                          Content="Identity registry"
                           Click="MediaModeLauncherButton_OnClick" />
                       <Button
                           x:Name="MediaHubRefreshButton"
@@ -2445,19 +2445,20 @@
                   <Grid
                       x:Name="MediaLauncherSettingsPanel"
                       IsVisible="False"
-                      ColumnDefinitions="*,390"
+                      ColumnDefinitions="1.15*,430"
                       ColumnSpacing="10"
-                      MinHeight="510">
+                      MinHeight="540">
 
                     <Border Classes="flatCard mediaLauncherPanel">
-                      <Grid RowDefinitions="Auto,*" RowSpacing="10">
+                      <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
                         <Grid ColumnDefinitions="*,Auto">
                           <StackPanel>
-                            <TextBlock Text="Launcher settings" Classes="sectionTitle" />
+                            <TextBlock Text="Application identity registry" Classes="sectionTitle" />
                             <TextBlock
-                                Text="Override display names, categories and local URLs without changing detection ownership."
+                                Text="Logical application type, stable runtime owner, role, endpoint and operator overrides remain separate."
                                 Classes="pageSubtitle"
-                                Margin="0,3,0,0" />
+                                Margin="0,3,0,0"
+                                TextWrapping="Wrap" />
                           </StackPanel>
                           <TextBlock
                               Grid.Column="1"
@@ -2470,34 +2471,46 @@
                               MaxWidth="420" />
                         </Grid>
 
+                        <Border Grid.Row="1" Classes="inset">
+                          <TextBlock
+                              x:Name="IdentityRegistrySummaryText"
+                              Text="Waiting for identity resolution."
+                              Classes="muted"
+                              TextWrapping="Wrap" />
+                        </Border>
+
                         <ListBox
-                            Grid.Row="1"
+                            Grid.Row="2"
                             x:Name="MediaLauncherSettingsList"
                             Classes="mediaLauncherList"
                             SelectionChanged="MediaLauncherSettingsList_OnSelectionChanged">
                           <ListBox.ItemTemplate>
                             <DataTemplate x:CompileBindings="False">
-                              <Grid ColumnDefinitions="1.1*,0.8*,1.6*,Auto" ColumnSpacing="10">
+                              <Grid ColumnDefinitions="1.05*,0.7*,0.9*,1.45*,Auto" ColumnSpacing="10">
                                 <TextBlock
                                     Text="{ReflectionBinding DisplayName}"
                                     FontWeight="SemiBold"
                                     TextTrimming="CharacterEllipsis"
-                                    ToolTip.Tip="{ReflectionBinding DisplayName}" />
+                                    ToolTip.Tip="{ReflectionBinding SourceKey}" />
                                 <TextBlock
                                     Grid.Column="1"
-                                    Text="{ReflectionBinding Category}"
+                                    Text="{ReflectionBinding Product}"
                                     Classes="muted"
-                                    TextTrimming="CharacterEllipsis"
-                                    ToolTip.Tip="{ReflectionBinding Category}" />
+                                    TextTrimming="CharacterEllipsis" />
                                 <TextBlock
                                     Grid.Column="2"
-                                    Text="{ReflectionBinding Url}"
-                                    Classes="dim"
-                                    TextTrimming="CharacterEllipsis"
-                                    ToolTip.Tip="{ReflectionBinding Url}" />
+                                    Text="{ReflectionBinding Role}"
+                                    Classes="muted"
+                                    TextTrimming="CharacterEllipsis" />
                                 <TextBlock
                                     Grid.Column="3"
-                                    Text="{ReflectionBinding VisibilityText}"
+                                    Text="{ReflectionBinding SourceSummary}"
+                                    Classes="dim"
+                                    TextTrimming="CharacterEllipsis"
+                                    ToolTip.Tip="{ReflectionBinding SourceSummary}" />
+                                <TextBlock
+                                    Grid.Column="4"
+                                    Text="{ReflectionBinding VerificationLabel}"
                                     Foreground="{DynamicResource AccentBrush}" />
                               </Grid>
                             </DataTemplate>
@@ -2507,80 +2520,121 @@
                     </Border>
 
                     <Border Grid.Column="1" Classes="flatCard mediaLauncherPanel">
-                      <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*,Auto" RowSpacing="8">
-                        <StackPanel>
-                          <TextBlock Text="Edit launcher" Classes="sectionTitle" />
-                          <TextBlock
-                              x:Name="MediaLauncherSelectedText"
-                              Text="Select a detected application."
-                              Classes="muted"
-                              Margin="0,3,0,0"
-                              TextWrapping="Wrap" />
-                        </StackPanel>
-
-                        <StackPanel Grid.Row="1">
-                          <TextBlock Text="Display name" Classes="eyebrow" Margin="0,0,0,4" />
-                          <TextBox x:Name="MediaLauncherDisplayNameTextBox" />
-                        </StackPanel>
-
-                        <StackPanel Grid.Row="2">
-                          <TextBlock Text="URL override" Classes="eyebrow" Margin="0,0,0,4" />
-                          <TextBox
-                              x:Name="MediaLauncherUrlTextBox"
-                              PlaceholderText="Leave blank to use detected endpoint" />
-                        </StackPanel>
-
-                        <StackPanel Grid.Row="3">
-                          <TextBlock Text="Category" Classes="eyebrow" Margin="0,0,0,4" />
-                          <TextBox x:Name="MediaLauncherCategoryTextBox" />
-                        </StackPanel>
-
-                        <CheckBox
-                            Grid.Row="4"
-                            x:Name="MediaLauncherVisibleCheckBox"
-                            Content="Show card in Fleet overview"
-                            IsChecked="True" />
-
-                        <Border Grid.Row="5" Classes="inset">
-                          <StackPanel Spacing="4">
-                            <TextBlock Text="DETECTED CONTEXT" Classes="eyebrow" />
+                      <ScrollViewer
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Spacing="9" Margin="0,0,4,0">
+                          <StackPanel>
+                            <TextBlock Text="Edit identity" Classes="sectionTitle" />
                             <TextBlock
-                                x:Name="MediaLauncherDetectedText"
-                                Text="--"
+                                x:Name="MediaLauncherSelectedText"
+                                Text="Select a detected source."
                                 Classes="muted"
+                                Margin="0,3,0,0"
                                 TextWrapping="Wrap" />
                           </StackPanel>
-                        </Border>
 
-                        <TextBlock
-                            Grid.Row="6"
-                            x:Name="MediaLauncherStatusText"
-                            Text="Select an application to edit its launcher."
-                            Classes="dim"
-                            TextWrapping="Wrap" />
+                          <Grid ColumnDefinitions="*,*" ColumnSpacing="7">
+                            <StackPanel>
+                              <TextBlock Text="Application type" Classes="eyebrow" Margin="0,0,0,4" />
+                              <ComboBox x:Name="IdentityProductComboBox" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                              <TextBlock Text="Role" Classes="eyebrow" Margin="0,0,0,4" />
+                              <ComboBox x:Name="IdentityRoleComboBox" />
+                            </StackPanel>
+                          </Grid>
 
-                        <WrapPanel Grid.Row="7">
-                          <Button
-                              x:Name="MediaLauncherSaveButton"
-                              Classes="primary compact"
-                              Content="Save"
-                              MinWidth="88"
-                              Margin="0,0,8,0"
-                              Click="MediaLauncherSaveButton_OnClick" />
-                          <Button
-                              x:Name="MediaLauncherResetButton"
-                              Classes="compact"
-                              Content="Reset"
-                              MinWidth="88"
-                              Margin="0,0,8,0"
-                              Click="MediaLauncherResetButton_OnClick" />
-                          <Button
-                              x:Name="MediaLauncherOpenButton"
-                              Classes="compact"
-                              Content="Open selected"
-                              Click="MediaLauncherOpenButton_OnClick" />
-                        </WrapPanel>
-                      </Grid>
+                          <StackPanel>
+                            <TextBlock Text="API / protocol" Classes="eyebrow" Margin="0,0,0,4" />
+                            <TextBox
+                                x:Name="IdentityProtocolTextBox"
+                                PlaceholderText="Examples: Native API, qBittorrent-compatible API, supporting dependency" />
+                          </StackPanel>
+
+                          <StackPanel>
+                            <TextBlock Text="Display name" Classes="eyebrow" Margin="0,0,0,4" />
+                            <TextBox x:Name="MediaLauncherDisplayNameTextBox" />
+                          </StackPanel>
+
+                          <StackPanel>
+                            <TextBlock Text="Parent / owning application" Classes="eyebrow" Margin="0,0,0,4" />
+                            <ComboBox x:Name="IdentityParentComboBox" />
+                          </StackPanel>
+
+                          <StackPanel>
+                            <TextBlock Text="Verified URL override" Classes="eyebrow" Margin="0,0,0,4" />
+                            <TextBox
+                                x:Name="MediaLauncherUrlTextBox"
+                                PlaceholderText="Leave blank to retain detected or suggested endpoint" />
+                          </StackPanel>
+
+                          <StackPanel>
+                            <TextBlock Text="Category" Classes="eyebrow" Margin="0,0,0,4" />
+                            <TextBox x:Name="MediaLauncherCategoryTextBox" />
+                          </StackPanel>
+
+                          <Border Classes="inset">
+                            <StackPanel Spacing="7">
+                              <CheckBox
+                                  x:Name="IdentityOwnsHealthCheckBox"
+                                  Content="Use this source as an application health owner" />
+                              <CheckBox
+                                  x:Name="IdentityShowNavigationCheckBox"
+                                  Content="Show application in GraveOps navigation" />
+                              <CheckBox
+                                  x:Name="MediaLauncherVisibleCheckBox"
+                                  Content="Show instance in Media Hub"
+                                  IsChecked="True" />
+                            </StackPanel>
+                          </Border>
+
+                          <Border Classes="inset">
+                            <StackPanel Spacing="4">
+                              <TextBlock Text="DETECTED CONTEXT" Classes="eyebrow" />
+                              <TextBlock
+                                  x:Name="IdentityVerificationText"
+                                  Text="--"
+                                  FontWeight="SemiBold"
+                                  TextWrapping="Wrap" />
+                              <TextBlock
+                                  x:Name="MediaLauncherDetectedText"
+                                  Text="--"
+                                  Classes="muted"
+                                  TextWrapping="Wrap" />
+                            </StackPanel>
+                          </Border>
+
+                          <TextBlock
+                              x:Name="MediaLauncherStatusText"
+                              Text="Select a source to inspect or override its identity."
+                              Classes="dim"
+                              TextWrapping="Wrap" />
+
+                          <WrapPanel>
+                            <Button
+                                x:Name="MediaLauncherSaveButton"
+                                Classes="primary compact"
+                                Content="Confirm and save"
+                                MinWidth="112"
+                                Margin="0,0,8,8"
+                                Click="MediaLauncherSaveButton_OnClick" />
+                            <Button
+                                x:Name="MediaLauncherResetButton"
+                                Classes="compact"
+                                Content="Reset automatic"
+                                MinWidth="108"
+                                Margin="0,0,8,8"
+                                Click="MediaLauncherResetButton_OnClick" />
+                            <Button
+                                x:Name="MediaLauncherOpenButton"
+                                Classes="compact"
+                                Content="Open selected"
+                                Margin="0,0,0,8"
+                                Click="MediaLauncherOpenButton_OnClick" />
+                          </WrapPanel>
+                        </StackPanel>
+                      </ScrollViewer>
                     </Border>
                   </Grid>
 

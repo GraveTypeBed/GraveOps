@@ -426,6 +426,29 @@ public partial class MainWindow
             .Length;
     }
 
+    private static bool IsDumbComposeOwner(
+        DockerFleetRow row) =>
+        !string.IsNullOrWhiteSpace(
+            row.ComposeProject) &&
+        row.ComposeProject != "--" &&
+        !string.IsNullOrWhiteSpace(
+            row.ComposeWorkingDirectory) &&
+        row.ComposeWorkingDirectory != "--" &&
+        (
+            row.Group.Equals(
+                "DUMB",
+                StringComparison.OrdinalIgnoreCase) ||
+            row.Name.Equals(
+                "DUMB",
+                StringComparison.OrdinalIgnoreCase) ||
+            row.Image.Contains(
+                "iampuid0/dumb",
+                StringComparison.OrdinalIgnoreCase) ||
+            row.ComposeService.Equals(
+                "dumb",
+                StringComparison.OrdinalIgnoreCase)
+        );
+
     private void UpdateDockerWorkspaceActionButtons()
     {
         var row = SelectedDockerRow();
@@ -446,11 +469,8 @@ public partial class MainWindow
             enabled && row?.IsRunning == true;
         Get<Button>("DockerRestartDumbButton").IsEnabled =
             enabled &&
-            row?.ComposeProject.Equals(
-                "dumb",
-                StringComparison.OrdinalIgnoreCase) == true &&
-            !string.IsNullOrWhiteSpace(row.ComposeWorkingDirectory) &&
-            row.ComposeWorkingDirectory != "--";
+            row is not null &&
+            IsDumbComposeOwner(row);
     }
 
     private async void DockerRefreshButton_OnClick(
@@ -718,9 +738,7 @@ public partial class MainWindow
     {
         var row = SelectedDockerRow();
         if (row is null ||
-            !row.ComposeProject.Equals(
-                "dumb",
-                StringComparison.OrdinalIgnoreCase))
+            !IsDumbComposeOwner(row))
         {
             return;
         }

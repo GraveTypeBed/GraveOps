@@ -32,28 +32,11 @@ public partial class MainWindow : Window
         LinuxOperatorTools.FindRepositoryRoot();
     private LinuxOperatorSettings _operatorSettings =
         LinuxOperatorSettings.Default;
-
-    private static readonly IReadOnlyDictionary<string, int[]> KnownIntegrationPorts =
-        new Dictionary<string, int[]>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["DUMB"] = new[] { 3005 },
-            ["Plex"] = new[] { 32400 },
-            ["Sonarr"] = new[] { 8989, 8990 },
-            ["Radarr"] = new[] { 7878, 7879 },
-            ["Lidarr"] = new[] { 8686 },
-            ["Prowlarr"] = new[] { 9696 },
-            ["Readarr"] = new[] { 8787 },
-            ["Whisparr"] = new[] { 6969 },
-            ["Mylar3"] = new[] { 8090 },
-            ["SABnzbd"] = new[] { 8080 },
-            ["qBittorrent"] = new[] { 8081 },
-            ["Decypharr"] = new[] { 8282 },
-            ["Zurg"] = new[] { 18080 },
-            ["Tautulli"] = new[] { 8181 },
-            ["Bazarr"] = new[] { 6767 },
-            ["Seerr"] = new[] { 5055 },
-            ["FlareSolverr"] = new[] { 8191 }
-        };
+    private readonly ApplicationIdentityStore
+        _applicationIdentityStore = new();
+    private ApplicationIdentityResolution
+        _identityResolution =
+            ApplicationIdentityResolution.Empty;
 
     private static readonly IReadOnlyDictionary<string, string>
         IntegrationNavigationTargets =
@@ -354,6 +337,7 @@ public partial class MainWindow : Window
     {
         bool Detected(string name) =>
             _integrations.Any(item =>
+                item.ShowInNavigation &&
                 item.Name.Equals(
                     name,
                     StringComparison.OrdinalIgnoreCase));
@@ -518,6 +502,7 @@ public partial class MainWindow : Window
             }
 
             return _integrations.Any(item =>
+                item.ShowInNavigation &&
                 item.Name.Equals(
                     integrationName,
                     StringComparison.OrdinalIgnoreCase));
@@ -1083,7 +1068,15 @@ public partial class MainWindow : Window
         {
             _snapshot = await CaptureActiveTargetAsync();
             _backup = await CaptureTargetBackupAsync();
-            _integrations = LinuxOpsAnalyzer.EnrichIntegrations(_snapshot);
+            _identityResolution =
+                await ApplicationIdentityResolver.ResolveAsync(
+                    _snapshot,
+                    _controlPlane.ActiveProfile.Id,
+                    ActiveTargetUrlHost(),
+                    _controlPlane.ActiveProfile.IsLocal,
+                    _applicationIdentityStore);
+            _integrations =
+                _identityResolution.Integrations;
             _logs =
                 LinuxOpsAnalyzer
                     .GroupLogs(_snapshot.RecentLogs)
@@ -2392,7 +2385,11 @@ public partial class MainWindow : Window
             Array.Empty<OpsPolicyFinding>();
 
         var url = ResolveIntegrationUrl(selected);
-        name.Text = selected.Name;
+        name.Text =
+            string.IsNullOrWhiteSpace(
+                selected.DisplayName)
+                ? selected.Name
+                : selected.DisplayName;
         runtime.Text = selected.State;
         state.Text =
             LinuxOpsAnalyzer.SeverityLabel(
@@ -2406,7 +2403,7 @@ public partial class MainWindow : Window
             (string.IsNullOrWhiteSpace(selected.Endpoint)
                 ? "No verified web endpoint"
                 : selected.Endpoint);
-        role.Text = IntegrationRole(selected.Name);
+        role.Text = selected.Role;
         evidence.Text =
             IntegrationEvidenceSummary(selected);
         findingsSummary.Text = related.Length == 0
@@ -2491,29 +2488,30 @@ public partial class MainWindow : Window
     private static string IntegrationEvidenceSummary(
         OpsIntegration integration)
     {
-        if (integration.Kind.Equals(
-                "Docker port inference",
-                StringComparison.OrdinalIgnoreCase))
-        {
-            return
-                $"{integration.Name} was identified from a published port mapping " +
-                $"owned by container '{integration.Evidence}'.";
-        }
-
-        if (integration.Kind.Equals(
-                "systemd",
-                StringComparison.OrdinalIgnoreCase))
-        {
-            return
-                $"{integration.Name} was verified through native systemd unit " +
-                $"'{integration.Evidence}'.";
-        }
-
-        if (string.IsNullOrWhiteSpace(integration.Evidence))
-            return "Detected without additional provider evidence.";
+        var verification =
+            integration.IsVerified
+                ? "Verified identity"
+                : "Unverified discovery candidate";
+        var health =
+            integration.OwnsHealth
+                ? "health owner"
+                : "does not own health";
+        var source =
+            string.IsNullOrWhiteSpace(
+                integration.Provenance)
+                ? integration.Kind
+                : integration.Provenance;
 
         return
-            $"Detection evidence · {integration.Evidence}";
+            $"{verification} · {integration.Role} · {health}" +
+            Environment.NewLine +
+            $"Protocol · {(string.IsNullOrWhiteSpace(integration.Protocol) ? "--" : integration.Protocol)}" +
+            Environment.NewLine +
+            $"Source · {source} · {integration.InstanceKey}" +
+            Environment.NewLine +
+            (string.IsNullOrWhiteSpace(integration.Evidence)
+                ? "No additional evidence."
+                : integration.Evidence);
     }
 
     private static string IntegrationRole(string name)
@@ -2560,55 +2558,23 @@ public partial class MainWindow : Window
         return "Detected integration";
     }
 
-    private string? ResolveIntegrationUrl(
+    private static string? ResolveIntegrationUrl(
         OpsIntegration integration)
     {
-        var overrideUrl =
-            _mediaLauncherStore.ResolveUrl(
-                integration.Name);
-
-        if (!string.IsNullOrWhiteSpace(
-                overrideUrl) &&
-            Uri.TryCreate(
-                overrideUrl,
+        if (!integration.IsVerified ||
+            string.IsNullOrWhiteSpace(
+                integration.Endpoint) ||
+            !Uri.TryCreate(
+                integration.Endpoint.Trim(),
                 UriKind.Absolute,
-                out var overrideUri) &&
-            (overrideUri.Scheme == Uri.UriSchemeHttp ||
-             overrideUri.Scheme == Uri.UriSchemeHttps))
+                out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp &&
+             uri.Scheme != Uri.UriSchemeHttps))
         {
-            return overrideUri.ToString();
+            return null;
         }
 
-        var detectedPorts = Regex.Matches(
-                integration.Endpoint ?? string.Empty,
-                @"(?<!\d)\d{2,5}(?!\d)")
-            .Select(match => int.TryParse(
-                    match.Value,
-                    out var port)
-                ? port
-                : 0)
-            .Where(port => port is > 0 and <= 65535)
-            .ToArray();
-
-        var candidates = detectedPorts.Length > 0
-            ? detectedPorts
-            : KnownIntegrationPorts.TryGetValue(
-                integration.Name,
-                out var known)
-                ? known
-                : Array.Empty<int>();
-
-        if (candidates.Length == 0)
-            return null;
-
-        var port = candidates[0];
-        var suffix = integration.Name.Equals(
-            "Plex",
-            StringComparison.OrdinalIgnoreCase)
-            ? "/web"
-            : string.Empty;
-
-        return $"http://{ActiveTargetUrlHost()}:{port}{suffix}";
+        return uri.ToString();
     }
 
     private static string FormatPolicyFree(double value) =>

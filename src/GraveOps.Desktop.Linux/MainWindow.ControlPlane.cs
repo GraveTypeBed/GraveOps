@@ -492,6 +492,8 @@ public partial class MainWindow
         _rawAnalysis = null;
         _integrations =
             Array.Empty<OpsIntegration>();
+        _identityResolution =
+            ApplicationIdentityResolution.Empty;
         _logs =
             Array.Empty<OpsLogGroup>();
         _arrTelemetrySnapshot = null;
@@ -615,10 +617,9 @@ public partial class MainWindow
             selected.Id.Equals(
                     _controlPlane.ActiveProfile.Id,
                     StringComparison.OrdinalIgnoreCase) &&
-                _integrations.Count > 0
-                ? _integrations
-                    .Select(item =>
-                        $"{item.Name} · {item.Kind} · {item.State}")
+                _identityResolution.Records.Count > 0
+                ? _identityResolution.Records
+                    .Select(IdentityServerSummary)
                     .ToArray()
                 : Array.Empty<string>();
 
@@ -634,6 +635,12 @@ public partial class MainWindow
         object? sender,
         SelectionChangedEventArgs e) =>
         UpdateServerFormCapability();
+
+    private static string IdentityServerSummary(
+        ApplicationIdentityRecord item) =>
+        $"{item.DisplayName} · {item.Product} · " +
+        $"{item.Role} · {item.VerificationLabel} · " +
+        $"{item.Protocol} · {item.Kind} · {item.Evidence}";
 
     private void UpdateServerFormCapability()
     {
@@ -1092,9 +1099,8 @@ public partial class MainWindow
 
         Get<ListBox>("ServerDetectedIntegrationsList")
             .ItemsSource =
-            _integrations
-                .Select(item =>
-                    $"{item.Name} · {item.Kind} · {item.State}")
+            _identityResolution.Records
+                    .Select(IdentityServerSummary)
                 .ToArray();
 
         Get<TextBlock>("ServerProfileStatusText").Text =

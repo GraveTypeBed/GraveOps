@@ -47,7 +47,22 @@ public sealed record OpsIntegration(
     string State,
     string Evidence,
     string Endpoint,
-    OpsSeverity Severity);
+    OpsSeverity Severity)
+{
+    public string InstanceKey { get; init; } = string.Empty;
+    public string DisplayName { get; init; } = string.Empty;
+    public string Category { get; init; } = string.Empty;
+    public string Role { get; init; } =
+        ApplicationIdentityRoles.NativeApplication;
+    public string Protocol { get; init; } = string.Empty;
+    public string OwnerKey { get; init; } = string.Empty;
+    public bool OwnsHealth { get; init; } = true;
+    public bool IsVerified { get; init; } = true;
+    public bool IsVisible { get; init; } = true;
+    public bool ShowInNavigation { get; init; } = true;
+    public string Provenance { get; init; } = string.Empty;
+}
+
 
 public sealed record OpsLogGroup(
     OpsSeverity Severity,
@@ -91,82 +106,49 @@ public sealed record OpsActionResult(
 
 public static class LinuxOpsAnalyzer
 {
-    private static readonly IReadOnlyDictionary<string, int[]> InferredPorts =
-        new Dictionary<string, int[]>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["DUMB"] = new[] { 3005, 5000 },
-            ["Sonarr"] = new[] { 8989, 8990 },
-            ["Radarr"] = new[] { 7878, 7879 },
-            ["Lidarr"] = new[] { 8686 },
-            ["Prowlarr"] = new[] { 9696 },
-            ["Readarr"] = new[] { 8787 },
-            ["Whisparr"] = new[] { 6969 },
-            ["Mylar3"] = new[] { 8090 },
-            ["Bazarr"] = new[] { 6767 },
-            ["Seerr"] = new[] { 5055 },
-            ["SABnzbd"] = new[] { 8080 },
-            ["qBittorrent"] = new[] { 6881, 8081 },
-            ["Decypharr"] = new[] { 8282 },
-            ["Zurg"] = new[] { 18080 },
-            ["Tautulli"] = new[] { 8181 },
-            ["Tdarr"] = new[] { 8265, 8266 },
-            ["FlareSolverr"] = new[] { 8191 }
-        };
-
     public static IReadOnlyList<OpsIntegration> EnrichIntegrations(
-        HostSnapshot snapshot)
-    {
-        var rows = snapshot.Integrations
-            .Select(item => new OpsIntegration(
-                item.Name,
-                item.Kind,
-                item.State,
-                item.Evidence,
-                string.Empty,
-                SeverityFromState(item.State)))
-            .ToList();
-
-        foreach (var container in snapshot.Containers)
-        {
-            var containerSeverity = ContainerSeverity(container);
-            foreach (var rule in InferredPorts)
-            {
-                var matched = rule.Value
-                    .Where(port => Regex.IsMatch(
-                        container.Ports ?? string.Empty,
-                        $@"(?<!\d){port}(?!\d)"))
-                    .ToArray();
-
-                if (matched.Length == 0)
-                    continue;
-
-                rows.Add(new OpsIntegration(
-                    rule.Key,
-                    "Docker port inference",
-                    container.Status,
-                    container.Name,
-                    string.Join(", ", matched),
-                    containerSeverity));
-            }
-        }
-
-        return rows
+        HostSnapshot snapshot) =>
+        snapshot.Integrations
+            .Select(item =>
+                new OpsIntegration(
+                    item.Name,
+                    item.Kind,
+                    item.State,
+                    item.Evidence,
+                    string.Empty,
+                    SeverityFromState(item.State))
+                {
+                    InstanceKey =
+                        $"provider|{item.Kind}|{item.Evidence}|{item.Name}",
+                    DisplayName =
+                        item.Name,
+                    Category =
+                        ApplicationIdentityCatalog.DefaultCategory(
+                            item.Name),
+                    Role =
+                        item.Kind.Contains(
+                            "port",
+                            StringComparison.OrdinalIgnoreCase)
+                            ? ApplicationIdentityRoles.DiscoveryCandidate
+                            : ApplicationIdentityRoles.NativeApplication,
+                    OwnsHealth =
+                        !item.Kind.Contains(
+                            "port",
+                            StringComparison.OrdinalIgnoreCase),
+                    IsVerified =
+                        !item.Kind.Contains(
+                            "port",
+                            StringComparison.OrdinalIgnoreCase),
+                    Provenance =
+                        item.Kind
+                })
             .GroupBy(
-                row => $"{row.Name}|{row.Endpoint}|{row.Evidence}",
+                item => item.InstanceKey,
                 StringComparer.OrdinalIgnoreCase)
-            .Select(group => group
-                .OrderBy(row => row.Severity)
-                .ThenByDescending(row =>
-                    !string.IsNullOrWhiteSpace(row.Endpoint))
-                .ThenByDescending(row =>
-                    row.Kind.Equals(
-                        "systemd",
-                        StringComparison.OrdinalIgnoreCase))
-                .First())
-            .OrderBy(row => row.Name)
-            .ThenBy(row => row.Evidence)
+            .Select(group => group.First())
+            .OrderBy(item => item.Name)
+            .ThenBy(item => item.InstanceKey)
             .ToArray();
-    }
 
     public static IReadOnlyList<OpsLogGroup> GroupLogs(
         IReadOnlyList<string> lines)
@@ -477,24 +459,65 @@ public static class LinuxOpsAnalyzer
         string nextStep)
     {
         var matches = integrations
-            .Where(item => names.Contains(item.Name, StringComparer.OrdinalIgnoreCase))
+            .Where(item =>
+                names.Contains(
+                    item.Name,
+                    StringComparer.OrdinalIgnoreCase))
             .ToArray();
 
         if (matches.Length == 0)
         {
-            return new OpsLifecycleStage(order, stage,
-                required ? "NOT DETECTED" : "NOT CONFIGURED",
-                required ? OpsSeverity.Warning : OpsSeverity.Info,
+            return new OpsLifecycleStage(
+                order,
+                stage,
+                required
+                    ? "NOT DETECTED"
+                    : "NOT CONFIGURED",
+                required
+                    ? OpsSeverity.Warning
+                    : OpsSeverity.Info,
                 $"No verified {stage.ToLowerInvariant()} integration was detected.",
                 impact,
                 nextStep);
         }
 
-        var severity = matches.Max(item => item.Severity);
-        return new OpsLifecycleStage(order, stage,
-            severity >= OpsSeverity.Error ? "BLOCKED" : severity == OpsSeverity.Warning ? "DEGRADED" : "READY",
+        var owners = matches
+            .Where(item =>
+                item.IsVerified &&
+                item.OwnsHealth)
+            .ToArray();
+
+        if (owners.Length == 0)
+        {
+            return new OpsLifecycleStage(
+                order,
+                stage,
+                "UNVERIFIED",
+                OpsSeverity.Info,
+                string.Join(
+                    " · ",
+                    matches.Select(item =>
+                        $"{(string.IsNullOrWhiteSpace(item.DisplayName) ? item.Name : item.DisplayName)}: " +
+                        $"{item.Role} ({item.Provenance})")),
+                impact,
+                "Confirm the owning application in Media Hub → Identity registry before using it for health or remediation.");
+        }
+
+        var severity = owners.Max(item => item.Severity);
+        return new OpsLifecycleStage(
+            order,
+            stage,
+            severity >= OpsSeverity.Error
+                ? "BLOCKED"
+                : severity == OpsSeverity.Warning
+                    ? "DEGRADED"
+                    : "READY",
             severity,
-            string.Join(" · ", matches.Select(item => $"{item.Name}: {item.State} ({item.Evidence})")),
+            string.Join(
+                " · ",
+                owners.Select(item =>
+                    $"{(string.IsNullOrWhiteSpace(item.DisplayName) ? item.Name : item.DisplayName)}: " +
+                    $"{item.State} ({item.Provenance} · {item.Evidence})")),
             impact,
             nextStep);
     }

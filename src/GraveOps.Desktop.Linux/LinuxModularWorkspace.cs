@@ -78,7 +78,7 @@ public sealed record ModularApplicationDescriptor(
 
 public sealed class ModularLayoutContract
 {
-    public string Version { get; set; } = "4.9.0-E";
+    public string Version { get; set; } = "4.9.0-F";
     public bool ViewportFirst { get; set; } = true;
     public bool PageLevelScrollDisabled { get; set; } = false;
     public bool DirectAppsUseDedicatedWorkspace { get; set; } = true;
@@ -177,6 +177,18 @@ public sealed class ModularLayoutContract
     public bool RoutineActivityDeduplication { get; set; } = true;
     public bool NonContiguousRoutineHistoryCollapse { get; set; } = true;
     public bool DistinctSegmentSelectionState { get; set; } = true;
+    public bool ApplicationIdentityRegistry { get; set; } = true;
+    public bool StableRuntimeSourceKeys { get; set; } = true;
+    public bool OpaqueStableSourceKeys { get; set; } = true;
+    public bool LogicalProductInstanceSeparation { get; set; } = true;
+    public bool PortHintsNeverOwnHealth { get; set; } = true;
+    public bool OperatorIdentityOverrides { get; set; } = true;
+    public bool CompatibilityAndSupportRoles { get; set; } = true;
+    public bool IdentityAliasAndEndpointOverrides { get; set; } = true;
+    public bool ComposeMetadataIdentity { get; set; } = true;
+    public bool NoAssumedApplicationUrls { get; set; } = true;
+    public bool RenamedComposeProjectSupport { get; set; } = true;
+    public bool WindowsIdentityRegistryPending { get; set; } = true;
     public int PrimaryReferenceWidth { get; set; } = 1920;
     public int PrimaryReferenceHeight { get; set; } = 1040;
     public int SidebarWidth { get; set; } = 260;

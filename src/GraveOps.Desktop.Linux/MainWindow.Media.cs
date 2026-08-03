@@ -9,6 +9,7 @@ public sealed class LinuxMediaApplicationRow
 {
     public required OpsIntegration Integration { get; init; }
     public required string IntegrationName { get; init; }
+    public required string SourceKey { get; init; }
     public required string DisplayName { get; init; }
     public required string Category { get; init; }
     public required string RuntimeText { get; init; }
@@ -25,9 +26,8 @@ public sealed class LinuxMediaApplicationRow
 
 public partial class MainWindow
 {
-    private readonly LinuxMediaLauncherStore
-        _mediaLauncherStore =
-            new();
+    private string _selectedIdentitySourceKey =
+        string.Empty;
 
     private IReadOnlyList<LinuxMediaApplicationRow>
         _mediaRows =
@@ -40,28 +40,36 @@ public partial class MainWindow
         Get<TextBlock>(
                 "MediaLauncherStorePathText")
             .Text =
-            _mediaLauncherStore.FilePath;
+            _applicationIdentityStore.FilePath;
+
+        Get<ComboBox>(
+                "IdentityProductComboBox")
+            .ItemsSource =
+            ApplicationIdentityCatalog.ProductNames;
+
+        Get<ComboBox>(
+                "IdentityRoleComboBox")
+            .ItemsSource =
+            ApplicationIdentityRoles.All;
 
         ShowMediaFleetOverview();
     }
 
     private void PopulateMediaHub()
     {
-        var selectedName =
-            SelectedMediaRow()?.IntegrationName;
+        var selectedSource =
+            SelectedMediaRow()?.SourceKey;
 
-        var launcherSelectedName =
-            (Get<ListBox>(
-                    "MediaLauncherSettingsList")
-                .SelectedItem as
-                LinuxMediaApplicationRow)?
-                .IntegrationName;
+        var registrySelectedSource =
+            SelectedMediaLauncherRow()?.SourceKey ??
+            _selectedIdentitySourceKey;
 
         _mediaRows =
             _integrations
                 .Select(BuildMediaApplicationRow)
                 .OrderBy(item => item.Category)
                 .ThenBy(item => item.DisplayName)
+                .ThenBy(item => item.SourceKey)
                 .ToArray();
 
         var filter =
@@ -93,8 +101,8 @@ public partial class MainWindow
 
         cards.SelectedItem =
             visibleRows.FirstOrDefault(item =>
-                item.IntegrationName.Equals(
-                    selectedName,
+                item.SourceKey.Equals(
+                    selectedSource,
                     StringComparison.OrdinalIgnoreCase)) ??
             visibleRows.FirstOrDefault();
 
@@ -102,39 +110,48 @@ public partial class MainWindow
             .IsVisible =
             visibleRows.Length == 0;
 
-        var launchers =
+        var identities =
             Get<ListBox>(
                 "MediaLauncherSettingsList");
 
-        launchers.ItemsSource =
-            _mediaRows;
+        identities.ItemsSource =
+            _identityResolution.Records;
 
-        launchers.SelectedItem =
-            _mediaRows.FirstOrDefault(item =>
-                item.IntegrationName.Equals(
-                    launcherSelectedName,
-                    StringComparison.OrdinalIgnoreCase)) ??
-            _mediaRows.FirstOrDefault(item =>
-                item.IntegrationName.Equals(
-                    selectedName,
-                    StringComparison.OrdinalIgnoreCase)) ??
-            _mediaRows.FirstOrDefault();
+        identities.SelectedItem =
+            _identityResolution.Records
+                .FirstOrDefault(item =>
+                    item.SourceKey.Equals(
+                        registrySelectedSource,
+                        StringComparison.OrdinalIgnoreCase)) ??
+            _identityResolution.Records
+                .FirstOrDefault();
+
+        Get<TextBlock>(
+                "IdentityRegistrySummaryText")
+            .Text =
+            $"{_identityResolution.Records.Count} detected source(s) · " +
+            $"{_integrations.Count(item => item.IsVerified && item.OwnsHealth)} verified health owner(s) · " +
+            $"{_identityResolution.Records.Count(item => !item.IsVerified)} candidate(s)";
 
         var offline =
             _integrations.Count(item =>
-                item.Severity >= OpsSeverity.Error ||
-                item.State.Contains(
-                    "offline",
-                    StringComparison.OrdinalIgnoreCase) ||
-                item.State.Contains(
-                    "unavailable",
-                    StringComparison.OrdinalIgnoreCase) ||
-                item.State.Contains(
-                    "not detected",
-                    StringComparison.OrdinalIgnoreCase));
+                item.OwnsHealth &&
+                item.IsVerified &&
+                (item.Severity >= OpsSeverity.Error ||
+                 item.State.Contains(
+                     "offline",
+                     StringComparison.OrdinalIgnoreCase) ||
+                 item.State.Contains(
+                     "unavailable",
+                     StringComparison.OrdinalIgnoreCase) ||
+                 item.State.Contains(
+                     "not detected",
+                     StringComparison.OrdinalIgnoreCase)));
 
         var attention =
             _integrations.Count(item =>
+                item.OwnsHealth &&
+                item.IsVerified &&
                 item.Severity ==
                     OpsSeverity.Warning &&
                 !item.State.Contains(
@@ -144,10 +161,15 @@ public partial class MainWindow
                     "unavailable",
                     StringComparison.OrdinalIgnoreCase));
 
+        var healthOwners =
+            _integrations.Count(item =>
+                item.OwnsHealth &&
+                item.IsVerified);
+
         var healthy =
             Math.Max(
                 0,
-                _integrations.Count -
+                healthOwners -
                 offline -
                 attention);
 
@@ -170,7 +192,7 @@ public partial class MainWindow
         Get<TextBlock>("MediaHubSummaryText")
             .Text =
             $"{visibleRows.Length} shown · " +
-            $"{_integrations.Count} detected";
+            $"{_integrations.Count} application instance(s)";
 
         Get<TextBlock>("MediaHubSampleAgeText")
             .Text =
@@ -193,22 +215,18 @@ public partial class MainWindow
         BuildMediaApplicationRow(
             OpsIntegration integration)
     {
-        var profile =
-            _mediaLauncherStore.Get(
-                integration.Name);
-
         var displayName =
             string.IsNullOrWhiteSpace(
-                profile?.DisplayName)
+                integration.DisplayName)
                 ? integration.Name
-                : profile.DisplayName.Trim();
+                : integration.DisplayName.Trim();
 
         var category =
             string.IsNullOrWhiteSpace(
-                profile?.Category)
+                integration.Category)
                 ? DefaultMediaCategory(
                     integration.Name)
-                : profile.Category.Trim();
+                : integration.Category.Trim();
 
         var url =
             ResolveIntegrationUrl(
@@ -227,35 +245,34 @@ public partial class MainWindow
         }
 
         var liveSeverity =
-            plexSnapshot is null
-                ? integration.Severity
-                : PlexSeverity(
-                    plexSnapshot.State);
+            !integration.IsVerified ||
+            !integration.OwnsHealth
+                ? OpsSeverity.Info
+                : plexSnapshot is null
+                    ? integration.Severity
+                    : PlexSeverity(
+                        plexSnapshot.State);
 
         var runtimeText =
             plexSnapshot is null
-                ? string.IsNullOrWhiteSpace(
-                    integration.Kind)
-                    ? "Detected"
-                    : integration.Kind
+                ? $"{integration.Kind} · {integration.Role} · " +
+                  $"{(string.IsNullOrWhiteSpace(integration.Protocol) ? "--" : integration.Protocol)}"
                 : $"{plexSnapshot.Service} · " +
                   $"{plexSnapshot.ActiveSessions} active";
 
         var endpointText =
             url ??
-            (plexSnapshot is null
-                ? string.IsNullOrWhiteSpace(
-                    integration.Endpoint)
-                    ? "No verified endpoint"
-                    : integration.Endpoint
-                : plexSnapshot.Endpoint);
+            (string.IsNullOrWhiteSpace(
+                integration.Endpoint)
+                ? "No verified endpoint"
+                : integration.IsVerified
+                    ? integration.Endpoint
+                    : $"Suggested · {integration.Endpoint}");
 
         var evidence =
             plexSnapshot is null
-                ? string.IsNullOrWhiteSpace(
-                    integration.Evidence)
-                    ? "Detected without additional provider evidence."
-                    : integration.Evidence
+                ? $"{(integration.IsVerified ? "Verified" : "Candidate")} · " +
+                  $"{integration.Evidence}"
                 : $"Live Plex · " +
                   $"{plexSnapshot.ActiveSessions} sessions · " +
                   $"{plexSnapshot.TotalBandwidth} · " +
@@ -267,6 +284,8 @@ public partial class MainWindow
                 integration,
             IntegrationName =
                 integration.Name,
+            SourceKey =
+                integration.InstanceKey,
             DisplayName =
                 displayName,
             Category =
@@ -283,15 +302,17 @@ public partial class MainWindow
                     ? "Open interface"
                     : "Open in GraveOps",
             VisibilityText =
-                profile?.IsVisible == false
-                    ? "Hidden from Fleet overview"
-                    : "Visible in Fleet overview",
+                integration.IsVisible
+                    ? "Visible in Fleet overview"
+                    : "Hidden from Fleet overview",
             Url =
                 url ??
                 "No verified URL",
             StateLabel =
-                LinuxOpsAnalyzer.SeverityLabel(
-                    liveSeverity),
+                integration.IsVerified
+                    ? LinuxOpsAnalyzer.SeverityLabel(
+                        liveSeverity)
+                    : "UNVERIFIED",
             StateForeground =
                 OpsPalette.Foreground(
                     liveSeverity),
@@ -299,7 +320,7 @@ public partial class MainWindow
                 OpsPalette.Background(
                     liveSeverity),
             IsVisible =
-                profile?.IsVisible != false
+                integration.IsVisible
         };
     }
 
@@ -346,20 +367,10 @@ public partial class MainWindow
             .Key;
 
     private LinuxMediaApplicationRow?
-        SelectedMediaRow()
-    {
-        if (Get<ListBox>("IntegrationsList")
-                .SelectedItem is
-            LinuxMediaApplicationRow selected)
-        {
-            return selected;
-        }
-
-        return Get<ListBox>(
-                   "MediaLauncherSettingsList")
-               .SelectedItem as
-            LinuxMediaApplicationRow;
-    }
+        SelectedMediaRow() =>
+        Get<ListBox>("IntegrationsList")
+            .SelectedItem as
+        LinuxMediaApplicationRow;
 
     private OpsIntegration?
         SelectedMediaIntegration() =>
@@ -540,12 +551,12 @@ public partial class MainWindow
             SelectionChangedEventArgs e) =>
         PopulateMediaLauncherEditor();
 
-    private LinuxMediaApplicationRow?
+    private ApplicationIdentityRecord?
         SelectedMediaLauncherRow() =>
         Get<ListBox>(
                 "MediaLauncherSettingsList")
             .SelectedItem as
-        LinuxMediaApplicationRow;
+        ApplicationIdentityRecord;
 
     private void PopulateMediaLauncherEditor()
     {
@@ -554,10 +565,8 @@ public partial class MainWindow
 
         var save =
             Get<Button>("MediaLauncherSaveButton");
-
         var reset =
             Get<Button>("MediaLauncherResetButton");
-
         var open =
             Get<Button>("MediaLauncherOpenButton");
 
@@ -565,93 +574,165 @@ public partial class MainWindow
         {
             Get<TextBlock>("MediaLauncherSelectedText")
                 .Text =
-                "Select a detected application.";
-
-            Get<TextBox>(
-                    "MediaLauncherDisplayNameTextBox")
+                "Select a detected source.";
+            Get<TextBox>("MediaLauncherDisplayNameTextBox")
                 .Text =
                 string.Empty;
-
-            Get<TextBox>(
-                    "MediaLauncherUrlTextBox")
+            Get<TextBox>("IdentityProtocolTextBox")
                 .Text =
                 string.Empty;
-
-            Get<TextBox>(
-                    "MediaLauncherCategoryTextBox")
+            Get<TextBox>("MediaLauncherUrlTextBox")
                 .Text =
                 string.Empty;
-
-            Get<CheckBox>(
-                    "MediaLauncherVisibleCheckBox")
+            Get<TextBox>("MediaLauncherCategoryTextBox")
+                .Text =
+                string.Empty;
+            Get<ComboBox>("IdentityProductComboBox")
+                .SelectedItem =
+                null;
+            Get<ComboBox>("IdentityRoleComboBox")
+                .SelectedItem =
+                null;
+            Get<ComboBox>("IdentityParentComboBox")
+                .ItemsSource =
+                new[]
+                {
+                    new IdentityOwnerOption(
+                        string.Empty,
+                        "No parent / independent instance")
+                };
+            Get<ComboBox>("IdentityParentComboBox")
+                .SelectedIndex =
+                0;
+            Get<CheckBox>("IdentityOwnsHealthCheckBox")
+                .IsChecked =
+                false;
+            Get<CheckBox>("IdentityShowNavigationCheckBox")
+                .IsChecked =
+                false;
+            Get<CheckBox>("MediaLauncherVisibleCheckBox")
                 .IsChecked =
                 true;
-
+            Get<TextBlock>("IdentityVerificationText")
+                .Text =
+                "--";
             Get<TextBlock>("MediaLauncherDetectedText")
                 .Text =
                 "--";
-
             save.IsEnabled =
                 false;
-
             reset.IsEnabled =
                 false;
-
             open.IsEnabled =
                 false;
-
             return;
         }
 
+        _selectedIdentitySourceKey =
+            selected.SourceKey;
+
         var profile =
-            _mediaLauncherStore.Get(
-                selected.IntegrationName);
+            _applicationIdentityStore.Get(
+                selected.SourceKey);
 
         Get<TextBlock>("MediaLauncherSelectedText")
             .Text =
-            selected.IntegrationName;
-
-        Get<TextBox>(
-                "MediaLauncherDisplayNameTextBox")
+            selected.SourceKey;
+        Get<ComboBox>("IdentityProductComboBox")
+            .SelectedItem =
+            selected.Product;
+        Get<ComboBox>("IdentityRoleComboBox")
+            .SelectedItem =
+            selected.Role;
+        Get<TextBox>("MediaLauncherDisplayNameTextBox")
             .Text =
-            profile?.DisplayName ??
-            string.Empty;
-
-        Get<TextBox>(
-                "MediaLauncherUrlTextBox")
+            selected.DisplayName;
+        Get<TextBox>("IdentityProtocolTextBox")
+            .Text =
+            selected.Protocol;
+        Get<TextBox>("MediaLauncherUrlTextBox")
             .Text =
             profile?.UrlOverride ??
-            string.Empty;
-
-        Get<TextBox>(
-                "MediaLauncherCategoryTextBox")
+            selected.Endpoint;
+        Get<TextBox>("MediaLauncherCategoryTextBox")
             .Text =
-            profile?.Category ??
-            string.Empty;
-
-        Get<CheckBox>(
-                "MediaLauncherVisibleCheckBox")
+            selected.Category;
+        Get<CheckBox>("IdentityOwnsHealthCheckBox")
             .IsChecked =
-            profile?.IsVisible ??
-            true;
+            selected.OwnsHealth;
+        Get<CheckBox>("IdentityShowNavigationCheckBox")
+            .IsChecked =
+            selected.ShowInNavigation;
+        Get<CheckBox>("MediaLauncherVisibleCheckBox")
+            .IsChecked =
+            selected.IsVisible;
 
+        PopulateIdentityOwnerOptions(selected);
+
+        Get<TextBlock>("IdentityVerificationText")
+            .Text =
+            $"{selected.VerificationLabel} · " +
+            $"{selected.Role} · confidence {selected.Confidence}";
         Get<TextBlock>("MediaLauncherDetectedText")
             .Text =
-            $"{selected.RuntimeText} · " +
-            $"{selected.EndpointText}";
+            $"{selected.Kind} · {selected.State}" +
+            Environment.NewLine +
+            selected.Evidence;
 
         save.IsEnabled =
             true;
-
         reset.IsEnabled =
             profile is not null;
 
+        var integration =
+            _integrations.FirstOrDefault(item =>
+                item.InstanceKey.Equals(
+                    selected.SourceKey,
+                    StringComparison.OrdinalIgnoreCase));
         open.IsEnabled =
-            ResolveIntegrationUrl(
-                selected.Integration) is not null;
+            integration is not null &&
+            ResolveIntegrationUrl(integration) is not null;
     }
 
-    private void MediaLauncherSaveButton_OnClick(
+    private void PopulateIdentityOwnerOptions(
+        ApplicationIdentityRecord selected)
+    {
+        var options =
+            new[]
+            {
+                new IdentityOwnerOption(
+                    string.Empty,
+                    "No parent / independent instance")
+            }
+            .Concat(
+                _identityResolution.Records
+                    .Where(item =>
+                        !item.SourceKey.Equals(
+                            selected.SourceKey,
+                            StringComparison.OrdinalIgnoreCase) &&
+                        ApplicationIdentityRoles.IsTopLevel(
+                            item.Role))
+                    .Select(item =>
+                        new IdentityOwnerOption(
+                            item.SourceKey,
+                            $"{item.DisplayName} · {item.Product}")))
+            .ToArray();
+
+        var combo =
+            Get<ComboBox>(
+                "IdentityParentComboBox");
+
+        combo.ItemsSource =
+            options;
+        combo.SelectedItem =
+            options.FirstOrDefault(item =>
+                item.SourceKey.Equals(
+                    selected.ParentSourceKey,
+                    StringComparison.OrdinalIgnoreCase)) ??
+            options[0];
+    }
+
+    private async void MediaLauncherSaveButton_OnClick(
         object? sender,
         RoutedEventArgs e)
     {
@@ -663,11 +744,29 @@ public partial class MainWindow
 
         try
         {
-            _mediaLauncherStore.Save(
-                new LinuxMediaLauncherProfile
+            var product =
+                Get<ComboBox>(
+                        "IdentityProductComboBox")
+                    .SelectedItem as string ??
+                selected.Product;
+            var role =
+                Get<ComboBox>(
+                        "IdentityRoleComboBox")
+                    .SelectedItem as string ??
+                selected.Role;
+            var parent =
+                Get<ComboBox>(
+                        "IdentityParentComboBox")
+                    .SelectedItem as
+                IdentityOwnerOption;
+
+            _applicationIdentityStore.Save(
+                new ApplicationIdentityProfile
                 {
-                    IntegrationName =
-                        selected.IntegrationName,
+                    SourceKey =
+                        selected.SourceKey,
+                    Product =
+                        product,
                     DisplayName =
                         Get<TextBox>(
                                 "MediaLauncherDisplayNameTextBox")
@@ -678,6 +777,16 @@ public partial class MainWindow
                                 "MediaLauncherCategoryTextBox")
                             .Text ??
                         string.Empty,
+                    Role =
+                        role,
+                    Protocol =
+                        Get<TextBox>(
+                                "IdentityProtocolTextBox")
+                            .Text ??
+                        string.Empty,
+                    ParentSourceKey =
+                        parent?.SourceKey ??
+                        string.Empty,
                     UrlOverride =
                         Get<TextBox>(
                                 "MediaLauncherUrlTextBox")
@@ -687,17 +796,32 @@ public partial class MainWindow
                         Get<CheckBox>(
                                 "MediaLauncherVisibleCheckBox")
                             .IsChecked !=
-                        false
+                        false,
+                    ShowInNavigation =
+                        Get<CheckBox>(
+                                "IdentityShowNavigationCheckBox")
+                            .IsChecked ==
+                        true,
+                    OwnsHealth =
+                        Get<CheckBox>(
+                                "IdentityOwnsHealthCheckBox")
+                            .IsChecked ==
+                        true,
+                    Confirmed =
+                        true
                 });
+
+            _selectedIdentitySourceKey =
+                selected.SourceKey;
 
             Get<TextBlock>("MediaLauncherStatusText")
                 .Text =
-                $"Saved launcher for " +
-                $"{selected.IntegrationName}.";
+                $"Saved identity for {selected.SourceKey}.";
 
-            PopulateMediaHub();
-            SelectMediaIntegrationByName(
-                selected.IntegrationName);
+            await RefreshAsync();
+            ShowMediaLauncherSettings();
+            SelectIdentityRegistrySource(
+                selected.SourceKey);
         }
         catch (Exception exception)
         {
@@ -707,7 +831,7 @@ public partial class MainWindow
         }
     }
 
-    private void MediaLauncherResetButton_OnClick(
+    private async void MediaLauncherResetButton_OnClick(
         object? sender,
         RoutedEventArgs e)
     {
@@ -717,17 +841,40 @@ public partial class MainWindow
         if (selected is null)
             return;
 
-        _mediaLauncherStore.Reset(
-            selected.IntegrationName);
+        _applicationIdentityStore.Reset(
+            selected.SourceKey);
+
+        _selectedIdentitySourceKey =
+            selected.SourceKey;
 
         Get<TextBlock>("MediaLauncherStatusText")
             .Text =
-            $"Default launcher restored for " +
-            $"{selected.IntegrationName}.";
+            $"Automatic identity restored for " +
+            $"{selected.SourceKey}.";
 
-        PopulateMediaHub();
-        SelectMediaIntegrationByName(
-            selected.IntegrationName);
+        await RefreshAsync();
+        ShowMediaLauncherSettings();
+        SelectIdentityRegistrySource(
+            selected.SourceKey);
+    }
+
+    private void SelectIdentityRegistrySource(
+        string sourceKey)
+    {
+        var list =
+            Get<ListBox>(
+                "MediaLauncherSettingsList");
+
+        list.SelectedItem =
+            _identityResolution.Records
+                .FirstOrDefault(item =>
+                    item.SourceKey.Equals(
+                        sourceKey,
+                        StringComparison.OrdinalIgnoreCase)) ??
+            _identityResolution.Records
+                .FirstOrDefault();
+
+        PopulateMediaLauncherEditor();
     }
 
     private void MediaLauncherOpenButton_OnClick(
@@ -737,12 +884,26 @@ public partial class MainWindow
         var selected =
             SelectedMediaLauncherRow();
 
-        if (selected is not null)
+        if (selected is null)
+            return;
+
+        var integration =
+            _integrations.FirstOrDefault(item =>
+                item.InstanceKey.Equals(
+                    selected.SourceKey,
+                    StringComparison.OrdinalIgnoreCase));
+
+        if (integration is null)
         {
-            _ = OpenMediaIntegrationAsync(
-                selected.Integration,
-                "MediaLauncherStatusText");
+            Get<TextBlock>("MediaLauncherStatusText")
+                .Text =
+                "Supporting and compatibility records do not own a standalone interface.";
+            return;
         }
+
+        _ = OpenMediaIntegrationAsync(
+            integration,
+            "MediaLauncherStatusText");
     }
 
     private async Task OpenMediaIntegrationAsync(
