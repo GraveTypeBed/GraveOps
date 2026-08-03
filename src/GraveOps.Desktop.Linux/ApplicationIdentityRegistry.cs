@@ -57,6 +57,7 @@ public sealed class ApplicationIdentityProfile
     public string Protocol { get; set; } = string.Empty;
     public string ParentSourceKey { get; set; } = string.Empty;
     public string UrlOverride { get; set; } = string.Empty;
+    public string ProbeUrlOverride { get; set; } = string.Empty;
     public bool IsVisible { get; set; } = true;
     public bool ShowInNavigation { get; set; } = true;
     public bool OwnsHealth { get; set; } = true;
@@ -83,6 +84,26 @@ public sealed record ApplicationIdentityRecord
     public required bool IsVisible { get; init; }
     public required bool ShowInNavigation { get; init; }
     public required int Confidence { get; init; }
+    public string VerificationState { get; init; } =
+        ApplicationVerificationStates.Candidate;
+    public string VerificationDetail { get; init; } =
+        string.Empty;
+    public string ProbeUrl { get; init; } =
+        string.Empty;
+    public string LaunchUrl { get; init; } =
+        string.Empty;
+    public DateTimeOffset? LastVerificationAt { get; init; }
+    public DateTimeOffset? LastVerifiedAt { get; init; }
+    public string ApplicationVersion { get; init; } =
+        string.Empty;
+    public string ApiVersion { get; init; } =
+        string.Empty;
+    public string InstanceName { get; init; } =
+        string.Empty;
+    public string ApplicationDataPath { get; init; } =
+        string.Empty;
+    public string StartupPath { get; init; } =
+        string.Empty;
 
     public string VerificationLabel =>
         IsVerified
@@ -232,6 +253,9 @@ public sealed class ApplicationIdentityStore
                     string.Empty,
                 UrlOverride =
                     profile.UrlOverride.Trim(),
+                ProbeUrlOverride =
+                    profile.ProbeUrlOverride?.Trim() ??
+                    string.Empty,
                 IsVisible =
                     profile.IsVisible,
                 ShowInNavigation =
@@ -427,17 +451,30 @@ public sealed class ApplicationIdentityStore
                 "Select a supported application role.");
         }
 
-        if (!string.IsNullOrWhiteSpace(
-                profile.UrlOverride) &&
-            (!Uri.TryCreate(
-                 profile.UrlOverride.Trim(),
-                 UriKind.Absolute,
-                 out var uri) ||
-             (uri.Scheme != Uri.UriSchemeHttp &&
-              uri.Scheme != Uri.UriSchemeHttps)))
+        ValidateHttpUrl(
+            profile.UrlOverride,
+            "Launch URL override");
+        ValidateHttpUrl(
+            profile.ProbeUrlOverride,
+            "Probe URL override");
+    }
+
+    private static void ValidateHttpUrl(
+        string? value,
+        string label)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return;
+
+        if (!Uri.TryCreate(
+                value.Trim(),
+                UriKind.Absolute,
+                out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp &&
+             uri.Scheme != Uri.UriSchemeHttps))
         {
             throw new InvalidOperationException(
-                "URL override must be a complete http:// or https:// address.");
+                $"{label} must be a complete http:// or https:// address.");
         }
     }
 
@@ -769,6 +806,16 @@ public static class ApplicationIdentityResolver
             BindAutomaticRelationships(records);
 
         store.MigrateLegacy(records);
+
+        records =
+            await VerifiedArrDiscoveryService.PromoteAsync(
+                snapshot,
+                records,
+                hostKey,
+                urlHost,
+                inspectLocalDocker,
+                store,
+                cancellationToken);
 
         records =
             records
@@ -1453,6 +1500,22 @@ public static class ApplicationIdentityResolver
                 string.IsNullOrWhiteSpace(
                     profile.UrlOverride)
                     ? detected.Endpoint
+                    : profile.UrlOverride.Trim(),
+            ProbeUrl =
+                string.IsNullOrWhiteSpace(
+                    profile.ProbeUrlOverride)
+                    ? string.IsNullOrWhiteSpace(
+                        detected.ProbeUrl)
+                        ? detected.Endpoint
+                        : detected.ProbeUrl
+                    : profile.ProbeUrlOverride.Trim(),
+            LaunchUrl =
+                string.IsNullOrWhiteSpace(
+                    profile.UrlOverride)
+                    ? string.IsNullOrWhiteSpace(
+                        detected.LaunchUrl)
+                        ? detected.Endpoint
+                        : detected.LaunchUrl
                     : profile.UrlOverride.Trim(),
             OwnsHealth =
                 ownsHealth,

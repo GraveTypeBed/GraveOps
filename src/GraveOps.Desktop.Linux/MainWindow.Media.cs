@@ -672,12 +672,42 @@ public partial class MainWindow
         Get<TextBlock>("IdentityVerificationText")
             .Text =
             $"{selected.VerificationLabel} · " +
+            $"{selected.VerificationState} · " +
             $"{selected.Role} · confidence {selected.Confidence}";
         Get<TextBlock>("MediaLauncherDetectedText")
             .Text =
             $"{selected.Kind} · {selected.State}" +
             Environment.NewLine +
-            selected.Evidence;
+            selected.Evidence +
+            (string.IsNullOrWhiteSpace(
+                selected.VerificationDetail)
+                ? string.Empty
+                : Environment.NewLine +
+                  selected.VerificationDetail) +
+            (string.IsNullOrWhiteSpace(
+                selected.InstanceName)
+                ? string.Empty
+                : Environment.NewLine +
+                  $"Instance · {selected.InstanceName}") +
+            (string.IsNullOrWhiteSpace(
+                selected.ApplicationVersion)
+                ? string.Empty
+                : Environment.NewLine +
+                  $"Version · {selected.ApplicationVersion}") +
+            (string.IsNullOrWhiteSpace(
+                selected.ApiVersion)
+                ? string.Empty
+                : $" · API {selected.ApiVersion}") +
+            (string.IsNullOrWhiteSpace(
+                selected.ProbeUrl)
+                ? string.Empty
+                : Environment.NewLine +
+                  $"Probe · {selected.ProbeUrl}") +
+            (selected.LastVerificationAt is null
+                ? string.Empty
+                : Environment.NewLine +
+                  $"Verified at · " +
+                  $"{selected.LastVerificationAt.Value.ToLocalTime():g}");
 
         save.IsEnabled =
             true;

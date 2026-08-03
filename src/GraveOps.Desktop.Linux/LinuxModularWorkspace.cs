@@ -78,7 +78,7 @@ public sealed record ModularApplicationDescriptor(
 
 public sealed class ModularLayoutContract
 {
-    public string Version { get; set; } = "4.9.0-F";
+    public string Version { get; set; } = "4.9.0-G";
     public bool ViewportFirst { get; set; } = true;
     public bool PageLevelScrollDisabled { get; set; } = false;
     public bool DirectAppsUseDedicatedWorkspace { get; set; } = true;
@@ -189,6 +189,19 @@ public sealed class ModularLayoutContract
     public bool NoAssumedApplicationUrls { get; set; } = true;
     public bool RenamedComposeProjectSupport { get; set; } = true;
     public bool WindowsIdentityRegistryPending { get; set; } = true;
+    public bool VerifiedApplicationDiscovery { get; set; } = true;
+    public bool ProductSpecificArrAdapters { get; set; } = true;
+    public bool SonarrV3V5Negotiation { get; set; } = true;
+    public bool ReadOnlyStatusFingerprinting { get; set; } = true;
+    public bool AutomaticVerifiedPromotion { get; set; } = true;
+    public bool DockerInternalPublishedPortCorrelation { get; set; } = true;
+    public bool TransientApiKeyDiscovery { get; set; } = true;
+    public bool ProwlarrAssistedHints { get; set; } = true;
+    public bool ProbeLaunchUrlSeparation { get; set; } = true;
+    public bool RedirectCredentialProtection { get; set; } = true;
+    public bool PrivateDestinationProbePolicy { get; set; } = true;
+    public bool NoVerificationBackgroundPolling { get; set; } = true;
+    public bool MultipleVerifiedArrInstances { get; set; } = true;
     public int PrimaryReferenceWidth { get; set; } = 1920;
     public int PrimaryReferenceHeight { get; set; } = 1040;
     public int SidebarWidth { get; set; } = 260;
