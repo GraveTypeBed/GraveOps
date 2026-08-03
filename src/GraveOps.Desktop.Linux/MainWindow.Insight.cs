@@ -1007,77 +1007,8 @@ public partial class MainWindow
         RoutedEventArgs e) =>
         Navigate("IntelligenceNav");
 
-    private void PopulateHistoryV43()
-    {
-        _historyRows =
-            _insightStore.BuildHistory(
-                _history.Records,
-                _controlPlane.State.Activities,
-                _controlPlane.ActiveProfile.DisplayName);
-
-        var transitions =
-            _historyRows
-                .Where(item =>
-                    item.Stream.Equals(
-                        "Health transition",
-                        StringComparison.Ordinal))
-                .ToArray();
-
-        var activities =
-            _historyRows
-                .Where(item =>
-                    !item.Stream.Equals(
-                        "Health transition",
-                        StringComparison.Ordinal))
-                .ToArray();
-
-        var incidents =
-            _historyRows
-                .Where(item =>
-                    item.Severity >=
-                    OpsSeverity.Warning)
-                .ToArray();
-
-        var since =
-            DateTimeOffset.Now -
-            TimeSpan.FromHours(24);
-
-        Get<TextBlock>("HistoryTransitionMetricText").Text =
-            transitions.Count(item =>
-                item.Timestamp >= since)
-                .ToString(
-                    CultureInfo.InvariantCulture);
-
-        Get<TextBlock>("HistoryActivityMetricText").Text =
-            activities.Count(item =>
-                item.Timestamp >= since)
-                .ToString(
-                    CultureInfo.InvariantCulture);
-
-        Get<TextBlock>("HistoryIncidentMetricText").Text =
-            incidents.Length.ToString(
-                CultureInfo.InvariantCulture);
-
-        Get<TextBlock>("HistoryRetentionMetricText").Text =
-            $"{transitions.Length}/750 · {activities.Length}/300";
-
-        Get<TextBlock>("HistoryCachePathText").Text =
-            $"Fleet cache · {_insightStore.FilePath}";
-
-        Get<ListBox>("HistoryTransitionsList").ItemsSource =
-            transitions;
-
-        Get<ListBox>("HistoryActivityList").ItemsSource =
-            activities;
-
-        Get<ListBox>("HistoryIncidentList").ItemsSource =
-            incidents.Length == 0
-                ? _historyRows.Take(20).ToArray()
-                : incidents;
-
-        EnsureListSelection("HistoryIncidentList");
-        PopulateHistoryIncidentSelection();
-    }
+    private void PopulateHistoryV43() =>
+        PopulateReliableHistory();
 
     private void HistoryTransitionsList_OnSelectionChanged(
         object? sender,

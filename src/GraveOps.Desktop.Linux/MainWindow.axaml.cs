@@ -1227,47 +1227,8 @@ public partial class MainWindow : Window
         Get<TextBlock>("ServerNetworkText").Text = $"Addresses · {snapshot.IpAddresses}";
     }
 
-    private void ApplyLogsFilter()
-    {
-        var list = Get<ListBox>("LogsList");
-        var selectedKey =
-            (list.SelectedItem as OpsLogGroup) is { } selected
-                ? $"{selected.Source}|{selected.Message}"
-                : string.Empty;
-        var showInformational =
-            Get<CheckBox>("ShowInformationalLogsCheckBox")
-                .IsChecked == true;
-
-        var active = _logs.Count(item =>
-            item.Severity >= OpsSeverity.Warning);
-        var background = _logs.Count(item =>
-            item.Severity == OpsSeverity.Info);
-
-        var rows = _logs
-            .Where(item =>
-                showInformational ||
-                item.Severity >= OpsSeverity.Warning)
-            .ToArray();
-
-        list.ItemsSource = rows;
-        list.SelectedItem = rows.FirstOrDefault(item =>
-            $"{item.Source}|{item.Message}".Equals(
-                selectedKey,
-                StringComparison.Ordinal));
-
-        Get<TextBlock>("LogsSummaryText").Text =
-            $"{active} active · {background} background";
-
-        if (list.SelectedItem is null && rows.Length > 0)
-            list.SelectedIndex = 0;
-
-        Get<TextBox>("LogDetailText").Text =
-            list.SelectedItem is OpsLogGroup log
-                ? FormatLog(log)
-                : showInformational
-                    ? "No journal event groups were returned."
-                    : "No actionable warning or error journal events are active.";
-    }
+    private void ApplyLogsFilter() =>
+        ApplyReliableLogsFilter();
 
     private void PopulateBackups()
     {
@@ -2768,11 +2729,10 @@ public partial class MainWindow : Window
         PopulateHistoryV43();
     }
 
-    private void LogsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        if (Get<ListBox>("LogsList").SelectedItem is OpsLogGroup log)
-            Get<TextBox>("LogDetailText").Text = FormatLog(log);
-    }
+    private void LogsList_OnSelectionChanged(
+        object? sender,
+        SelectionChangedEventArgs e) =>
+        PopulateReliableLogSelection();
 
     private async Task<TimeSpan?> ShowSnoozeDialogAsync()
     {

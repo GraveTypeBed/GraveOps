@@ -4748,52 +4748,210 @@
             <!-- Logs -->
             <Grid
                 x:Name="LogsPage"
-                IsVisible="False"
-                RowDefinitions="Auto,Auto,Auto"
-                RowSpacing="8">
+                IsVisible="False">
 
-              <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                <StackPanel>
-                  <TextBlock Text="Log Center" Classes="sectionTitle" FontSize="18" />
-                  <TextBlock Text="Grouped journal evidence, severity filtering and selected-event detail." Classes="pageSubtitle" />
-                </StackPanel>
-                <TextBlock Grid.Column="1" x:Name="LogsSummaryText" Text="0 active" Classes="dim" VerticalAlignment="Center" />
-                <CheckBox Grid.Column="2" x:Name="ShowInformationalLogsCheckBox" Content="Show informational observations" VerticalAlignment="Center" Click="ShowInformationalLogsCheckBox_OnClick" />
-              </Grid>
+              <ScrollViewer
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
 
-              <Border Grid.Row="1" Classes="module adaptive" MinHeight="270" MaxHeight="430">
-                <Grid RowDefinitions="Auto,*" RowSpacing="6">
-                  <Border Classes="tableHeaderBar">
-                    <Grid ColumnDefinitions="80,130,125,70,*" ColumnSpacing="8">
-                      <TextBlock Text="SEVERITY" Classes="tableColumnHeader" />
-                      <TextBlock Grid.Column="1" Text="SOURCE" Classes="tableColumnHeader" />
-                      <TextBlock Grid.Column="2" Text="LAST SEEN" Classes="tableColumnHeader" />
-                      <TextBlock Grid.Column="3" Text="COUNT" Classes="tableColumnHeader" />
-                      <TextBlock Grid.Column="4" Text="MESSAGE" Classes="tableColumnHeader" />
+                <StackPanel Spacing="10" Margin="0,0,4,4">
+                  <StackPanel>
+                    <TextBlock Text="Log Center" Classes="sectionTitle" FontSize="18" />
+                    <TextBlock
+                        Text="Grouped system-journal evidence with explicit filters, empty-state reasons and selected-event detail."
+                        Classes="pageSubtitle"
+                        Margin="0,3,0,0" />
+                  </StackPanel>
+
+                  <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+                    <Border Classes="metric">
+                      <StackPanel>
+                        <TextBlock Text="WARNING / ERROR" Classes="eyebrow" />
+                        <TextBlock x:Name="LogsActiveMetricText" Text="0" Classes="metricValue" />
+                      </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Classes="metric">
+                      <StackPanel>
+                        <TextBlock Text="INFORMATIONAL" Classes="eyebrow" />
+                        <TextBlock x:Name="LogsBackgroundMetricText" Text="0" Classes="metricValue" />
+                      </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Classes="metric">
+                      <StackPanel>
+                        <TextBlock Text="VISIBLE" Classes="eyebrow" />
+                        <TextBlock x:Name="LogsVisibleMetricText" Text="0" Classes="metricValue" />
+                      </StackPanel>
+                    </Border>
+                    <Border Grid.Column="3" Classes="metric">
+                      <StackPanel>
+                        <TextBlock Text="VISIBLE SOURCES" Classes="eyebrow" />
+                        <TextBlock x:Name="LogsSourceMetricText" Text="0" Classes="metricValue" />
+                      </StackPanel>
+                    </Border>
+                  </Grid>
+
+                  <Border Classes="module adaptive">
+                    <StackPanel Spacing="8">
+                      <WrapPanel>
+                        <ComboBox
+                            x:Name="LogsSeverityFilterComboBox"
+                            Width="150"
+                            Margin="0,0,7,7"
+                            SelectionChanged="LogsReliabilityFilter_OnChanged" />
+                        <ComboBox
+                            x:Name="LogsTimeFilterComboBox"
+                            Width="135"
+                            Margin="0,0,7,7"
+                            SelectionChanged="LogsReliabilityFilter_OnChanged" />
+                        <TextBox
+                            x:Name="LogsSourceFilterText"
+                            Classes="filter"
+                            Width="175"
+                            PlaceholderText="Filter source"
+                            Margin="0,0,7,7"
+                            TextChanged="LogsSourceFilterText_OnTextChanged" />
+                        <TextBox
+                            x:Name="LogsTextFilterText"
+                            Classes="filter"
+                            Width="240"
+                            PlaceholderText="Filter message"
+                            Margin="0,0,7,7"
+                            TextChanged="LogsTextFilterText_OnTextChanged" />
+                        <CheckBox
+                            x:Name="ShowInformationalLogsCheckBox"
+                            Content="Include informational"
+                            VerticalAlignment="Center"
+                            Margin="0,0,10,7"
+                            Click="ShowInformationalLogsCheckBox_OnClick" />
+                        <Button
+                            Classes="compact"
+                            Content="Reset filters"
+                            Margin="0,0,0,7"
+                            Click="LogsResetFiltersButton_OnClick" />
+                      </WrapPanel>
+                      <TextBlock
+                          x:Name="LogsFilterStatusText"
+                          Text="Journal filters are ready."
+                          Classes="dim"
+                          TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+
+                  <Border Classes="module adaptive" MinHeight="270" MaxHeight="430">
+                    <Grid RowDefinitions="Auto,*" RowSpacing="6">
+                      <Border Classes="tableHeaderBar">
+                        <Grid ColumnDefinitions="95,150,135,70,*" ColumnSpacing="8">
+                          <TextBlock Text="SEVERITY" Classes="tableColumnHeader" />
+                          <TextBlock Grid.Column="1" Text="SOURCE" Classes="tableColumnHeader" />
+                          <TextBlock Grid.Column="2" Text="LAST SEEN" Classes="tableColumnHeader" />
+                          <TextBlock Grid.Column="3" Text="COUNT" Classes="tableColumnHeader" />
+                          <TextBlock Grid.Column="4" Text="MESSAGE" Classes="tableColumnHeader" />
+                        </Grid>
+                      </Border>
+
+                      <Grid Grid.Row="1">
+                        <ListBox
+                            x:Name="LogsList"
+                            Classes="dataList"
+                            SelectionChanged="LogsList_OnSelectionChanged">
+                          <ListBox.ItemTemplate>
+                            <DataTemplate x:CompileBindings="False">
+                              <Grid ColumnDefinitions="95,150,135,70,*" ColumnSpacing="8">
+                                <TextBlock
+                                    Text="{ReflectionBinding SeverityLabel}"
+                                    FontWeight="SemiBold"
+                                    Foreground="{DynamicResource AccentBrush}" />
+                                <TextBlock
+                                    Grid.Column="1"
+                                    Text="{ReflectionBinding Source}"
+                                    FontWeight="SemiBold"
+                                    TextTrimming="CharacterEllipsis" />
+                                <TextBlock
+                                    Grid.Column="2"
+                                    Text="{ReflectionBinding DisplayTime}"
+                                    Classes="dim" />
+                                <TextBlock
+                                    Grid.Column="3"
+                                    Text="{ReflectionBinding Count}" />
+                                <TextBlock
+                                    Grid.Column="4"
+                                    Text="{ReflectionBinding Message}"
+                                    TextTrimming="CharacterEllipsis"
+                                    ToolTip.Tip="{ReflectionBinding Message}" />
+                              </Grid>
+                            </DataTemplate>
+                          </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <Border
+                            x:Name="LogsEmptyState"
+                            Classes="emptyState"
+                            IsVisible="False"
+                            VerticalAlignment="Top">
+                          <StackPanel>
+                            <TextBlock
+                                x:Name="LogsEmptyTitleText"
+                                Text="No visible journal evidence"
+                                FontWeight="SemiBold" />
+                            <TextBlock
+                                x:Name="LogsEmptyDetailText"
+                                Text="No journal group matches the current filters."
+                                Classes="muted"
+                                Margin="0,3,0,0"
+                                TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Border>
+                      </Grid>
                     </Grid>
                   </Border>
-                  <ListBox Grid.Row="1" x:Name="LogsList" Classes="dataList" SelectionChanged="LogsList_OnSelectionChanged">
-                  <ListBox.ItemTemplate>
-                    <DataTemplate x:CompileBindings="False">
-                      <Grid ColumnDefinitions="80,130,125,70,*" ColumnSpacing="8">
-                        <TextBlock Text="{ReflectionBinding Severity}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
-                        <TextBlock Grid.Column="1" Text="{ReflectionBinding Source}" FontWeight="SemiBold" />
-                        <TextBlock Grid.Column="2" Text="{ReflectionBinding LastSeen}" Classes="dim" />
-                        <TextBlock Grid.Column="3" Text="{ReflectionBinding Count}" />
-                        <TextBlock Grid.Column="4" Text="{ReflectionBinding Message}" TextTrimming="CharacterEllipsis" />
-                      </Grid>
-                    </DataTemplate>
-                  </ListBox.ItemTemplate>
-                  </ListBox>
-                </Grid>
-              </Border>
 
-              <Border Grid.Row="2" Classes="module adaptive" MinHeight="164">
-                <Grid RowDefinitions="Auto,Auto" RowSpacing="5">
-                  <TextBlock Text="Selected event detail" Classes="sectionTitle" />
-                  <TextBox Grid.Row="1" x:Name="LogDetailText" Classes="console workspaceOutput" MinHeight="112" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" ScrollViewer.VerticalScrollBarVisibility="Auto" />
-                </Grid>
-              </Border>
+                  <Border Classes="module adaptive" MinHeight="180" MaxHeight="270">
+                    <Grid RowDefinitions="Auto,*" RowSpacing="6">
+                      <Grid ColumnDefinitions="*,Auto,Auto">
+                        <StackPanel>
+                          <TextBlock Text="Selected event detail" Classes="sectionTitle" />
+                          <TextBlock
+                              x:Name="LogsSelectedTitleText"
+                              Text="No journal group selected"
+                              Classes="pageSubtitle"
+                              Margin="0,3,0,0" />
+                        </StackPanel>
+                        <Button
+                            Grid.Column="1"
+                            x:Name="LogsCopyDetailButton"
+                            Classes="compact"
+                            Content="Copy detail"
+                            IsEnabled="False"
+                            Margin="0,0,6,0"
+                            Click="LogsCopyDetailButton_OnClick" />
+                        <Button
+                            Grid.Column="2"
+                            Classes="compact"
+                            Content="Intelligence"
+                            Click="LogsOpenIntelligenceButton_OnClick" />
+                      </Grid>
+                      <TextBox
+                          Grid.Row="1"
+                          x:Name="LogDetailText"
+                          Classes="console workspaceOutput"
+                          MinHeight="120"
+                          IsReadOnly="True"
+                          AcceptsReturn="True"
+                          TextWrapping="Wrap"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                    </Grid>
+                  </Border>
+
+                  <Border Classes="arrStatusBar">
+                    <TextBlock
+                        x:Name="LogsSummaryText"
+                        Text="0 shown · 0 warning/error · 0 informational"
+                        Classes="muted"
+                        TextWrapping="NoWrap"
+                        TextTrimming="CharacterEllipsis" />
+                  </Border>
+                </StackPanel>
+              </ScrollViewer>
             </Grid>
             <!-- Intelligence -->
             <Grid
@@ -5038,110 +5196,287 @@
             <!-- History -->
             <Grid
                 x:Name="HistoryPage"
-                IsVisible="False"
-                RowDefinitions="Auto,*,220,Auto"
-                RowSpacing="8">
+                IsVisible="False">
 
-              <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto">
-                <StackPanel>
-                  <TextBlock Text="History &amp; incidents" Classes="sectionTitle" FontSize="18" />
-                  <TextBlock Text="Meaningful health transitions and GraveOps actions, recorded without another polling loop." Classes="pageSubtitle" />
+              <ScrollViewer
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+
+                <StackPanel Spacing="10" Margin="0,0,4,4">
+                  <Grid ColumnDefinitions="*,Auto,Auto">
+                    <StackPanel>
+                      <TextBlock
+                          Text="History &amp; incidents"
+                          Classes="sectionTitle"
+                          FontSize="18" />
+                      <TextBlock
+                          Text="Classified transitions, meaningful control-plane activity and replayable evidence."
+                          Classes="pageSubtitle"
+                          Margin="0,3,0,0" />
+                    </StackPanel>
+                    <Button
+                        Grid.Column="1"
+                        x:Name="HistoryCopyReplayButton"
+                        Classes="compact"
+                        Content="Copy replay"
+                        IsEnabled="False"
+                        Margin="0,0,6,0"
+                        Click="HistoryCopyReplayButton_OnClick" />
+                    <Button
+                        Grid.Column="2"
+                        Classes="danger compact"
+                        Content="Clear history"
+                        Click="HistoryClearAllButton_OnClick" />
+                  </Grid>
+
+                  <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+                    <Border Classes="metric">
+                      <StackPanel>
+                        <TextBlock Text="VISIBLE TRANSITIONS" Classes="eyebrow" />
+                        <TextBlock x:Name="HistoryTransitionMetricText" Text="0" Classes="metricValue" />
+                      </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Classes="metric">
+                      <StackPanel>
+                        <TextBlock Text="VISIBLE ACTIVITY" Classes="eyebrow" />
+                        <TextBlock x:Name="HistoryActivityMetricText" Text="0" Classes="metricValue" />
+                      </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Classes="metric">
+                      <StackPanel>
+                        <TextBlock Text="VISIBLE INCIDENTS" Classes="eyebrow" />
+                        <TextBlock x:Name="HistoryIncidentMetricText" Text="0" Classes="metricValue" />
+                      </StackPanel>
+                    </Border>
+                    <Border Grid.Column="3" Classes="metric">
+                      <StackPanel>
+                        <TextBlock Text="VISIBLE / RETAINED" Classes="eyebrow" />
+                        <TextBlock x:Name="HistoryRetentionMetricText" Text="0/0" Classes="metricValue" />
+                      </StackPanel>
+                    </Border>
+                  </Grid>
+
+                  <Border Classes="module adaptive">
+                    <StackPanel Spacing="8">
+                      <WrapPanel>
+                        <ComboBox
+                            x:Name="HistoryClassFilterComboBox"
+                            Width="165"
+                            Margin="0,0,7,7"
+                            SelectionChanged="HistoryReliabilityFilter_OnChanged" />
+                        <ComboBox
+                            x:Name="HistorySeverityFilterComboBox"
+                            Width="150"
+                            Margin="0,0,7,7"
+                            SelectionChanged="HistoryReliabilityFilter_OnChanged" />
+                        <ComboBox
+                            x:Name="HistoryTimeFilterComboBox"
+                            Width="135"
+                            Margin="0,0,7,7"
+                            SelectionChanged="HistoryReliabilityFilter_OnChanged" />
+                        <TextBox
+                            x:Name="HistorySourceFilterText"
+                            Classes="filter"
+                            Width="170"
+                            PlaceholderText="Target, source or stream"
+                            Margin="0,0,7,7"
+                            TextChanged="HistorySourceFilterText_OnTextChanged" />
+                        <TextBox
+                            x:Name="HistoryFilterText"
+                            Classes="filter"
+                            Width="225"
+                            PlaceholderText="Filter event or evidence"
+                            Margin="0,0,7,7"
+                            TextChanged="HistoryFilterText_OnTextChanged" />
+                        <Button
+                            Classes="compact"
+                            Content="Reset filters"
+                            Margin="0,0,0,7"
+                            Click="HistoryResetFiltersButton_OnClick" />
+                      </WrapPanel>
+                      <TextBlock
+                          x:Name="HistoryFilterStatusText"
+                          Text="History filters are ready."
+                          Classes="dim"
+                          TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+
+                  <Grid
+                      ColumnDefinitions="1.05*,0.95*"
+                      ColumnSpacing="8"
+                      MinHeight="300"
+                      MaxHeight="430">
+                    <Border Classes="module">
+                      <Grid RowDefinitions="Auto,Auto,*" RowSpacing="6">
+                        <StackPanel>
+                          <TextBlock Text="Health transitions" Classes="sectionTitle" />
+                          <TextBlock
+                              Text="Repeated identical changes collapse visually while retained source events remain untouched."
+                              Classes="pageSubtitle"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Border Grid.Row="1" Classes="tableHeaderBar">
+                          <Grid ColumnDefinitions="120,110,140,*,*" ColumnSpacing="6">
+                            <TextBlock Text="TIME" Classes="tableColumnHeader" />
+                            <TextBlock Grid.Column="1" Text="TARGET" Classes="tableColumnHeader" />
+                            <TextBlock Grid.Column="2" Text="COMPONENT" Classes="tableColumnHeader" />
+                            <TextBlock Grid.Column="3" Text="TRANSITION" Classes="tableColumnHeader" />
+                            <TextBlock Grid.Column="4" Text="DETAIL" Classes="tableColumnHeader" />
+                          </Grid>
+                        </Border>
+                        <Grid Grid.Row="2">
+                          <ListBox
+                              x:Name="HistoryTransitionsList"
+                              Classes="dataList"
+                              SelectionChanged="HistoryTransitionsList_OnSelectionChanged">
+                            <ListBox.ItemTemplate>
+                              <DataTemplate x:CompileBindings="False">
+                                <Grid ColumnDefinitions="120,110,140,*,*" ColumnSpacing="6">
+                                  <TextBlock Text="{ReflectionBinding DisplayTime}" Classes="dim" />
+                                  <TextBlock Grid.Column="1" Text="{ReflectionBinding Target}" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="2" Text="{ReflectionBinding Component}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="3" Text="{ReflectionBinding Transition}" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="4" Text="{ReflectionBinding Detail}" Classes="dim" TextTrimming="CharacterEllipsis" />
+                                </Grid>
+                              </DataTemplate>
+                            </ListBox.ItemTemplate>
+                          </ListBox>
+                          <Border
+                              x:Name="HistoryTransitionsEmptyState"
+                              Classes="emptyState"
+                              IsVisible="False"
+                              VerticalAlignment="Top">
+                            <StackPanel>
+                              <TextBlock Text="No visible health transitions" FontWeight="SemiBold" />
+                              <TextBlock
+                                  x:Name="HistoryTransitionsEmptyText"
+                                  Text="No transition matches the current filters."
+                                  Classes="muted"
+                                  Margin="0,3,0,0"
+                                  TextWrapping="Wrap" />
+                            </StackPanel>
+                          </Border>
+                        </Grid>
+                      </Grid>
+                    </Border>
+
+                    <Border Grid.Column="1" Classes="module">
+                      <Grid RowDefinitions="Auto,Auto,*" RowSpacing="6">
+                        <StackPanel>
+                          <TextBlock Text="Meaningful activity" Classes="sectionTitle" />
+                          <TextBlock
+                              Text="Navigation noise is hidden by default and remains available through All events or Navigation."
+                              Classes="pageSubtitle"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Border Grid.Row="1" Classes="tableHeaderBar">
+                          <Grid ColumnDefinitions="115,125,130,*" ColumnSpacing="6">
+                            <TextBlock Text="TIME" Classes="tableColumnHeader" />
+                            <TextBlock Grid.Column="1" Text="CLASS" Classes="tableColumnHeader" />
+                            <TextBlock Grid.Column="2" Text="TARGET" Classes="tableColumnHeader" />
+                            <TextBlock Grid.Column="3" Text="EVENT" Classes="tableColumnHeader" />
+                          </Grid>
+                        </Border>
+                        <Grid Grid.Row="2">
+                          <ListBox
+                              x:Name="HistoryActivityList"
+                              Classes="dataList"
+                              SelectionChanged="HistoryActivityList_OnSelectionChanged">
+                            <ListBox.ItemTemplate>
+                              <DataTemplate x:CompileBindings="False">
+                                <Grid ColumnDefinitions="115,125,130,*" ColumnSpacing="6">
+                                  <TextBlock Text="{ReflectionBinding DisplayTime}" Classes="dim" />
+                                  <TextBlock Grid.Column="1" Text="{ReflectionBinding Stream}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="2" Text="{ReflectionBinding Target}" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="3" Text="{ReflectionBinding Transition}" TextTrimming="CharacterEllipsis" />
+                                </Grid>
+                              </DataTemplate>
+                            </ListBox.ItemTemplate>
+                          </ListBox>
+                          <Border
+                              x:Name="HistoryActivityEmptyState"
+                              Classes="emptyState"
+                              IsVisible="False"
+                              VerticalAlignment="Top">
+                            <StackPanel>
+                              <TextBlock Text="No visible activity" FontWeight="SemiBold" />
+                              <TextBlock
+                                  x:Name="HistoryActivityEmptyText"
+                                  Text="No activity row matches the current filters."
+                                  Classes="muted"
+                                  Margin="0,3,0,0"
+                                  TextWrapping="Wrap" />
+                            </StackPanel>
+                          </Border>
+                        </Grid>
+                      </Grid>
+                    </Border>
+                  </Grid>
+
+                  <Border Classes="module adaptive" MinHeight="180" MaxHeight="270">
+                    <Grid RowDefinitions="Auto,*" RowSpacing="6">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock Text="Incident replay" Classes="sectionTitle" />
+                          <TextBlock
+                              x:Name="HistorySelectedTitleText"
+                              Text="Select a transition or activity row."
+                              Classes="pageSubtitle" />
+                        </StackPanel>
+                        <Button
+                            Grid.Column="1"
+                            x:Name="HistoryOpenRelatedButton"
+                            Classes="compact"
+                            Content="Open related"
+                            IsEnabled="False"
+                            Click="HistoryOpenRelatedButton_OnClick" />
+                      </Grid>
+                      <Grid Grid.Row="1" ColumnDefinitions="0.8*,1.2*" ColumnSpacing="6">
+                        <TextBox
+                            x:Name="HistorySelectedDetailText"
+                            Classes="console workspaceOutput"
+                            IsReadOnly="True"
+                            AcceptsReturn="True"
+                            TextWrapping="Wrap"
+                            ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                        <TextBox
+                            Grid.Column="1"
+                            x:Name="HistoryReplayText"
+                            Classes="console workspaceOutput"
+                            IsReadOnly="True"
+                            AcceptsReturn="True"
+                            TextWrapping="Wrap"
+                            ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                      </Grid>
+                    </Grid>
+                  </Border>
+
+                  <Border Classes="arrStatusBar">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                      <TextBlock
+                          x:Name="HistoryCopyStatusText"
+                          Text="No replay copied."
+                          Classes="muted"
+                          TextWrapping="NoWrap"
+                          TextTrimming="CharacterEllipsis" />
+                      <TextBlock
+                          Grid.Column="1"
+                          x:Name="HistoryCachePathText"
+                          Text="Fleet cache"
+                          Classes="dim"
+                          MaxWidth="520"
+                          TextTrimming="CharacterEllipsis"
+                          ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                    </Grid>
+                  </Border>
+
+                  <ListBox
+                      x:Name="HistoryIncidentList"
+                      IsVisible="False"
+                      SelectionChanged="HistoryIncidentList_OnSelectionChanged" />
                 </StackPanel>
-                <Button Grid.Column="1" Content="Replay selected" Margin="0,0,5,0" Click="HistoryReplaySelectedButton_OnClick" />
-                <Button Grid.Column="2" x:Name="HistoryCopyReplayButton" Content="Copy replay" IsEnabled="False" Click="HistoryCopyReplayButton_OnClick" />
-              </Grid>
-
-              <Grid Grid.Row="1" ColumnDefinitions="1.05*,0.95*" ColumnSpacing="8">
-                <Border Classes="module">
-                  <Grid RowDefinitions="Auto,Auto,*" RowSpacing="5">
-                    <StackPanel>
-                      <TextBlock Text="Health transitions" Classes="sectionTitle" />
-                      <TextBlock Text="Only changes are stored; identical refresh samples do not create noise." Classes="pageSubtitle" />
-                    </StackPanel>
-                    <Border Grid.Row="1" Classes="tableHeaderBar">
-                      <Grid ColumnDefinitions="115,100,130,*,*" ColumnSpacing="6">
-                        <TextBlock Text="TIME" Classes="tableColumnHeader" />
-                        <TextBlock Grid.Column="1" Text="TARGET" Classes="tableColumnHeader" />
-                        <TextBlock Grid.Column="2" Text="COMPONENT" Classes="tableColumnHeader" />
-                        <TextBlock Grid.Column="3" Text="TRANSITION" Classes="tableColumnHeader" />
-                        <TextBlock Grid.Column="4" Text="DETAIL" Classes="tableColumnHeader" />
-                      </Grid>
-                    </Border>
-                    <ListBox Grid.Row="2" x:Name="HistoryTransitionsList" Classes="dataList" SelectionChanged="HistoryTransitionsList_OnSelectionChanged">
-                      <ListBox.ItemTemplate>
-                        <DataTemplate x:CompileBindings="False">
-                          <Grid ColumnDefinitions="115,100,130,*,*" ColumnSpacing="6">
-                            <TextBlock Text="{ReflectionBinding DisplayTime}" Classes="dim" />
-                            <TextBlock Grid.Column="1" Text="{ReflectionBinding Target}" />
-                            <TextBlock Grid.Column="2" Text="{ReflectionBinding Component}" FontWeight="SemiBold" />
-                            <TextBlock Grid.Column="3" Text="{ReflectionBinding Transition}" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Grid.Column="4" Text="{ReflectionBinding Detail}" Classes="dim" TextTrimming="CharacterEllipsis" />
-                          </Grid>
-                        </DataTemplate>
-                      </ListBox.ItemTemplate>
-                    </ListBox>
-                  </Grid>
-                </Border>
-
-                <Border Grid.Column="1" Classes="module">
-                  <Grid RowDefinitions="Auto,Auto,*" RowSpacing="5">
-                    <StackPanel>
-                      <TextBlock Text="GraveOps activity" Classes="sectionTitle" />
-                      <TextBlock Text="Actions, discoveries and control-plane events." Classes="pageSubtitle" />
-                    </StackPanel>
-                    <Border Grid.Row="1" Classes="tableHeaderBar">
-                      <Grid ColumnDefinitions="105,125,130,*" ColumnSpacing="6">
-                        <TextBlock Text="TIME" Classes="tableColumnHeader" />
-                        <TextBlock Grid.Column="1" Text="STREAM" Classes="tableColumnHeader" />
-                        <TextBlock Grid.Column="2" Text="TARGET" Classes="tableColumnHeader" />
-                        <TextBlock Grid.Column="3" Text="EVENT" Classes="tableColumnHeader" />
-                      </Grid>
-                    </Border>
-                    <ListBox Grid.Row="2" x:Name="HistoryActivityList" Classes="dataList" SelectionChanged="HistoryActivityList_OnSelectionChanged">
-                      <ListBox.ItemTemplate>
-                        <DataTemplate x:CompileBindings="False">
-                          <Grid ColumnDefinitions="105,125,130,*" ColumnSpacing="6">
-                            <TextBlock Text="{ReflectionBinding DisplayTime}" Classes="dim" />
-                            <TextBlock Grid.Column="1" Text="{ReflectionBinding Stream}" FontWeight="SemiBold" />
-                            <TextBlock Grid.Column="2" Text="{ReflectionBinding Target}" />
-                            <TextBlock Grid.Column="3" Text="{ReflectionBinding Transition}" TextTrimming="CharacterEllipsis" />
-                          </Grid>
-                        </DataTemplate>
-                      </ListBox.ItemTemplate>
-                    </ListBox>
-                  </Grid>
-                </Border>
-              </Grid>
-
-              <Border Grid.Row="2" Classes="module">
-                <Grid RowDefinitions="Auto,*" RowSpacing="5">
-                  <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel>
-                      <TextBlock Text="Incident replay" Classes="sectionTitle" />
-                      <TextBlock x:Name="HistorySelectedTitleText" Text="Select a transition or activity row." Classes="pageSubtitle" />
-                    </StackPanel>
-                    <Button Grid.Column="1" x:Name="HistoryOpenRelatedButton" Content="Open related" IsEnabled="False" Click="HistoryOpenRelatedButton_OnClick" />
-                  </Grid>
-                  <Grid Grid.Row="1" ColumnDefinitions="0.8*,1.2*" ColumnSpacing="6">
-                    <TextBox x:Name="HistorySelectedDetailText" Classes="console workspaceOutput" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" ScrollViewer.VerticalScrollBarVisibility="Auto" />
-                    <TextBox Grid.Column="1" x:Name="HistoryReplayText" Classes="console workspaceOutput" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" ScrollViewer.VerticalScrollBarVisibility="Auto" />
-                  </Grid>
-                </Grid>
-              </Border>
-
-              <Grid Grid.Row="3" ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto">
-                <TextBlock x:Name="HistoryTransitionMetricText" Text="0" Classes="dim" />
-                <TextBlock Grid.Column="1" Text=" transitions · " Classes="dim" />
-                <TextBlock Grid.Column="2" x:Name="HistoryActivityMetricText" Text="0" Classes="dim" />
-                <TextBlock Grid.Column="3" Text=" activities" Classes="dim" />
-                <TextBlock Grid.Column="4" x:Name="HistoryCopyStatusText" Text="No replay copied." Classes="dim" HorizontalAlignment="Center" />
-                <Button Grid.Column="5" Content="Clear history" Classes="danger" Click="HistoryClearAllButton_OnClick" />
-
-                <TextBlock x:Name="HistoryIncidentMetricText" IsVisible="False" />
-                <TextBlock x:Name="HistoryRetentionMetricText" IsVisible="False" />
-                <ListBox x:Name="HistoryIncidentList" IsVisible="False" SelectionChanged="HistoryIncidentList_OnSelectionChanged" />
-                <TextBlock x:Name="HistoryCachePathText" IsVisible="False" />
-              </Grid>
+              </ScrollViewer>
             </Grid>
             <!-- Backups -->
             <Grid
