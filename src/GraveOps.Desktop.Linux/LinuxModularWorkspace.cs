@@ -78,7 +78,7 @@ public sealed record ModularApplicationDescriptor(
 
 public sealed class ModularLayoutContract
 {
-    public string Version { get; set; } = "4.9.0-C1";
+    public string Version { get; set; } = "4.9.0-C2";
     public bool ViewportFirst { get; set; } = true;
     public bool PageLevelScrollDisabled { get; set; } = false;
     public bool DirectAppsUseDedicatedWorkspace { get; set; } = true;
@@ -153,6 +153,12 @@ public sealed class ModularLayoutContract
     public bool DockerLogFileNameFirstProjection { get; set; } = true;
     public bool DockerRawEvidenceRetention { get; set; } = true;
     public bool DockerRunningLifecycleLabel { get; set; } = true;
+    public bool DockerResponsiveDetailWorkspace { get; set; } = true;
+    public bool DockerBoundedDetailTabs { get; set; } = true;
+    public bool DockerCompactContainerSummary { get; set; } = true;
+    public bool DockerNonWrappingStatusFooter { get; set; } = true;
+    public bool DockerViewportWeightedLogs { get; set; } = true;
+    public bool DockerDetailTabPersistence { get; set; } = true;
     public int PrimaryReferenceWidth { get; set; } = 1920;
     public int PrimaryReferenceHeight { get; set; } = 1040;
     public int SidebarWidth { get; set; } = 260;

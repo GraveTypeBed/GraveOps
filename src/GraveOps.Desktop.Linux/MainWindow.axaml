@@ -4475,7 +4475,7 @@
                             x:Name="DockerList"
                             Classes="dataList"
                             MinHeight="180"
-                            MaxHeight="330"
+                            MaxHeight="250"
                             SelectionChanged="DockerList_OnSelectionChanged">
                           <ListBox.ItemTemplate>
                             <DataTemplate x:CompileBindings="False">
@@ -4507,80 +4507,81 @@
                     </Grid>
                   </Border>
 
+                  <!-- Compact selected-container workspace -->
                   <Border Classes="module adaptive">
-                    <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
-                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                        <StackPanel>
-                          <TextBlock x:Name="DockerSelectedNameText" Text="No container selected" Classes="sectionTitle" />
-                          <TextBlock x:Name="DockerSelectedStateText" Text="--" Classes="pageSubtitle" Margin="0,3,0,0" />
-                        </StackPanel>
+                    <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="8">
+                      <StackPanel>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                          <StackPanel>
+                            <TextBlock x:Name="DockerSelectedNameText" Text="No container selected" Classes="sectionTitle" />
+                            <TextBlock x:Name="DockerSelectedStateText" Text="--" Classes="pageSubtitle" Margin="0,3,0,0" />
+                          </StackPanel>
+                          <Button Grid.Column="1" x:Name="DockerRefreshDetailButton" Classes="compact" Content="Refresh detail" Click="DockerRefreshDetailButton_OnClick" />
+                        </Grid>
+                        <TextBlock
+                            x:Name="DockerDetailStatusText"
+                            Text="Select a container to inspect."
+                            Classes="dim"
+                            Margin="0,5,0,0"
+                            TextWrapping="NoWrap"
+                            TextTrimming="CharacterEllipsis"
+                            ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                      </StackPanel>
 
-                        <WrapPanel Grid.Column="1" VerticalAlignment="Center">
-                          <Button x:Name="DockerRefreshDetailButton" Classes="compact" Content="Refresh detail" Margin="0,0,6,0" Click="DockerRefreshDetailButton_OnClick" />
-                          <Button x:Name="DockerStartButton" Classes="compact" Content="Start" Margin="0,0,6,0" Click="DockerStartButton_OnClick" />
-                          <Button x:Name="DockerRestartButton" Classes="primary compact" Content="Restart" Margin="0,0,6,0" Click="DockerRestartButton_OnClick" />
-                          <Button x:Name="DockerStopButton" Classes="danger compact" Content="Stop" Margin="0,0,6,0" Click="DockerStopButton_OnClick" />
-                          <Button x:Name="DockerRestartDumbButton" Classes="danger compact" Content="Restart DUMB project" Click="DockerRestartDumbButton_OnClick" />
+                      <WrapPanel Grid.Row="1">
+                        <Button x:Name="DockerStartButton" Classes="compact" Content="Start" Margin="0,0,6,6" Click="DockerStartButton_OnClick" />
+                        <Button x:Name="DockerRestartButton" Classes="primary compact" Content="Restart" Margin="0,0,6,6" Click="DockerRestartButton_OnClick" />
+                        <Button x:Name="DockerStopButton" Classes="danger compact" Content="Stop" Margin="0,0,6,6" Click="DockerStopButton_OnClick" />
+                        <Button x:Name="DockerRestartDumbButton" Classes="danger compact" Content="Restart DUMB project" Margin="0,0,6,6" Click="DockerRestartDumbButton_OnClick" />
+                      </WrapPanel>
+
+                      <Border Grid.Row="2" Classes="inset" Padding="6">
+                        <WrapPanel>
+                          <Button x:Name="DockerDetailOverviewButton" Classes="primary compact" Content="Overview" Margin="0,0,6,0" Click="DockerDetailOverviewButton_OnClick" />
+                          <Button x:Name="DockerDetailPortsButton" Classes="compact" Content="Ports" Margin="0,0,6,0" Click="DockerDetailPortsButton_OnClick" />
+                          <Button x:Name="DockerDetailMountsButton" Classes="compact" Content="Mounts" Margin="0,0,6,0" Click="DockerDetailMountsButton_OnClick" />
+                          <Button x:Name="DockerDetailEnvironmentButton" Classes="compact" Content="Environment" Click="DockerDetailEnvironmentButton_OnClick" />
                         </WrapPanel>
-                      </Grid>
+                      </Border>
 
-                      <Grid Grid.Row="1" ColumnDefinitions="1.05*,0.95*" ColumnSpacing="10">
-                        <Border Classes="inset">
-                          <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
-                            <TextBlock Text="IMAGE" Classes="eyebrow" />
-                            <TextBlock Grid.Column="1" x:Name="DockerSelectedImageText" Text="--" TextWrapping="Wrap" />
-                            <TextBlock Grid.Row="1" Text="CONTAINER ID" Classes="eyebrow" />
-                            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="DockerSelectedIdText" Text="--" Classes="mono" />
-                            <TextBlock Grid.Row="2" Text="COMPOSE" Classes="eyebrow" />
-                            <TextBlock Grid.Row="2" Grid.Column="1" x:Name="DockerSelectedComposeText" Text="--" TextWrapping="Wrap" />
-                            <TextBlock Grid.Row="3" Text="RESTART POLICY" Classes="eyebrow" />
-                            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="DockerSelectedRestartText" Text="--" TextWrapping="Wrap" />
-                            <TextBlock Grid.Row="4" Text="LIFECYCLE" Classes="eyebrow" />
-                            <TextBlock Grid.Row="4" Grid.Column="1" x:Name="DockerSelectedLifecycleText" Text="--" TextWrapping="Wrap" />
-                            <TextBlock Grid.Row="5" Text="RESOURCES" Classes="eyebrow" />
-                            <TextBlock Grid.Row="5" Grid.Column="1" x:Name="DockerSelectedResourcesText" Text="--" TextWrapping="Wrap" />
+                      <Grid Grid.Row="3">
+                        <Border x:Name="DockerOverviewPanel" Classes="inset" MinHeight="130" MaxHeight="190">
+                          <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
+                            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+                              <Border Classes="flatCard compact"><StackPanel><TextBlock Text="IMAGE" Classes="eyebrow" /><TextBlock x:Name="DockerSelectedImageText" Text="--" FontWeight="SemiBold" TextWrapping="Wrap" MaxHeight="44" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" /></StackPanel></Border>
+                              <Border Grid.Column="1" Classes="flatCard compact"><StackPanel><TextBlock Text="COMPOSE" Classes="eyebrow" /><TextBlock x:Name="DockerSelectedComposeText" Text="--" FontWeight="SemiBold" TextWrapping="Wrap" MaxHeight="44" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" /></StackPanel></Border>
+                              <Border Grid.Column="2" Classes="flatCard compact"><StackPanel><TextBlock Text="LIFECYCLE" Classes="eyebrow" /><TextBlock x:Name="DockerSelectedLifecycleText" Text="--" FontWeight="SemiBold" TextWrapping="Wrap" MaxHeight="44" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" /></StackPanel></Border>
+                              <Border Grid.Column="3" Classes="flatCard compact"><StackPanel><TextBlock Text="RESOURCES" Classes="eyebrow" /><TextBlock x:Name="DockerSelectedResourcesText" Text="--" FontWeight="SemiBold" TextWrapping="Wrap" MaxHeight="44" /></StackPanel></Border>
+                            </Grid>
+                            <Grid Grid.Row="1" ColumnDefinitions="0.75*,1.05*,1.1*,1.5*" ColumnSpacing="8">
+                              <StackPanel><TextBlock Text="CONTAINER ID" Classes="eyebrow" /><TextBlock x:Name="DockerSelectedIdText" Text="--" Classes="mono" TextTrimming="CharacterEllipsis" /></StackPanel>
+                              <StackPanel Grid.Column="1"><TextBlock Text="RESTART POLICY" Classes="eyebrow" /><TextBlock x:Name="DockerSelectedRestartText" Text="--" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" /></StackPanel>
+                              <StackPanel Grid.Column="2"><TextBlock Text="NETWORKS" Classes="eyebrow" /><TextBlock x:Name="DockerSelectedNetworksText" Text="--" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" /></StackPanel>
+                              <StackPanel Grid.Column="3"><TextBlock Text="ACTION RESULT" Classes="eyebrow" /><TextBlock x:Name="DockerActionStatusText" Text="No container action run." TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" /></StackPanel>
+                            </Grid>
                           </Grid>
                         </Border>
 
-                        <Border Grid.Column="1" Classes="inset">
-                          <Grid ColumnDefinitions="105,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
-                            <TextBlock Text="PORTS" Classes="eyebrow" />
-                            <TextBlock Grid.Column="1" x:Name="DockerSelectedPortsText" Text="--" TextWrapping="Wrap" />
-                            <TextBlock Grid.Row="1" Text="NETWORKS" Classes="eyebrow" />
-                            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="DockerSelectedNetworksText" Text="--" TextWrapping="Wrap" />
-                            <TextBlock Grid.Row="2" Text="ACTION RESULT" Classes="eyebrow" />
-                            <TextBlock Grid.Row="2" Grid.Column="1" x:Name="DockerActionStatusText" Text="No container action run." TextWrapping="Wrap" />
+                        <Border x:Name="DockerPortsPanel" Classes="inset" IsVisible="False" MinHeight="130" MaxHeight="200">
+                          <Grid RowDefinitions="Auto,*" RowSpacing="6">
+                            <Grid ColumnDefinitions="*,Auto"><StackPanel><TextBlock Text="Published ports" Classes="sectionTitle" /><TextBlock Text="Container ports and host bindings." Classes="pageSubtitle" Margin="0,2,0,0" /></StackPanel><TextBlock Grid.Column="1" x:Name="DockerPortCountText" Text="0 ports" Classes="dim" VerticalAlignment="Center" /></Grid>
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" MaxHeight="150"><TextBlock x:Name="DockerSelectedPortsText" Text="--" Classes="mono" TextWrapping="NoWrap" /></ScrollViewer>
                           </Grid>
                         </Border>
-                      </Grid>
 
-                      <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="10">
-                        <StackPanel>
-                          <TextBlock Text="Mounts" Classes="sectionTitle" />
-                          <TextBox
-                              x:Name="DockerSelectedMountsText"
-                              Classes="console workspaceOutput"
-                              MinHeight="105"
-                              MaxHeight="190"
-                              Margin="0,5,0,0"
-                              IsReadOnly="True"
-                              AcceptsReturn="True"
-                              TextWrapping="Wrap"
-                              ScrollViewer.VerticalScrollBarVisibility="Auto" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="1">
-                          <TextBlock Text="Environment-variable names" Classes="sectionTitle" />
-                          <TextBox
-                              x:Name="DockerSelectedEnvironmentText"
-                              Classes="console workspaceOutput"
-                              MinHeight="105"
-                              MaxHeight="190"
-                              Margin="0,5,0,0"
-                              IsReadOnly="True"
-                              AcceptsReturn="True"
-                              TextWrapping="Wrap"
-                              ScrollViewer.VerticalScrollBarVisibility="Auto" />
-                        </StackPanel>
+                        <Border x:Name="DockerMountsPanel" Classes="inset" IsVisible="False" MinHeight="130" MaxHeight="200">
+                          <Grid RowDefinitions="Auto,*" RowSpacing="6">
+                            <Grid ColumnDefinitions="*,Auto"><StackPanel><TextBlock Text="Mounts" Classes="sectionTitle" /><TextBlock Text="Source, destination and access mode." Classes="pageSubtitle" Margin="0,2,0,0" /></StackPanel><TextBlock Grid.Column="1" x:Name="DockerMountCountText" Text="0 mounts" Classes="dim" VerticalAlignment="Center" /></Grid>
+                            <TextBox Grid.Row="1" x:Name="DockerSelectedMountsText" Classes="console workspaceOutput" MinHeight="90" MaxHeight="150" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" />
+                          </Grid>
+                        </Border>
+
+                        <Border x:Name="DockerEnvironmentPanel" Classes="inset" IsVisible="False" MinHeight="130" MaxHeight="200">
+                          <Grid RowDefinitions="Auto,*" RowSpacing="6">
+                            <Grid ColumnDefinitions="*,Auto"><StackPanel><TextBlock Text="Environment-variable names" Classes="sectionTitle" /><TextBlock Text="Names only. Values never enter the view model." Classes="pageSubtitle" Margin="0,2,0,0" /></StackPanel><TextBlock Grid.Column="1" x:Name="DockerEnvironmentCountText" Text="0 names" Classes="dim" VerticalAlignment="Center" /></Grid>
+                            <TextBox Grid.Row="1" x:Name="DockerSelectedEnvironmentText" Classes="console workspaceOutput" MinHeight="90" MaxHeight="150" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                          </Grid>
+                        </Border>
                       </Grid>
                     </Grid>
                   </Border>
@@ -4643,7 +4644,7 @@
                           x:Name="DockerLogsText"
                           Classes="console workspaceOutput"
                           MinHeight="190"
-                          MaxHeight="340"
+                          MaxHeight="500"
                           IsReadOnly="True"
                           AcceptsReturn="True"
                           TextWrapping="Wrap"
@@ -4653,20 +4654,13 @@
                   </Border>
 
                   <Border Classes="arrStatusBar" Margin="0,0,0,4">
-                    <Grid ColumnDefinitions="*,Auto">
-                      <TextBlock
-                          x:Name="DockerWorkspaceStatusText"
-                          Text="Docker workspace capture pending."
-                          Classes="muted"
-                          TextWrapping="Wrap" />
-                      <TextBlock
-                          Grid.Column="1"
-                          x:Name="DockerDetailStatusText"
-                          Text="Select a container to inspect."
-                          Classes="dim"
-                          Margin="12,0,0,0"
-                          TextWrapping="Wrap" />
-                    </Grid>
+                    <TextBlock
+                        x:Name="DockerWorkspaceStatusText"
+                        Text="Docker workspace capture pending."
+                        Classes="muted"
+                        TextWrapping="NoWrap"
+                        TextTrimming="CharacterEllipsis"
+                        ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
                   </Border>
                 </StackPanel>
               </ScrollViewer>

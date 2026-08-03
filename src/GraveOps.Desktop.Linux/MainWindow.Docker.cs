@@ -15,6 +15,7 @@ public partial class MainWindow
     private bool _dockerFleetBusy;
     private bool _dockerActionBusy;
     private bool _dockerShowRawLogs;
+    private string _dockerDetailTab = "overview";
     private int _dockerDetailRequest;
 
     private void InitializeDockerWorkspace()
@@ -28,6 +29,7 @@ public partial class MainWindow
             "Select a container to capture the last 200 log lines on demand.";
         _dockerShowRawLogs = false;
         UpdateDockerLogModeButtons();
+        UpdateDockerDetailTab();
         ClearDockerWorkspaceDetail();
         UpdateDockerWorkspaceActionButtons();
     }
@@ -305,6 +307,8 @@ public partial class MainWindow
             detail.EnvironmentNames;
         Get<TextBlock>("DockerDetailStatusText").Text =
             detail.Evidence;
+        UpdateDockerDetailCounts(detail);
+        UpdateDockerDetailTab();
         UpdateDockerLogModeButtons();
         ApplyDockerLogFilter();
     }
@@ -329,11 +333,81 @@ public partial class MainWindow
             "Environment-variable names only. Values are never displayed.";
         Get<TextBlock>("DockerDetailStatusText").Text =
             "Select a fleet row to capture inspect metadata.";
+        ResetDockerDetailCounts();
+        UpdateDockerDetailTab();
         _dockerShowRawLogs = false;
         UpdateDockerLogModeButtons();
         Get<TextBlock>("DockerLogsStatusText").Text = "Not captured";
         Get<TextBox>("DockerLogsText").Text =
             "Select a container to capture the last 200 log lines on demand.";
+    }
+
+    private void DockerDetailOverviewButton_OnClick(object? sender, RoutedEventArgs e) => SetDockerDetailTab("overview");
+    private void DockerDetailPortsButton_OnClick(object? sender, RoutedEventArgs e) => SetDockerDetailTab("ports");
+    private void DockerDetailMountsButton_OnClick(object? sender, RoutedEventArgs e) => SetDockerDetailTab("mounts");
+    private void DockerDetailEnvironmentButton_OnClick(object? sender, RoutedEventArgs e) => SetDockerDetailTab("environment");
+
+    private void SetDockerDetailTab(string tab)
+    {
+        _dockerDetailTab = tab;
+        UpdateDockerDetailTab();
+    }
+
+    private void UpdateDockerDetailTab()
+    {
+        var overview = _dockerDetailTab == "overview";
+        var ports = _dockerDetailTab == "ports";
+        var mounts = _dockerDetailTab == "mounts";
+        var environment = _dockerDetailTab == "environment";
+
+        Get<Border>("DockerOverviewPanel").IsVisible = overview;
+        Get<Border>("DockerPortsPanel").IsVisible = ports;
+        Get<Border>("DockerMountsPanel").IsVisible = mounts;
+        Get<Border>("DockerEnvironmentPanel").IsVisible = environment;
+
+        Get<Button>("DockerDetailOverviewButton").IsEnabled = !overview;
+        Get<Button>("DockerDetailPortsButton").IsEnabled = !ports;
+        Get<Button>("DockerDetailMountsButton").IsEnabled = !mounts;
+        Get<Button>("DockerDetailEnvironmentButton").IsEnabled = !environment;
+    }
+
+    private void UpdateDockerDetailCounts(DockerContainerDetailSnapshot detail)
+    {
+        var ports = CountDockerDetailLines(detail.Ports);
+        var mounts = CountDockerDetailLines(detail.Mounts);
+        var names = CountDockerDetailLines(detail.EnvironmentNames);
+
+        Get<Button>("DockerDetailPortsButton").Content = $"Ports ({ports})";
+        Get<Button>("DockerDetailMountsButton").Content = $"Mounts ({mounts})";
+        Get<Button>("DockerDetailEnvironmentButton").Content = $"Environment ({names})";
+        Get<TextBlock>("DockerPortCountText").Text = $"{ports} {(ports == 1 ? "port" : "ports")}";
+        Get<TextBlock>("DockerMountCountText").Text = $"{mounts} {(mounts == 1 ? "mount" : "mounts")}";
+        Get<TextBlock>("DockerEnvironmentCountText").Text = $"{names} {(names == 1 ? "name" : "names")}";
+    }
+
+    private void ResetDockerDetailCounts()
+    {
+        Get<Button>("DockerDetailPortsButton").Content = "Ports";
+        Get<Button>("DockerDetailMountsButton").Content = "Mounts";
+        Get<Button>("DockerDetailEnvironmentButton").Content = "Environment";
+        Get<TextBlock>("DockerPortCountText").Text = "0 ports";
+        Get<TextBlock>("DockerMountCountText").Text = "0 mounts";
+        Get<TextBlock>("DockerEnvironmentCountText").Text = "0 names";
+    }
+
+    private static int CountDockerDetailLines(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value == "--" ||
+            value.StartsWith("No ", StringComparison.OrdinalIgnoreCase) ||
+            value.StartsWith("Select ", StringComparison.OrdinalIgnoreCase))
+        {
+            return 0;
+        }
+
+        return value.Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace('\r', '\n')
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Length;
     }
 
     private void UpdateDockerWorkspaceActionButtons()
