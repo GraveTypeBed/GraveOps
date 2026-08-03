@@ -1824,8 +1824,8 @@
                 ColumnDefinitions="230,520,*"
                 ColumnSpacing="8">
 
-              <Border Classes="module">
-                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="7">
+              <Border Classes="module adaptive">
+                <Grid RowDefinitions="Auto,260,Auto" RowSpacing="7">
                   <StackPanel>
                     <TextBlock Text="Saved hosts" Classes="sectionTitle" />
                     <TextBlock Text="Local and remote host profiles. Secrets remain in the Linux Secret Service." Classes="pageSubtitle" TextWrapping="Wrap" />
@@ -1855,8 +1855,8 @@
                 </Grid>
               </Border>
 
-              <Border Grid.Column="1" Classes="module">
-                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="6">
+              <Border Grid.Column="1" Classes="module adaptive">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
                   <StackPanel>
                     <TextBlock Text="Host profile" Classes="sectionTitle" />
                     <TextBlock Text="Remote Linux uses SSH with pinned host keys. Local hosts need no credentials." Classes="pageSubtitle" TextWrapping="Wrap" />
@@ -1935,15 +1935,15 @@
 
                   <TextBlock Grid.Row="9" x:Name="ServerProfileStatusText" Text="Select a host or add a new profile." Classes="dim" TextWrapping="Wrap" />
 
-                  <Grid Grid.Row="10" ColumnDefinitions="*,Auto" ColumnSpacing="6" VerticalAlignment="Bottom">
+                  <Grid Grid.Row="10" ColumnDefinitions="*,Auto" ColumnSpacing="6">
                     <TextBlock x:Name="ServerKeyringStatusText" Text="Secret Service status pending." Classes="dim" TextWrapping="Wrap" />
                     <Button Grid.Column="1" x:Name="SetActiveServerButton" Content="Set active" Click="SetActiveServerButton_OnClick" />
                   </Grid>
                 </Grid>
               </Border>
 
-              <Border Grid.Column="2" Classes="module">
-                <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" RowSpacing="8">
+              <Border Grid.Column="2" Classes="module adaptive">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="8">
                   <StackPanel>
                     <TextBlock Text="Detected context" Classes="sectionTitle" />
                     <TextBlock Text="Linux-specific runtime and integration evidence stays visible without changing the Windows page structure." Classes="pageSubtitle" TextWrapping="Wrap" />
@@ -1962,7 +1962,7 @@
                     <Border Grid.Column="1" Classes="inset"><StackPanel><TextBlock Text="MEMORY" Classes="eyebrow" /><TextBlock x:Name="ServerMemoryText" Text="--" TextWrapping="Wrap" /></StackPanel></Border>
                   </Grid>
 
-                  <ListBox Grid.Row="4" x:Name="ServerDetectedIntegrationsList" Classes="dataList" />
+                  <ListBox Grid.Row="4" x:Name="ServerDetectedIntegrationsList" Classes="dataList" MinHeight="76" MaxHeight="230" />
                   <TextBlock Grid.Row="5" x:Name="ServerNetworkText" Text="--" Classes="dim" TextWrapping="Wrap" />
 
                   <ListBox x:Name="ServerLanCandidatesList" IsVisible="False" SelectionChanged="ServerLanCandidatesList_OnSelectionChanged" />
@@ -4003,7 +4003,7 @@
             <Grid
                 x:Name="DockerPage"
                 IsVisible="False"
-                RowDefinitions="Auto,*,128"
+                RowDefinitions="Auto,*,Auto"
                 RowSpacing="8">
 
               <Grid Grid.Row="0" ColumnDefinitions="*,220,Auto,Auto" ColumnSpacing="6">
@@ -4017,7 +4017,16 @@
               </Grid>
 
               <Border Grid.Row="1" Classes="module">
-                <ListBox Grid.Row="1" x:Name="DockerList" Classes="dataList" SelectionChanged="DockerList_OnSelectionChanged">
+                <Grid RowDefinitions="Auto,*" RowSpacing="6">
+                  <Border Classes="tableHeaderBar">
+                    <Grid ColumnDefinitions="170,1.2*,160,1.3*" ColumnSpacing="8">
+                      <TextBlock Text="CONTAINER" Classes="tableColumnHeader" />
+                      <TextBlock Grid.Column="1" Text="IMAGE" Classes="tableColumnHeader" />
+                      <TextBlock Grid.Column="2" Text="STATE" Classes="tableColumnHeader" />
+                      <TextBlock Grid.Column="3" Text="PUBLISHED PORTS" Classes="tableColumnHeader" />
+                    </Grid>
+                  </Border>
+                  <ListBox Grid.Row="1" x:Name="DockerList" Classes="dataList" SelectionChanged="DockerList_OnSelectionChanged">
                   <ListBox.ItemTemplate>
                     <DataTemplate x:CompileBindings="False">
                       <Grid ColumnDefinitions="170,1.2*,160,1.3*" ColumnSpacing="8">
@@ -4028,30 +4037,31 @@
                       </Grid>
                     </DataTemplate>
                   </ListBox.ItemTemplate>
-                </ListBox>
+                  </ListBox>
+                </Grid>
               </Border>
 
-              <Border Grid.Row="2" Classes="module">
-                <Grid ColumnDefinitions="125,*" ColumnSpacing="8">
-                  <StackPanel Spacing="5">
-                    <Button Content="Recent logs" Tag="LogsNav" Click="DashboardQuickModuleButton_OnClick" />
-                    <Button x:Name="DockerStartButton" Content="Start" Click="DockerStartButton_OnClick" />
-                    <Button x:Name="DockerRestartButton" Content="Restart" Classes="primary" Click="DockerRestartButton_OnClick" />
-                    <Button x:Name="DockerStopButton" Content="Stop" Classes="danger" Click="DockerStopButton_OnClick" />
-                  </StackPanel>
-                  <Grid Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="5">
-                    <Grid ColumnDefinitions="*,Auto">
-                      <TextBlock x:Name="DockerSelectedNameText" Text="Select a container" FontWeight="SemiBold" />
-                      <TextBlock Grid.Column="1" x:Name="DockerSelectedStateText" Text="--" Foreground="{DynamicResource AccentBrush}" />
-                    </Grid>
-                    <Border Grid.Row="1" Classes="inset">
-                      <StackPanel Spacing="4">
-                        <TextBlock x:Name="DockerActionStatusText" Text="No container action run." TextWrapping="Wrap" />
-                        <TextBlock x:Name="DockerSelectedImageText" Text="Image · --" Classes="muted" TextWrapping="Wrap" />
-                        <TextBlock x:Name="DockerSelectedPortsText" Text="Ports · --" Classes="muted" TextWrapping="Wrap" />
-                      </StackPanel>
-                    </Border>
+              <Border Grid.Row="2" Classes="module adaptive" MinHeight="154">
+                <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                    <StackPanel>
+                      <TextBlock x:Name="DockerSelectedNameText" Text="No container selected" FontWeight="SemiBold" />
+                      <TextBlock x:Name="DockerSelectedStateText" Text="Select a fleet row to inspect or operate it." Classes="dim" Margin="0,3,0,0" />
+                    </StackPanel>
+                    <WrapPanel Grid.Column="1" VerticalAlignment="Center">
+                      <Button Content="Recent logs" Tag="LogsNav" Margin="0,0,6,0" Click="DashboardQuickModuleButton_OnClick" />
+                      <Button x:Name="DockerStartButton" Content="Start" Margin="0,0,6,0" Click="DockerStartButton_OnClick" />
+                      <Button x:Name="DockerRestartButton" Content="Restart" Classes="primary" Margin="0,0,6,0" Click="DockerRestartButton_OnClick" />
+                      <Button x:Name="DockerStopButton" Content="Stop" Classes="danger" Click="DockerStopButton_OnClick" />
+                    </WrapPanel>
                   </Grid>
+                  <Border Grid.Row="1" Classes="inset">
+                    <StackPanel Spacing="4">
+                      <TextBlock x:Name="DockerActionStatusText" Text="No container action run." TextWrapping="Wrap" />
+                      <TextBlock x:Name="DockerSelectedImageText" Text="Image · --" Classes="muted" TextWrapping="Wrap" />
+                      <TextBlock x:Name="DockerSelectedPortsText" Text="Ports · --" Classes="muted" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
                 </Grid>
               </Border>
             </Grid>
@@ -4060,7 +4070,7 @@
             <Grid
                 x:Name="StoragePage"
                 IsVisible="False"
-                RowDefinitions="Auto,Auto,*,110"
+                RowDefinitions="Auto,Auto,Auto,Auto"
                 RowSpacing="8">
 
               <Grid Grid.Row="0" ColumnDefinitions="*,220,Auto,Auto" ColumnSpacing="6">
@@ -4119,7 +4129,7 @@
                 </ListBox.ItemTemplate>
               </ListBox>
 
-              <Grid Grid.Row="3" ColumnDefinitions="1.3*,0.7*" ColumnSpacing="8">
+              <Grid Grid.Row="3" ColumnDefinitions="1.3*,0.7*" ColumnSpacing="8" VerticalAlignment="Top">
                 <Border Classes="module">
                   <StackPanel>
                     <TextBlock Text="Capacity policy" Classes="sectionTitle" />
@@ -4139,7 +4149,7 @@
             <Grid
                 x:Name="LogsPage"
                 IsVisible="False"
-                RowDefinitions="Auto,1.3*,0.7*"
+                RowDefinitions="Auto,Auto,Auto"
                 RowSpacing="8">
 
               <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
@@ -4151,8 +4161,18 @@
                 <CheckBox Grid.Column="2" x:Name="ShowInformationalLogsCheckBox" Content="Show informational observations" VerticalAlignment="Center" Click="ShowInformationalLogsCheckBox_OnClick" />
               </Grid>
 
-              <Border Grid.Row="1" Classes="module">
-                <ListBox Grid.Row="1" x:Name="LogsList" Classes="dataList" SelectionChanged="LogsList_OnSelectionChanged">
+              <Border Grid.Row="1" Classes="module adaptive" MinHeight="270" MaxHeight="430">
+                <Grid RowDefinitions="Auto,*" RowSpacing="6">
+                  <Border Classes="tableHeaderBar">
+                    <Grid ColumnDefinitions="80,130,125,70,*" ColumnSpacing="8">
+                      <TextBlock Text="SEVERITY" Classes="tableColumnHeader" />
+                      <TextBlock Grid.Column="1" Text="SOURCE" Classes="tableColumnHeader" />
+                      <TextBlock Grid.Column="2" Text="LAST SEEN" Classes="tableColumnHeader" />
+                      <TextBlock Grid.Column="3" Text="COUNT" Classes="tableColumnHeader" />
+                      <TextBlock Grid.Column="4" Text="MESSAGE" Classes="tableColumnHeader" />
+                    </Grid>
+                  </Border>
+                  <ListBox Grid.Row="1" x:Name="LogsList" Classes="dataList" SelectionChanged="LogsList_OnSelectionChanged">
                   <ListBox.ItemTemplate>
                     <DataTemplate x:CompileBindings="False">
                       <Grid ColumnDefinitions="80,130,125,70,*" ColumnSpacing="8">
@@ -4164,13 +4184,14 @@
                       </Grid>
                     </DataTemplate>
                   </ListBox.ItemTemplate>
-                </ListBox>
+                  </ListBox>
+                </Grid>
               </Border>
 
-              <Border Grid.Row="2" Classes="module">
-                <Grid RowDefinitions="Auto,*" RowSpacing="5">
+              <Border Grid.Row="2" Classes="module adaptive" MinHeight="164">
+                <Grid RowDefinitions="Auto,Auto" RowSpacing="5">
                   <TextBlock Text="Selected event detail" Classes="sectionTitle" />
-                  <TextBox Grid.Row="1" x:Name="LogDetailText" Classes="console" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" />
+                  <TextBox Grid.Row="1" x:Name="LogDetailText" Classes="console workspaceOutput" MinHeight="112" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" ScrollViewer.VerticalScrollBarVisibility="Auto" />
                 </Grid>
               </Border>
             </Grid>
@@ -4190,7 +4211,7 @@
                 <Button Grid.Column="2" Content="Analyze now" Classes="primary" Click="IntelligenceCopyReportButton_OnClick" />
               </Grid>
 
-              <Border Grid.Row="1" Classes="module" Height="92">
+              <Border Grid.Row="1" Classes="module adaptive" MinHeight="108">
                 <Grid RowDefinitions="Auto,*" RowSpacing="5">
                   <Grid ColumnDefinitions="*,Auto">
                     <StackPanel>
@@ -4207,7 +4228,7 @@
                       <TextBlock x:Name="IntelligenceHeadlineText" Text="Refresh the environment to run analysis." FontWeight="SemiBold" TextWrapping="Wrap" />
                       <TextBlock x:Name="IntelligenceCopyStatusText" Text="No report copied." Classes="dim" FontSize="8.5" />
                     </StackPanel>
-                    <ListBox Grid.Column="2" x:Name="IntelligenceImpactList" Width="320" Height="44" Classes="dataList" SelectionChanged="IntelligenceImpactList_OnSelectionChanged">
+                    <ListBox Grid.Column="2" x:Name="IntelligenceImpactList" Width="340" MinHeight="54" MaxHeight="112" Classes="dataList" SelectionChanged="IntelligenceImpactList_OnSelectionChanged">
                       <ListBox.ItemTemplate>
                         <DataTemplate x:CompileBindings="False">
                           <Grid ColumnDefinitions="100,100,*" ColumnSpacing="6">
@@ -4222,12 +4243,12 @@
                 </Grid>
               </Border>
 
-              <Border Grid.Row="2" Classes="module" Height="68">
+              <Border Grid.Row="2" Classes="module adaptive" MinHeight="94">
                 <Grid ColumnDefinitions="*,Auto">
                   <StackPanel>
                     <TextBlock Text="Guided remediation" Classes="sectionTitle" />
                     <TextBlock Text="Upstream-first troubleshooting from environment ownership and live telemetry." Classes="pageSubtitle" />
-                    <ListBox x:Name="IntelligenceRemediationList" Height="28" Classes="dataList" SelectionChanged="IntelligenceRemediationList_OnSelectionChanged">
+                    <ListBox x:Name="IntelligenceRemediationList" MinHeight="42" MaxHeight="98" Margin="0,6,0,0" Classes="dataList" SelectionChanged="IntelligenceRemediationList_OnSelectionChanged">
                       <ListBox.ItemTemplate>
                         <DataTemplate x:CompileBindings="False">
                           <Grid ColumnDefinitions="32,90,135,*,*" ColumnSpacing="6">
@@ -4241,7 +4262,7 @@
                       </ListBox.ItemTemplate>
                     </ListBox>
                   </StackPanel>
-                  <Button Grid.Column="1" x:Name="IntelligenceStageActionButton" Content="Open selected" IsEnabled="False" Click="IntelligenceStageActionButton_OnClick" />
+                  <Button Grid.Column="1" x:Name="IntelligenceStageActionButton" Content="Open selected" IsEnabled="False" VerticalAlignment="Bottom" Margin="8,0,0,0" Click="IntelligenceStageActionButton_OnClick" />
                 </Grid>
               </Border>
 
@@ -4294,13 +4315,13 @@
                 </Border>
               </Grid>
 
-              <Border Grid.Row="5" Classes="module" Height="64">
+              <Border Grid.Row="5" Classes="module adaptive" MinHeight="88">
                 <Grid ColumnDefinitions="180,*,Auto,Auto" ColumnSpacing="8">
                   <StackPanel>
                     <TextBlock x:Name="IntelligenceSelectedTitleText" Text="No finding selected" FontWeight="SemiBold" />
                     <TextBlock x:Name="IntelligenceRootCauseText" Text="No active fault detected" Classes="dim" TextTrimming="CharacterEllipsis" />
                   </StackPanel>
-                  <TextBox Grid.Column="1" x:Name="IntelligenceSelectedDetailText" Classes="console" IsReadOnly="True" TextWrapping="Wrap" />
+                  <TextBox Grid.Column="1" x:Name="IntelligenceSelectedDetailText" Classes="console workspaceOutput" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" ScrollViewer.VerticalScrollBarVisibility="Auto" />
                   <Button Grid.Column="2" x:Name="IntelligenceOpenRelatedButton" Content="Open related" IsEnabled="False" Click="IntelligenceOpenRelatedButton_OnClick" />
                   <Button Grid.Column="3" Content="Copy report" Click="IntelligenceCopyReportButton_OnClick" />
                 </Grid>
@@ -4310,7 +4331,7 @@
             <Grid
                 x:Name="LifecyclePage"
                 IsVisible="False"
-                RowDefinitions="Auto,Auto,Auto,*"
+                RowDefinitions="Auto,Auto,Auto,Auto"
                 RowSpacing="8">
 
               <Grid Grid.Row="0" ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
@@ -4320,7 +4341,7 @@
                 <Border Grid.Column="3" Classes="metric"><StackPanel><TextBlock Text="IMPORT / RECONCILE" Classes="eyebrow" /><TextBlock x:Name="LifecycleImportMetricText" Text="0" Classes="metricValue" /></StackPanel></Border>
               </Grid>
 
-              <Border Grid.Row="1" Classes="module" Height="112">
+              <Border Grid.Row="1" Classes="module adaptive" MinHeight="112">
                 <Grid RowDefinitions="Auto,*" RowSpacing="6">
                   <Grid ColumnDefinitions="*,Auto">
                     <StackPanel>
@@ -4353,7 +4374,7 @@
                 </Grid>
               </Border>
 
-              <Grid Grid.Row="2" ColumnDefinitions="1.25*,0.75*" ColumnSpacing="8" Height="300">
+              <Grid Grid.Row="2" ColumnDefinitions="1.25*,0.75*" ColumnSpacing="8" MinHeight="290">
                 <Border Classes="module">
                   <Grid RowDefinitions="Auto,*" RowSpacing="5">
                     <StackPanel>
@@ -4403,13 +4424,13 @@
                 </Border>
               </Grid>
 
-              <Border Grid.Row="3" Classes="module" Height="62">
+              <Border Grid.Row="3" Classes="module adaptive" MinHeight="88">
                 <Grid ColumnDefinitions="180,*,Auto" ColumnSpacing="8">
                   <StackPanel>
                     <TextBlock x:Name="LifecycleSelectedTitleText" Text="No lifecycle item selected" FontWeight="SemiBold" />
                     <TextBlock Text="Selected item" Classes="dim" />
                   </StackPanel>
-                  <TextBox Grid.Column="1" x:Name="LifecycleSelectedDetailText" Classes="console" IsReadOnly="True" TextWrapping="Wrap" />
+                  <TextBox Grid.Column="1" x:Name="LifecycleSelectedDetailText" Classes="console workspaceOutput" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" ScrollViewer.VerticalScrollBarVisibility="Auto" />
                   <Button Grid.Column="2" Content="Intelligence" Click="LifecycleOpenIntelligenceButton_OnClick" />
                 </Grid>
               </Border>
@@ -4418,7 +4439,7 @@
             <Grid
                 x:Name="HistoryPage"
                 IsVisible="False"
-                RowDefinitions="Auto,*,150,Auto"
+                RowDefinitions="Auto,*,220,Auto"
                 RowSpacing="8">
 
               <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto">
@@ -4432,12 +4453,21 @@
 
               <Grid Grid.Row="1" ColumnDefinitions="1.05*,0.95*" ColumnSpacing="8">
                 <Border Classes="module">
-                  <Grid RowDefinitions="Auto,*" RowSpacing="5">
+                  <Grid RowDefinitions="Auto,Auto,*" RowSpacing="5">
                     <StackPanel>
                       <TextBlock Text="Health transitions" Classes="sectionTitle" />
                       <TextBlock Text="Only changes are stored; identical refresh samples do not create noise." Classes="pageSubtitle" />
                     </StackPanel>
-                    <ListBox Grid.Row="1" x:Name="HistoryTransitionsList" Classes="dataList" SelectionChanged="HistoryTransitionsList_OnSelectionChanged">
+                    <Border Grid.Row="1" Classes="tableHeaderBar">
+                      <Grid ColumnDefinitions="115,100,130,*,*" ColumnSpacing="6">
+                        <TextBlock Text="TIME" Classes="tableColumnHeader" />
+                        <TextBlock Grid.Column="1" Text="TARGET" Classes="tableColumnHeader" />
+                        <TextBlock Grid.Column="2" Text="COMPONENT" Classes="tableColumnHeader" />
+                        <TextBlock Grid.Column="3" Text="TRANSITION" Classes="tableColumnHeader" />
+                        <TextBlock Grid.Column="4" Text="DETAIL" Classes="tableColumnHeader" />
+                      </Grid>
+                    </Border>
+                    <ListBox Grid.Row="2" x:Name="HistoryTransitionsList" Classes="dataList" SelectionChanged="HistoryTransitionsList_OnSelectionChanged">
                       <ListBox.ItemTemplate>
                         <DataTemplate x:CompileBindings="False">
                           <Grid ColumnDefinitions="115,100,130,*,*" ColumnSpacing="6">
@@ -4454,12 +4484,20 @@
                 </Border>
 
                 <Border Grid.Column="1" Classes="module">
-                  <Grid RowDefinitions="Auto,*" RowSpacing="5">
+                  <Grid RowDefinitions="Auto,Auto,*" RowSpacing="5">
                     <StackPanel>
                       <TextBlock Text="GraveOps activity" Classes="sectionTitle" />
                       <TextBlock Text="Actions, discoveries and control-plane events." Classes="pageSubtitle" />
                     </StackPanel>
-                    <ListBox Grid.Row="1" x:Name="HistoryActivityList" Classes="dataList" SelectionChanged="HistoryActivityList_OnSelectionChanged">
+                    <Border Grid.Row="1" Classes="tableHeaderBar">
+                      <Grid ColumnDefinitions="105,125,130,*" ColumnSpacing="6">
+                        <TextBlock Text="TIME" Classes="tableColumnHeader" />
+                        <TextBlock Grid.Column="1" Text="STREAM" Classes="tableColumnHeader" />
+                        <TextBlock Grid.Column="2" Text="TARGET" Classes="tableColumnHeader" />
+                        <TextBlock Grid.Column="3" Text="EVENT" Classes="tableColumnHeader" />
+                      </Grid>
+                    </Border>
+                    <ListBox Grid.Row="2" x:Name="HistoryActivityList" Classes="dataList" SelectionChanged="HistoryActivityList_OnSelectionChanged">
                       <ListBox.ItemTemplate>
                         <DataTemplate x:CompileBindings="False">
                           <Grid ColumnDefinitions="105,125,130,*" ColumnSpacing="6">
@@ -4485,8 +4523,8 @@
                     <Button Grid.Column="1" x:Name="HistoryOpenRelatedButton" Content="Open related" IsEnabled="False" Click="HistoryOpenRelatedButton_OnClick" />
                   </Grid>
                   <Grid Grid.Row="1" ColumnDefinitions="0.8*,1.2*" ColumnSpacing="6">
-                    <TextBox x:Name="HistorySelectedDetailText" Classes="console" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" />
-                    <TextBox Grid.Column="1" x:Name="HistoryReplayText" Classes="console" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" />
+                    <TextBox x:Name="HistorySelectedDetailText" Classes="console workspaceOutput" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                    <TextBox Grid.Column="1" x:Name="HistoryReplayText" Classes="console workspaceOutput" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" ScrollViewer.VerticalScrollBarVisibility="Auto" />
                   </Grid>
                 </Grid>
               </Border>
@@ -4665,7 +4703,7 @@
             <Grid
                 x:Name="ToolsPage"
                 IsVisible="False"
-                RowDefinitions="Auto,*"
+                RowDefinitions="Auto,Auto"
                 RowSpacing="8">
 
               <StackPanel>
@@ -4673,9 +4711,9 @@
                 <TextBlock Text="Redacted diagnostics, read-only validation and safe terminal handoff." Classes="pageSubtitle" />
               </StackPanel>
 
-              <Grid Grid.Row="1" ColumnDefinitions="1.05*,0.95*" ColumnSpacing="8">
-                <Border Classes="module">
-                  <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="7">
+              <Grid Grid.Row="1" ColumnDefinitions="1.05*,0.95*" ColumnSpacing="8" VerticalAlignment="Top">
+                <Border Classes="module adaptive">
+                  <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="7">
                     <StackPanel>
                       <TextBlock Text="Diagnostics export" Classes="sectionTitle" />
                       <TextBlock Text="Creates a redacted local ZIP without configuration contents, API keys or passwords." Classes="pageSubtitle" />
@@ -4689,14 +4727,14 @@
                   </Grid>
                 </Border>
 
-                <Border Grid.Column="1" Classes="module">
-                  <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="7">
+                <Border Grid.Column="1" Classes="module adaptive">
+                  <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="7">
                     <StackPanel>
                       <TextBlock Text="Read-only validation" Classes="sectionTitle" />
                       <TextBlock Text="Checks paths, JSON stores, repository state and required launchers without changing services or policies." Classes="pageSubtitle" />
                     </StackPanel>
                     <Button Grid.Row="1" x:Name="RunValidationButton" Content="Run validation" HorizontalAlignment="Left" Click="RunValidationButton_OnClick" />
-                    <TextBox Grid.Row="2" Grid.RowSpan="2" x:Name="ValidationOutputText" Classes="console" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" />
+                    <TextBox Grid.Row="2" x:Name="ValidationOutputText" Classes="console workspaceOutput" MinHeight="220" MaxHeight="340" Text="Validation has not been run." IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" ScrollViewer.VerticalScrollBarVisibility="Auto" />
                   </Grid>
                 </Border>
 
