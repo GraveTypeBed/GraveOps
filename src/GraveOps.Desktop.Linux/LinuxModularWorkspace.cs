@@ -78,7 +78,7 @@ public sealed record ModularApplicationDescriptor(
 
 public sealed class ModularLayoutContract
 {
-    public string Version { get; set; } = "4.8.0";
+    public string Version { get; set; } = "4.8.1";
     public bool ViewportFirst { get; set; } = true;
     public bool PageLevelScrollDisabled { get; set; } = false;
     public bool DirectAppsUseDedicatedWorkspace { get; set; } = true;
@@ -124,6 +124,8 @@ public sealed class ModularLayoutContract
     public bool OfficialLogoInspiredArrVectors { get; set; } = true;
     public bool WindowsNavigationHoverParity { get; set; } = true;
     public bool DistinctNavigationFocusState { get; set; } = true;
+    public bool SidebarScrollbarGutter { get; set; } = true;
+    public bool OfficialLogoInspiredPlexVector { get; set; } = true;
     public int PrimaryReferenceWidth { get; set; } = 1920;
     public int PrimaryReferenceHeight { get; set; } = 1040;
     public int SidebarWidth { get; set; } = 260;

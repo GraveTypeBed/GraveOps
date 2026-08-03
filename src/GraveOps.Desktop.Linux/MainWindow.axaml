@@ -229,10 +229,12 @@
 
             <ScrollViewer
                 Grid.Row="1"
+                x:Name="SidebarNavigationScrollViewer"
+                ClipToBounds="True"
                 VerticalScrollBarVisibility="Auto"
                 HorizontalScrollBarVisibility="Disabled">
 
-              <StackPanel>
+              <StackPanel Margin="0,0,10,0">
                 <TextBlock
                     Text="OVERVIEW"
                     Classes="eyebrow"
@@ -427,11 +429,10 @@
                         Width="16"
                         Height="16"
                         Stretch="Uniform"
-                        Data="M3,2 L13,8 L3,14 Z"
-                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                        StrokeThickness="1.45"
-                        StrokeLineCap="Round"
-                        StrokeJoin="Round" />
+                        Data="M3,2 L8.2,2 L13,8 L8.2,14 L3,14 L8.1,8 Z"
+                        Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        Stroke="Transparent"
+                        StrokeThickness="0" />
                     <TextBlock
                         Grid.Column="1"
                         Text="Plex"
