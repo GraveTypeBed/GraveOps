@@ -78,7 +78,7 @@ public sealed record ModularApplicationDescriptor(
 
 public sealed class ModularLayoutContract
 {
-    public string Version { get; set; } = "4.9.0-H";
+    public string Version { get; set; } = "4.9.0-I";
     public bool ViewportFirst { get; set; } = true;
     public bool PageLevelScrollDisabled { get; set; } = false;
     public bool DirectAppsUseDedicatedWorkspace { get; set; } = true;
@@ -210,6 +210,18 @@ public sealed class ModularLayoutContract
     public bool MediaHubEvidenceInRegistryOnly { get; set; } = true;
     public bool StrongestVerificationResultWins { get; set; } = true;
     public bool AuxiliaryProbeFailureRetention { get; set; } = true;
+    public bool SharedArrApiAdapterCatalog { get; set; } = true;
+    public bool ProductSpecificArrTelemetryNegotiation { get; set; } = true;
+    public bool SonarrV5V3TelemetryNegotiation { get; set; } = true;
+    public bool LidarrV1Telemetry { get; set; } = true;
+    public bool ProwlarrV1Telemetry { get; set; } = true;
+    public bool ReadarrV1Telemetry { get; set; } = true;
+    public bool WhisparrV1Telemetry { get; set; } = true;
+    public bool VerifiedEndpointOnlyArrTelemetry { get; set; } = true;
+    public bool ArrTelemetryUrlBasePreservation { get; set; } = true;
+    public bool ArrTelemetryRedirectProtection { get; set; } = true;
+    public bool SingleSharedQueueHorizontalScrollbar { get; set; } = true;
+    public bool NoPerRowQueueScrollbars { get; set; } = true;
     public int PrimaryReferenceWidth { get; set; } = 1920;
     public int PrimaryReferenceHeight { get; set; } = 1040;
     public int SidebarWidth { get; set; } = 260;

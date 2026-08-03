@@ -77,54 +77,6 @@ public static class VerifiedArrDiscoveryService
     private const int MaxDockerConfigFiles = 80;
     private const int MaximumConcurrentProbes = 4;
 
-    private static readonly string[] SupportedProducts =
-    {
-        "Sonarr",
-        "Radarr",
-        "Lidarr",
-        "Prowlarr",
-        "Readarr",
-        "Whisparr"
-    };
-
-    private static readonly IReadOnlyDictionary<string, string[]>
-        ApiPaths =
-            new Dictionary<string, string[]>(
-                StringComparer.OrdinalIgnoreCase)
-            {
-                ["Sonarr"] =
-                    new[]
-                    {
-                        "api/v5/system/status",
-                        "api/v3/system/status"
-                    },
-                ["Radarr"] =
-                    new[]
-                    {
-                        "api/v3/system/status"
-                    },
-                ["Lidarr"] =
-                    new[]
-                    {
-                        "api/v1/system/status"
-                    },
-                ["Prowlarr"] =
-                    new[]
-                    {
-                        "api/v1/system/status"
-                    },
-                ["Readarr"] =
-                    new[]
-                    {
-                        "api/v1/system/status"
-                    },
-                ["Whisparr"] =
-                    new[]
-                    {
-                        "api/v1/system/status"
-                    }
-            };
-
     private static readonly HttpClient Client =
         CreateClient();
 
@@ -356,7 +308,7 @@ public static class VerifiedArrDiscoveryService
         client.DefaultRequestHeaders.UserAgent.Add(
             new ProductInfoHeaderValue(
                 "GraveOps",
-                "4.9.0-G"));
+                "4.9.0-I"));
 
         client.DefaultRequestHeaders.Accept.Add(
             new MediaTypeWithQualityHeaderValue(
@@ -1023,32 +975,9 @@ public static class VerifiedArrDiscoveryService
 
     private static IReadOnlyList<string>
         OrderedApiPaths(
-            string expectedProduct)
-    {
-        var ordered =
-            new List<string>();
-
-        if (ApiPaths.TryGetValue(
-                expectedProduct,
-                out var preferred))
-        {
-            ordered.AddRange(preferred);
-        }
-
-        foreach (var path in
-                 ApiPaths.Values.SelectMany(
-                     value => value))
-        {
-            if (!ordered.Contains(
-                    path,
-                    StringComparer.OrdinalIgnoreCase))
-            {
-                ordered.Add(path);
-            }
-        }
-
-        return ordered;
-    }
+            string expectedProduct) =>
+        ArrApiCatalog.OrderedStatusPaths(
+            expectedProduct);
 
     private static ArrStatusFingerprint?
         ParseFingerprint(
@@ -1101,7 +1030,7 @@ public static class VerifiedArrDiscoveryService
         string value)
     {
         foreach (var product in
-                 SupportedProducts)
+                 ArrApiCatalog.SupportedProducts)
         {
             if (value.Equals(
                     product,
@@ -1118,19 +1047,9 @@ public static class VerifiedArrDiscoveryService
     }
 
     private static string ApiVersionFromPath(
-        string path)
-    {
-        var match =
-            System.Text.RegularExpressions.Regex.Match(
-                path,
-                @"/?api/(v\d+)/",
-                System.Text.RegularExpressions
-                    .RegexOptions.IgnoreCase);
-
-        return match.Success
-            ? match.Groups[1].Value.ToLowerInvariant()
-            : "unknown API";
-    }
+        string path) =>
+        ArrApiCatalog.ApiVersionFromPath(
+            path);
 
     private static bool TryResolveProbeEndpoint(
         ApplicationIdentityRecord record,
@@ -1974,7 +1893,7 @@ public static class VerifiedArrDiscoveryService
         {
             if (string.IsNullOrWhiteSpace(
                     credential.Product) ||
-                !SupportedProducts.Contains(
+                !ArrApiCatalog.SupportedProducts.Contains(
                     credential.Product,
                     StringComparer.OrdinalIgnoreCase) ||
                 string.IsNullOrWhiteSpace(
@@ -2397,7 +2316,7 @@ public static class VerifiedArrDiscoveryService
 
     private static bool IsArrProductRecord(
         ApplicationIdentityRecord record) =>
-        SupportedProducts.Contains(
+        ArrApiCatalog.SupportedProducts.Contains(
             record.Product,
             StringComparer.OrdinalIgnoreCase);
 
@@ -2405,7 +2324,7 @@ public static class VerifiedArrDiscoveryService
         string text)
     {
         foreach (var product in
-                 SupportedProducts)
+                 ArrApiCatalog.SupportedProducts)
         {
             if (text.Contains(
                     product,

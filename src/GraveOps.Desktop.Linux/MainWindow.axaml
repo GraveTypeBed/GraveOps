@@ -4065,87 +4065,109 @@
                             Click="ArrOpenNativeDetailButton_OnClick" />
                       </Grid>
 
-                      <Border Grid.Row="1" Classes="arrTableHeader">
-                        <ScrollViewer HorizontalScrollBarVisibility="Hidden">
-                          <Grid MinWidth="1040" ColumnDefinitions="120,105,1.35*,105,90,100,1.25*" ColumnSpacing="10">
-                            <TextBlock Text="SERVICE" Classes="tableHeader" />
-                            <TextBlock Grid.Column="1" Text="TYPE" Classes="tableHeader" />
-                            <TextBlock Grid.Column="2" Text="ITEM / ISSUE" Classes="tableHeader" />
-                            <TextBlock Grid.Column="3" Text="STATE" Classes="tableHeader" />
-                            <TextBlock Grid.Column="4" Text="PROGRESS" Classes="tableHeader" />
-                            <TextBlock Grid.Column="5" Text="REMAINING" Classes="tableHeader" />
-                            <TextBlock Grid.Column="6" Text="DETAIL" Classes="tableHeader" />
+                      <ScrollViewer
+                          Grid.Row="1"
+                          Grid.RowSpan="2"
+                          x:Name="ArrQueueHorizontalScrollViewer"
+                          MaxHeight="390"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Disabled">
+                        <Grid
+                            MinWidth="1040"
+                            RowDefinitions="Auto,*"
+                            RowSpacing="0">
+                          <Border Classes="arrTableHeader">
+                            <Grid
+                                ColumnDefinitions="120,105,1.35*,105,90,100,1.25*"
+                                ColumnSpacing="10">
+                              <TextBlock Text="SERVICE" Classes="tableHeader" />
+                              <TextBlock Grid.Column="1" Text="TYPE" Classes="tableHeader" />
+                              <TextBlock Grid.Column="2" Text="ITEM / ISSUE" Classes="tableHeader" />
+                              <TextBlock Grid.Column="3" Text="STATE" Classes="tableHeader" />
+                              <TextBlock Grid.Column="4" Text="PROGRESS" Classes="tableHeader" />
+                              <TextBlock Grid.Column="5" Text="REMAINING" Classes="tableHeader" />
+                              <TextBlock Grid.Column="6" Text="DETAIL" Classes="tableHeader" />
+                            </Grid>
+                          </Border>
+
+                          <Grid Grid.Row="1">
+                            <ListBox
+                                x:Name="ArrQueueHealthList"
+                                Classes="dataList arrTable"
+                                MinHeight="160"
+                                MaxHeight="330"
+                                ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                ScrollViewer.VerticalScrollBarVisibility="Auto">
+                              <ListBox.ItemTemplate>
+                                <DataTemplate x:CompileBindings="False">
+                                  <Grid
+                                      ColumnDefinitions="120,105,1.35*,105,90,100,1.25*"
+                                      ColumnSpacing="10">
+                                    <TextBlock
+                                        Text="{ReflectionBinding Service}"
+                                        FontWeight="SemiBold"
+                                        VerticalAlignment="Center"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Text="{ReflectionBinding Type}"
+                                        Classes="muted"
+                                        VerticalAlignment="Center"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <TextBlock
+                                        Grid.Column="2"
+                                        Text="{ReflectionBinding ItemIssue}"
+                                        VerticalAlignment="Center"
+                                        TextTrimming="CharacterEllipsis"
+                                        ToolTip.Tip="{ReflectionBinding ItemIssue}" />
+                                    <TextBlock
+                                        Grid.Column="3"
+                                        Text="{ReflectionBinding State}"
+                                        FontWeight="SemiBold"
+                                        VerticalAlignment="Center"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <TextBlock
+                                        Grid.Column="4"
+                                        Text="{ReflectionBinding Progress}"
+                                        VerticalAlignment="Center"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <TextBlock
+                                        Grid.Column="5"
+                                        Text="{ReflectionBinding Remaining}"
+                                        VerticalAlignment="Center"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <TextBlock
+                                        Grid.Column="6"
+                                        Text="{ReflectionBinding Detail}"
+                                        Classes="dim"
+                                        VerticalAlignment="Center"
+                                        TextTrimming="CharacterEllipsis"
+                                        ToolTip.Tip="{ReflectionBinding Detail}" />
+                                  </Grid>
+                                </DataTemplate>
+                              </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <Border
+                                x:Name="ArrQueueEmptyStateText"
+                                Classes="emptyState"
+                                IsVisible="False">
+                              <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock
+                                    Text="No active queue or health items"
+                                    FontWeight="SemiBold"
+                                    HorizontalAlignment="Center" />
+                                <TextBlock
+                                    Text="Live item detail will appear here automatically."
+                                    Classes="muted"
+                                    FontSize="10"
+                                    Margin="0,3,0,0"
+                                    HorizontalAlignment="Center" />
+                              </StackPanel>
+                            </Border>
                           </Grid>
-                        </ScrollViewer>
-                      </Border>
-
-                      <Grid Grid.Row="2">
-                        <ListBox
-                            x:Name="ArrQueueHealthList"
-                            Classes="dataList arrTable"
-                            MinHeight="160"
-                            MaxHeight="330">
-                          <ListBox.ItemTemplate>
-                            <DataTemplate x:CompileBindings="False">
-                              <ScrollViewer
-                                  HorizontalScrollBarVisibility="Auto"
-                                  VerticalScrollBarVisibility="Disabled">
-                                <Grid MinWidth="1040" ColumnDefinitions="120,105,1.35*,105,90,100,1.25*" ColumnSpacing="10">
-                                  <TextBlock
-                                      Text="{ReflectionBinding Service}"
-                                      FontWeight="SemiBold"
-                                      TextTrimming="CharacterEllipsis" />
-                                  <TextBlock
-                                      Grid.Column="1"
-                                      Text="{ReflectionBinding Type}"
-                                      Classes="muted"
-                                      TextTrimming="CharacterEllipsis" />
-                                  <TextBlock
-                                      Grid.Column="2"
-                                      Text="{ReflectionBinding ItemIssue}"
-                                      TextTrimming="CharacterEllipsis" />
-                                  <TextBlock
-                                      Grid.Column="3"
-                                      Text="{ReflectionBinding State}"
-                                      FontWeight="SemiBold"
-                                      TextTrimming="CharacterEllipsis" />
-                                  <TextBlock
-                                      Grid.Column="4"
-                                      Text="{ReflectionBinding Progress}"
-                                      TextTrimming="CharacterEllipsis" />
-                                  <TextBlock
-                                      Grid.Column="5"
-                                      Text="{ReflectionBinding Remaining}"
-                                      TextTrimming="CharacterEllipsis" />
-                                  <TextBlock
-                                      Grid.Column="6"
-                                      Text="{ReflectionBinding Detail}"
-                                      Classes="dim"
-                                      TextTrimming="CharacterEllipsis" />
-                                </Grid>
-                              </ScrollViewer>
-                            </DataTemplate>
-                          </ListBox.ItemTemplate>
-                        </ListBox>
-
-                        <Border
-                            x:Name="ArrQueueEmptyStateText"
-                            Classes="emptyState"
-                            IsVisible="False">
-                          <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <TextBlock
-                                Text="No active queue or health items"
-                                FontWeight="SemiBold"
-                                HorizontalAlignment="Center" />
-                            <TextBlock
-                                Text="Live item detail will appear here automatically."
-                                Classes="muted"
-                                FontSize="10"
-                                Margin="0,3,0,0"
-                                HorizontalAlignment="Center" />
-                          </StackPanel>
-                        </Border>
-                      </Grid>
+                        </Grid>
+                      </ScrollViewer>
 
                       <Border Grid.Row="3" Classes="arrStatusBar">
                         <TextBlock

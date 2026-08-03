@@ -38,35 +38,24 @@ public sealed record ArrLiveTelemetrySnapshot(
 
 public sealed class ArrLiveTelemetryService : IDisposable
 {
-    private static readonly IReadOnlyDictionary<string, int[]>
-        DefaultPorts =
-            new Dictionary<string, int[]>(
-                StringComparer.OrdinalIgnoreCase)
-            {
-                ["Sonarr"] = new[] { 8989 },
-                ["Radarr"] = new[] { 7878 },
-                ["Lidarr"] = new[] { 8686 },
-                ["Prowlarr"] = new[] { 9696 },
-                ["Readarr"] = new[] { 8787 },
-                ["Whisparr"] = new[] { 6969 }
-            };
-
-    private static readonly HashSet<string> QueueProducts =
+    private readonly HttpClient _http =
         new(
-            new[]
+            new SocketsHttpHandler
             {
-                "Sonarr",
-                "Radarr",
-                "Lidarr",
-                "Readarr",
-                "Whisparr"
+                AllowAutoRedirect = false,
+                ConnectTimeout =
+                    TimeSpan.FromSeconds(3),
+                PooledConnectionLifetime =
+                    TimeSpan.FromMinutes(2),
+                PooledConnectionIdleTimeout =
+                    TimeSpan.FromMinutes(1),
+                MaxConnectionsPerServer = 4
             },
-            StringComparer.OrdinalIgnoreCase);
-
-    private readonly HttpClient _http = new()
-    {
-        Timeout = TimeSpan.FromSeconds(6)
-    };
+            disposeHandler: true)
+        {
+            Timeout =
+                TimeSpan.FromSeconds(6)
+        };
 
     public async Task<ArrLiveTelemetrySnapshot> CaptureAsync(
         IReadOnlyList<ArrWorkspaceView> instances,
@@ -154,7 +143,8 @@ public sealed class ArrLiveTelemetryService : IDisposable
                 "GraveOps could not resolve a local HTTP endpoint.");
         }
 
-        if (!IsServarrApiProduct(view.ProductName))
+        if (!ArrApiCatalog.IsSupportedProduct(
+                view.ProductName))
         {
             return new InstanceResult(
                 new ArrServiceTelemetryRow(
@@ -196,16 +186,17 @@ public sealed class ArrLiveTelemetryService : IDisposable
                 $"GraveOps could not discover a local {view.ProductName} config.xml for {baseUrl}. Set its path under Customize.");
         }
 
-        var apiRoot = view.ProductName.Equals(
-            "Prowlarr",
-            StringComparison.OrdinalIgnoreCase)
-            ? "api/v1"
-            : "api/v3";
+        var apiSelection =
+            await SelectApiRootAsync(
+                baseUrl,
+                view.ProductName,
+                config.ApiKey,
+                cancellationToken);
 
-        var status = await GetJsonAsync(
-            $"{baseUrl.TrimEnd('/')}/{apiRoot}/system/status",
-            config.ApiKey,
-            cancellationToken);
+        var apiRoot =
+            apiSelection.ApiRoot;
+        var status =
+            apiSelection.Result;
 
         if (!status.Success)
         {
@@ -263,7 +254,7 @@ public sealed class ArrLiveTelemetryService : IDisposable
         int? workCount = null;
         string workLabel;
 
-        if (QueueProducts.Contains(view.ProductName))
+        if (ArrApiCatalog.SupportsQueue(view.ProductName))
         {
             var queue = await GetJsonAsync(
                 $"{baseUrl.TrimEnd('/')}/{apiRoot}/queue?page=1&pageSize=100&sortDirection=descending&sortKey=timeleft&includeUnknownSeriesItems=true&includeUnknownMovieItems=true",
@@ -333,11 +324,11 @@ public sealed class ArrLiveTelemetryService : IDisposable
             workItems.Add(
                 new ArrWorkItemRow(
                     view.DisplayName,
-                    QueueProducts.Contains(
+                    ArrApiCatalog.SupportsQueue(
                         view.ProductName)
                         ? "Queue"
                         : "Health",
-                    QueueProducts.Contains(
+                    ArrApiCatalog.SupportsQueue(
                         view.ProductName)
                         ? "No queued work or active health issue"
                         : "No active health issue",
@@ -358,7 +349,7 @@ public sealed class ArrLiveTelemetryService : IDisposable
                     ? healthCount.ToString(
                         CultureInfo.InvariantCulture)
                     : "--",
-                $"Connected · {Path.GetFileName(config.Path)}",
+                $"Connected · {Path.GetFileName(config.Path)} · {apiRoot}",
                 healthCount > 0
                     ? "Attention"
                     : "Online"),
@@ -520,26 +511,87 @@ public sealed class ArrLiveTelemetryService : IDisposable
         return new List<JsonElement>();
     }
 
-    private static bool IsServarrApiProduct(
-        string product) =>
-        product.Equals(
-            "Sonarr",
-            StringComparison.OrdinalIgnoreCase) ||
-        product.Equals(
-            "Radarr",
-            StringComparison.OrdinalIgnoreCase) ||
-        product.Equals(
-            "Lidarr",
-            StringComparison.OrdinalIgnoreCase) ||
-        product.Equals(
-            "Prowlarr",
-            StringComparison.OrdinalIgnoreCase) ||
-        product.Equals(
-            "Readarr",
-            StringComparison.OrdinalIgnoreCase) ||
-        product.Equals(
-            "Whisparr",
-            StringComparison.OrdinalIgnoreCase);
+    private async Task<ApiRootSelection>
+        SelectApiRootAsync(
+            string baseUrl,
+            string product,
+            string apiKey,
+            CancellationToken cancellationToken)
+    {
+        var roots =
+            ArrApiCatalog.ApiRootsFor(
+                product);
+
+        if (roots.Count == 0)
+        {
+            return new ApiRootSelection(
+                string.Empty,
+                new ApiResult(
+                    false,
+                    default,
+                    "Unsupported API",
+                    $"{product} does not have a registered Arr API adapter."));
+        }
+
+        ApiResult? strongestFailure =
+            null;
+
+        foreach (var root in roots)
+        {
+            var result =
+                await GetJsonAsync(
+                    $"{baseUrl.TrimEnd('/')}/" +
+                    $"{root.Trim('/')}/system/status",
+                    apiKey,
+                    cancellationToken);
+
+            if (result.Success)
+            {
+                return new ApiRootSelection(
+                    root,
+                    result);
+            }
+
+            strongestFailure =
+                PreferApiFailure(
+                    strongestFailure,
+                    result);
+        }
+
+        return new ApiRootSelection(
+            roots[0],
+            strongestFailure ??
+            new ApiResult(
+                false,
+                default,
+                "Unavailable",
+                $"No {product} API status endpoint responded."));
+    }
+
+    private static ApiResult PreferApiFailure(
+        ApiResult? current,
+        ApiResult candidate)
+    {
+        if (current is null)
+            return candidate;
+
+        return ApiFailureRank(candidate) >
+               ApiFailureRank(current)
+            ? candidate
+            : current;
+    }
+
+    private static int ApiFailureRank(
+        ApiResult result) =>
+        result.Status switch
+        {
+            "Unauthorized" => 6,
+            "Redirect blocked" => 6,
+            "Timed out" => 5,
+            "Unavailable" => 4,
+            "HTTP 404" => 1,
+            _ => 3
+        };
 
     private static InstanceResult AccessFailure(
         ArrWorkspaceView view,
@@ -601,6 +653,17 @@ public sealed class ArrLiveTelemetryService : IDisposable
                         .ResponseHeadersRead,
                     cancellationToken);
 
+            if ((int)response.StatusCode is
+                >= 300 and <= 399)
+            {
+                return new ApiResult(
+                    false,
+                    default,
+                    "Redirect blocked",
+                    $"GET {url} returned a redirect. " +
+                    "GraveOps did not follow it while an API key was present.");
+            }
+
             var text =
                 await response.Content
                     .ReadAsStringAsync(
@@ -648,44 +711,43 @@ public sealed class ArrLiveTelemetryService : IDisposable
     private static string? ResolveBaseUrl(
         OpsIntegration integration)
     {
+        if (!integration.IsVerified)
+            return null;
+
         var endpoint =
             integration.Endpoint?.Trim() ??
             string.Empty;
 
-        if (Uri.TryCreate(
+        if (!Uri.TryCreate(
                 endpoint,
                 UriKind.Absolute,
-                out var uri) &&
-            (uri.Scheme == Uri.UriSchemeHttp ||
-             uri.Scheme == Uri.UriSchemeHttps))
+                out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp &&
+             uri.Scheme != Uri.UriSchemeHttps))
         {
-            return uri.GetLeftPart(
-                UriPartial.Authority);
+            return null;
         }
 
-        var port = Regex.Matches(
-                endpoint,
-                @"(?<!\d)\d{2,5}(?!\d)")
-            .Select(match =>
-                int.TryParse(
-                    match.Value,
-                    out var value)
-                    ? value
-                    : 0)
-            .FirstOrDefault(value =>
-                value is > 0 and <= 65535);
+        var builder =
+            new UriBuilder(uri)
+            {
+                Query =
+                    string.Empty,
+                Fragment =
+                    string.Empty
+            };
 
-        if (port == 0 &&
-            DefaultPorts.TryGetValue(
-                integration.Name,
-                out var defaults))
-        {
-            port = defaults.FirstOrDefault();
-        }
+        var path =
+            uri.AbsolutePath.TrimEnd('/');
 
-        return port == 0
-            ? null
-            : $"http://127.0.0.1:{port}";
+        builder.Path =
+            string.IsNullOrWhiteSpace(path)
+                ? "/"
+                : path + "/";
+
+        return builder.Uri
+            .ToString()
+            .TrimEnd('/');
     }
 
     private static int ParsePort(
@@ -1038,6 +1100,10 @@ public sealed class ArrLiveTelemetryService : IDisposable
     public void Dispose() =>
         _http.Dispose();
 
+    private sealed record ApiRootSelection(
+        string ApiRoot,
+        ApiResult Result);
+
     private sealed record ApiResult(
         bool Success,
         JsonElement Root,
@@ -1057,4 +1123,3 @@ public sealed class ArrLiveTelemetryService : IDisposable
         int? WorkCount,
         int HealthCount);
 }
-
