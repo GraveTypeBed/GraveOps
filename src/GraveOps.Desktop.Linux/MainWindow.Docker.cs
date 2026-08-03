@@ -365,10 +365,26 @@ public partial class MainWindow
         Get<Border>("DockerMountsPanel").IsVisible = mounts;
         Get<Border>("DockerEnvironmentPanel").IsVisible = environment;
 
-        Get<Button>("DockerDetailOverviewButton").IsEnabled = !overview;
-        Get<Button>("DockerDetailPortsButton").IsEnabled = !ports;
-        Get<Button>("DockerDetailMountsButton").IsEnabled = !mounts;
-        Get<Button>("DockerDetailEnvironmentButton").IsEnabled = !environment;
+        var overviewButton =
+            Get<Button>("DockerDetailOverviewButton");
+        var portsButton =
+            Get<Button>("DockerDetailPortsButton");
+        var mountsButton =
+            Get<Button>("DockerDetailMountsButton");
+        var environmentButton =
+            Get<Button>("DockerDetailEnvironmentButton");
+
+        overviewButton.IsEnabled = true;
+        portsButton.IsEnabled = true;
+        mountsButton.IsEnabled = true;
+        environmentButton.IsEnabled = true;
+
+        overviewButton.Classes.Set("selected", overview);
+        portsButton.Classes.Set("selected", ports);
+        mountsButton.Classes.Set("selected", mounts);
+        environmentButton.Classes.Set(
+            "selected",
+            environment);
     }
 
     private void UpdateDockerDetailCounts(DockerContainerDetailSnapshot detail)
@@ -480,8 +496,14 @@ public partial class MainWindow
         var cleaned = Get<Button>("DockerCleanedLogsButton");
         var raw = Get<Button>("DockerRawLogsButton");
 
-        cleaned.IsEnabled = _dockerShowRawLogs;
-        raw.IsEnabled = !_dockerShowRawLogs;
+        cleaned.IsEnabled = true;
+        raw.IsEnabled = true;
+        cleaned.Classes.Set(
+            "selected",
+            !_dockerShowRawLogs);
+        raw.Classes.Set(
+            "selected",
+            _dockerShowRawLogs);
 
         var output = Get<TextBox>("DockerLogsText");
         output.TextWrapping = _dockerShowRawLogs

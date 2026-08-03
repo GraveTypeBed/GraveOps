@@ -78,7 +78,7 @@ public sealed record ModularApplicationDescriptor(
 
 public sealed class ModularLayoutContract
 {
-    public string Version { get; set; } = "4.9.0-D";
+    public string Version { get; set; } = "4.9.0-E";
     public bool ViewportFirst { get; set; } = true;
     public bool PageLevelScrollDisabled { get; set; } = false;
     public bool DirectAppsUseDedicatedWorkspace { get; set; } = true;
@@ -168,6 +168,15 @@ public sealed class ModularLayoutContract
     public bool LogsSourceSeverityTimeFilters { get; set; } = true;
     public bool LogsSelectedDetailCopy { get; set; } = true;
     public bool LogsNoAdditionalPolling { get; set; } = true;
+    public bool ConditionalServerProfileFields { get; set; } = true;
+    public bool CompactServerWorkspace { get; set; } = true;
+    public bool NativeLocalServerMode { get; set; } = true;
+    public bool RemoteSshCredentialDisclosure { get; set; } = true;
+    public bool BenignPortalHealthSuppression { get; set; } = true;
+    public bool RawPortalEvidenceRetention { get; set; } = true;
+    public bool RoutineActivityDeduplication { get; set; } = true;
+    public bool NonContiguousRoutineHistoryCollapse { get; set; } = true;
+    public bool DistinctSegmentSelectionState { get; set; } = true;
     public int PrimaryReferenceWidth { get; set; } = 1920;
     public int PrimaryReferenceHeight { get; set; } = 1040;
     public int SidebarWidth { get; set; } = 260;

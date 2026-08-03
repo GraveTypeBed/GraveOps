@@ -192,6 +192,32 @@
       <Setter Property="Padding" Value="10,6" />
     </Style>
 
+    <Style Selector="Button.segment">
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+
+    <Style Selector="Button.segment:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
+    </Style>
+
+    <Style Selector="Button.segment.selected">
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="Background" Value="{DynamicResource AccentTintBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+
+    <Style Selector="Button.segment.selected:pointerover">
+      <Setter Property="Background" Value="{DynamicResource AccentTintBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
+    </Style>
+
     <Style Selector="Button.quickModule">
       <Setter Property="MinHeight" Value="62" />
       <Setter Property="Padding" Value="11,9" />

@@ -1821,152 +1821,358 @@
             <Grid
                 x:Name="ServersPage"
                 IsVisible="False"
-                ColumnDefinitions="230,520,*"
+                ColumnDefinitions="250,0.95*,1.05*"
                 ColumnSpacing="8">
 
               <Border Classes="module adaptive">
-                <Grid RowDefinitions="Auto,260,Auto" RowSpacing="7">
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
                   <StackPanel>
                     <TextBlock Text="Saved hosts" Classes="sectionTitle" />
-                    <TextBlock Text="Local and remote host profiles. Secrets remain in the Linux Secret Service." Classes="pageSubtitle" TextWrapping="Wrap" />
-                    <TextBlock x:Name="ServerProfilesSummaryText" Text="0 profiles" Classes="dim" Margin="0,4,0,0" />
+                    <TextBlock
+                        Text="Local and remote Linux profiles. Secret values remain in the desktop keyring."
+                        Classes="pageSubtitle"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        x:Name="ServerProfilesSummaryText"
+                        Text="0 profiles"
+                        Classes="dim"
+                        Margin="0,4,0,0" />
                   </StackPanel>
 
                   <ListBox
                       Grid.Row="1"
                       x:Name="ServerProfilesList"
                       Classes="dataList"
+                      MinHeight="220"
                       SelectionChanged="ServerProfilesList_OnSelectionChanged">
                     <ListBox.ItemTemplate>
                       <DataTemplate x:CompileBindings="False">
                         <StackPanel Spacing="2">
-                          <TextBlock Text="{ReflectionBinding DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                          <TextBlock Text="{ReflectionBinding ConnectionSummary}" Classes="dim" FontSize="8.5" TextTrimming="CharacterEllipsis" />
+                          <TextBlock
+                              Text="{ReflectionBinding DisplayName}"
+                              FontWeight="SemiBold"
+                              TextTrimming="CharacterEllipsis" />
+                          <TextBlock
+                              Text="{ReflectionBinding ConnectionSummary}"
+                              Classes="dim"
+                              FontSize="8.5"
+                              TextTrimming="CharacterEllipsis"
+                              ToolTip.Tip="{ReflectionBinding ConnectionSummary}" />
                         </StackPanel>
                       </DataTemplate>
                     </ListBox.ItemTemplate>
                   </ListBox>
 
                   <WrapPanel Grid.Row="2">
-                    <Button Content="Add server" Classes="primary" Margin="0,0,5,0" Click="NewServerButton_OnClick" />
-                    <Button x:Name="DeleteServerButton" Content="Delete" Classes="danger" Margin="0,0,5,0" Click="DeleteServerButton_OnClick" />
-                    <Button Content="Discover LAN" Click="DiscoverLanButton_OnClick" />
+                    <Button
+                        Content="Add remote"
+                        Classes="primary compact"
+                        Margin="0,0,5,5"
+                        Click="NewServerButton_OnClick" />
+                    <Button
+                        x:Name="DeleteServerButton"
+                        Content="Delete"
+                        Classes="danger compact"
+                        Margin="0,0,5,5"
+                        Click="DeleteServerButton_OnClick" />
+                    <Button
+                        Content="Discover LAN"
+                        Classes="compact"
+                        Margin="0,0,0,5"
+                        Click="DiscoverLanButton_OnClick" />
                   </WrapPanel>
                 </Grid>
               </Border>
 
               <Border Grid.Column="1" Classes="module adaptive">
-                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
-                  <StackPanel>
-                    <TextBlock Text="Host profile" Classes="sectionTitle" />
-                    <TextBlock Text="Remote Linux uses SSH with pinned host keys. Local hosts need no credentials." Classes="pageSubtitle" TextWrapping="Wrap" />
-                  </StackPanel>
+                <ScrollViewer
+                    VerticalScrollBarVisibility="Auto"
+                    HorizontalScrollBarVisibility="Disabled">
+                  <StackPanel Spacing="9" Margin="0,0,4,0">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel>
+                        <TextBlock Text="Host profile" Classes="sectionTitle" />
+                        <TextBlock
+                            x:Name="ServerProfileModeText"
+                            Text="Select a saved profile or add a remote Linux host."
+                            Classes="pageSubtitle"
+                            TextWrapping="Wrap" />
+                      </StackPanel>
+                      <TextBlock
+                          Grid.Column="1"
+                          x:Name="ServerEditingIdText"
+                          Text="New profile"
+                          Classes="dim"
+                          MaxWidth="150"
+                          TextTrimming="CharacterEllipsis"
+                          VerticalAlignment="Center" />
+                    </Grid>
 
-                  <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                    <StackPanel>
-                      <TextBlock Text="Friendly name" Classes="eyebrow" Margin="0,0,0,3" />
-                      <TextBox x:Name="ServerNameTextBox" />
-                    </StackPanel>
-                    <TextBlock Grid.Column="1" x:Name="ServerEditingIdText" Text="New profile" Classes="dim" VerticalAlignment="Bottom" Margin="0,0,0,6" />
-                  </Grid>
+                    <Grid ColumnDefinitions="*,155" ColumnSpacing="7">
+                      <StackPanel>
+                        <TextBlock Text="Friendly name" Classes="eyebrow" Margin="0,0,0,3" />
+                        <TextBox x:Name="ServerNameTextBox" />
+                      </StackPanel>
+                      <StackPanel Grid.Column="1">
+                        <TextBlock Text="Role" Classes="eyebrow" Margin="0,0,0,3" />
+                        <TextBox x:Name="ServerRoleTextBox" />
+                      </StackPanel>
+                    </Grid>
 
-                  <Grid Grid.Row="2" ColumnDefinitions="*,160" ColumnSpacing="6">
                     <StackPanel>
                       <TextBlock Text="Connection type" Classes="eyebrow" Margin="0,0,0,3" />
-                      <ComboBox x:Name="ServerConnectionTypeComboBox" SelectionChanged="ServerConnectionTypeComboBox_OnSelectionChanged" />
+                      <ComboBox
+                          x:Name="ServerConnectionTypeComboBox"
+                          SelectionChanged="ServerConnectionTypeComboBox_OnSelectionChanged" />
                     </StackPanel>
-                    <StackPanel Grid.Column="1">
-                      <TextBlock Text="Role" Classes="eyebrow" Margin="0,0,0,3" />
-                      <TextBox x:Name="ServerRoleTextBox" />
-                    </StackPanel>
-                  </Grid>
 
-                  <Grid Grid.Row="3" ColumnDefinitions="*,90" ColumnSpacing="6">
-                    <StackPanel>
-                      <TextBlock Text="Host / IP" Classes="eyebrow" Margin="0,0,0,3" />
-                      <TextBox x:Name="ServerHostTextBox" />
-                    </StackPanel>
-                    <StackPanel Grid.Column="1">
-                      <TextBlock Text="SSH port" Classes="eyebrow" Margin="0,0,0,3" />
-                      <TextBox x:Name="ServerPortTextBox" />
-                    </StackPanel>
-                  </Grid>
+                    <Border
+                        x:Name="ServerLocalProviderPanel"
+                        Classes="healthPass"
+                        IsVisible="False">
+                      <StackPanel>
+                        <TextBlock Text="Native local provider" FontWeight="SemiBold" />
+                        <TextBlock
+                            Text="This host is captured directly. SSH host, credential and fingerprint fields are intentionally hidden."
+                            Classes="muted"
+                            Margin="0,4,0,0"
+                            TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
 
-                  <Grid Grid.Row="4" ColumnDefinitions="*,*" ColumnSpacing="6">
-                    <StackPanel>
-                      <TextBlock Text="Username" Classes="eyebrow" Margin="0,0,0,3" />
-                      <TextBox x:Name="ServerUsernameTextBox" />
-                    </StackPanel>
-                    <StackPanel Grid.Column="1">
-                      <TextBlock Text="Authentication" Classes="eyebrow" Margin="0,0,0,3" />
-                      <ComboBox x:Name="ServerAuthenticationComboBox" SelectionChanged="ServerAuthenticationComboBox_OnSelectionChanged" />
-                    </StackPanel>
-                  </Grid>
+                    <Border
+                        x:Name="ServerRemoteConnectionPanel"
+                        Classes="inset">
+                      <StackPanel Spacing="8">
+                        <TextBlock Text="Remote SSH connection" Classes="sectionTitle" />
+                        <Grid ColumnDefinitions="*,90" ColumnSpacing="7">
+                          <StackPanel>
+                            <TextBlock Text="Host / IP" Classes="eyebrow" Margin="0,0,0,3" />
+                            <TextBox x:Name="ServerHostTextBox" />
+                          </StackPanel>
+                          <StackPanel Grid.Column="1">
+                            <TextBlock Text="SSH port" Classes="eyebrow" Margin="0,0,0,3" />
+                            <TextBox x:Name="ServerPortTextBox" />
+                          </StackPanel>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="7">
+                          <StackPanel>
+                            <TextBlock Text="Username" Classes="eyebrow" Margin="0,0,0,3" />
+                            <TextBox x:Name="ServerUsernameTextBox" />
+                          </StackPanel>
+                          <StackPanel Grid.Column="1">
+                            <TextBlock Text="Authentication" Classes="eyebrow" Margin="0,0,0,3" />
+                            <ComboBox
+                                x:Name="ServerAuthenticationComboBox"
+                                SelectionChanged="ServerAuthenticationComboBox_OnSelectionChanged" />
+                          </StackPanel>
+                        </Grid>
+                      </StackPanel>
+                    </Border>
 
-                  <Grid Grid.Row="5" ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                    <StackPanel>
-                      <TextBlock Text="Private key path" Classes="eyebrow" Margin="0,0,0,3" />
-                      <TextBox x:Name="ServerPrivateKeyPathTextBox" />
-                    </StackPanel>
-                    <Button Grid.Column="1" x:Name="BrowsePrivateKeyButton" Content="Browse" VerticalAlignment="Bottom" Click="BrowsePrivateKeyButton_OnClick" />
-                  </Grid>
+                    <Border
+                        x:Name="ServerPrivateKeyPanel"
+                        Classes="inset"
+                        IsVisible="False">
+                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
+                        <StackPanel>
+                          <TextBlock Text="Private key path" Classes="eyebrow" Margin="0,0,0,3" />
+                          <TextBox x:Name="ServerPrivateKeyPathTextBox" />
+                        </StackPanel>
+                        <Button
+                            Grid.Column="1"
+                            x:Name="BrowsePrivateKeyButton"
+                            Content="Browse"
+                            Classes="compact"
+                            VerticalAlignment="Bottom"
+                            Click="BrowsePrivateKeyButton_OnClick" />
+                      </Grid>
+                    </Border>
 
-                  <Grid Grid.Row="6" ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                    <StackPanel>
-                      <TextBlock Text="Pinned host-key SHA-256 fingerprint" Classes="eyebrow" Margin="0,0,0,3" />
-                      <TextBox x:Name="ServerFingerprintTextBox" />
-                    </StackPanel>
-                    <Button Grid.Column="1" x:Name="ScanFingerprintButton" Content="Scan" VerticalAlignment="Bottom" Click="ScanFingerprintButton_OnClick" />
-                  </Grid>
+                    <Border
+                        x:Name="ServerFingerprintPanel"
+                        Classes="inset">
+                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
+                        <StackPanel>
+                          <TextBlock Text="Pinned host-key SHA-256 fingerprint" Classes="eyebrow" Margin="0,0,0,3" />
+                          <TextBox x:Name="ServerFingerprintTextBox" />
+                        </StackPanel>
+                        <Button
+                            Grid.Column="1"
+                            x:Name="ScanFingerprintButton"
+                            Content="Scan"
+                            Classes="compact"
+                            VerticalAlignment="Bottom"
+                            Click="ScanFingerprintButton_OnClick" />
+                      </Grid>
+                    </Border>
 
-                  <Grid Grid.Row="7" ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                    <StackPanel>
-                      <TextBlock Text="Password / passphrase" Classes="eyebrow" Margin="0,0,0,3" />
-                      <TextBox x:Name="ServerSecretTextBox" PasswordChar="●" />
-                    </StackPanel>
-                    <CheckBox Grid.Column="1" x:Name="ServerSaveSecretCheckBox" Content="Save securely" VerticalAlignment="Bottom" Margin="0,0,0,6" />
-                  </Grid>
+                    <Border
+                        x:Name="ServerSecretPanel"
+                        Classes="inset"
+                        IsVisible="False">
+                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
+                        <StackPanel>
+                          <TextBlock Text="Password / passphrase" Classes="eyebrow" Margin="0,0,0,3" />
+                          <TextBox x:Name="ServerSecretTextBox" PasswordChar="●" />
+                        </StackPanel>
+                        <CheckBox
+                            Grid.Column="1"
+                            x:Name="ServerSaveSecretCheckBox"
+                            Content="Save securely"
+                            VerticalAlignment="Bottom"
+                            Margin="0,0,0,6" />
+                      </Grid>
+                    </Border>
 
-                  <WrapPanel Grid.Row="8">
-                    <Button Content="Save profile" Classes="primary" Margin="0,0,5,0" Click="SaveServerButton_OnClick" />
-                    <Button Content="Test connection" Margin="0,0,5,0" Click="TestServerButton_OnClick" />
-                    <Button Content="Detect integrations" Click="DetectServerButton_OnClick" />
-                  </WrapPanel>
+                    <WrapPanel>
+                      <Button
+                          x:Name="ServerSaveButton"
+                          Content="Save profile"
+                          Classes="primary compact"
+                          Margin="0,0,5,5"
+                          Click="SaveServerButton_OnClick" />
+                      <Button
+                          x:Name="ServerTestButton"
+                          Content="Test SSH"
+                          Classes="compact"
+                          Margin="0,0,5,5"
+                          Click="TestServerButton_OnClick" />
+                      <Button
+                          x:Name="ServerDetectButton"
+                          Content="Detect integrations"
+                          Classes="compact"
+                          Margin="0,0,5,5"
+                          Click="DetectServerButton_OnClick" />
+                      <Button
+                          x:Name="SetActiveServerButton"
+                          Content="Set active"
+                          Classes="compact"
+                          Margin="0,0,0,5"
+                          Click="SetActiveServerButton_OnClick" />
+                    </WrapPanel>
 
-                  <TextBlock Grid.Row="9" x:Name="ServerProfileStatusText" Text="Select a host or add a new profile." Classes="dim" TextWrapping="Wrap" />
-
-                  <Grid Grid.Row="10" ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                    <TextBlock x:Name="ServerKeyringStatusText" Text="Secret Service status pending." Classes="dim" TextWrapping="Wrap" />
-                    <Button Grid.Column="1" x:Name="SetActiveServerButton" Content="Set active" Click="SetActiveServerButton_OnClick" />
-                  </Grid>
-                </Grid>
+                    <Border Classes="arrStatusBar">
+                      <StackPanel>
+                        <TextBlock
+                            x:Name="ServerProfileStatusText"
+                            Text="Select a host or add a remote profile."
+                            Classes="muted"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            x:Name="ServerKeyringStatusText"
+                            Text="Secret Service status pending."
+                            Classes="dim"
+                            Margin="0,3,0,0"
+                            TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+                  </StackPanel>
+                </ScrollViewer>
               </Border>
 
               <Border Grid.Column="2" Classes="module adaptive">
-                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="8">
-                  <StackPanel>
-                    <TextBlock Text="Detected context" Classes="sectionTitle" />
-                    <TextBlock Text="Linux-specific runtime and integration evidence stays visible without changing the Windows page structure." Classes="pageSubtitle" TextWrapping="Wrap" />
+                <ScrollViewer
+                    VerticalScrollBarVisibility="Auto"
+                    HorizontalScrollBarVisibility="Disabled">
+                  <StackPanel Spacing="9" Margin="0,0,4,0">
+                    <StackPanel>
+                      <TextBlock Text="Detected context" Classes="sectionTitle" />
+                      <TextBlock
+                          Text="Runtime, integration and signal-quality evidence for the active target."
+                          Classes="pageSubtitle"
+                          TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="7">
+                      <Border Classes="inset">
+                        <StackPanel>
+                          <TextBlock Text="IDENTITY" Classes="eyebrow" />
+                          <TextBlock x:Name="ServerIdentityText" Text="--" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+                      <Border Grid.Column="1" Classes="inset">
+                        <StackPanel>
+                          <TextBlock Text="OPERATING SYSTEM" Classes="eyebrow" />
+                          <TextBlock x:Name="ServerOperatingSystemText" Text="--" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="7">
+                      <Border Classes="inset">
+                        <StackPanel>
+                          <TextBlock Text="KERNEL" Classes="eyebrow" />
+                          <TextBlock x:Name="ServerKernelText" Text="--" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+                      <Border Grid.Column="1" Classes="inset">
+                        <StackPanel>
+                          <TextBlock Text="UPTIME" Classes="eyebrow" />
+                          <TextBlock x:Name="ServerUptimeText" Text="--" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="7">
+                      <Border Classes="inset">
+                        <StackPanel>
+                          <TextBlock Text="CPU" Classes="eyebrow" />
+                          <TextBlock x:Name="ServerCpuText" Text="--" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+                      <Border Grid.Column="1" Classes="inset">
+                        <StackPanel>
+                          <TextBlock Text="MEMORY" Classes="eyebrow" />
+                          <TextBlock x:Name="ServerMemoryText" Text="--" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+                    </Grid>
+
+                    <Border Classes="inset">
+                      <StackPanel>
+                        <TextBlock Text="SIGNAL QUALITY" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="ServerSignalQualityText"
+                            Text="Signal-quality policy will update after capture."
+                            Classes="muted"
+                            Margin="0,4,0,0"
+                            TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Classes="inset">
+                      <Grid RowDefinitions="Auto,*" RowSpacing="6">
+                        <StackPanel>
+                          <TextBlock Text="Detected integrations" Classes="sectionTitle" />
+                          <TextBlock
+                              Text="Save and select a target before running detection."
+                              Classes="pageSubtitle"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                        <ListBox
+                            Grid.Row="1"
+                            x:Name="ServerDetectedIntegrationsList"
+                            Classes="dataList"
+                            MinHeight="100"
+                            MaxHeight="230" />
+                      </Grid>
+                    </Border>
+
+                    <Border Classes="arrStatusBar">
+                      <TextBlock
+                          x:Name="ServerNetworkText"
+                          Text="Addresses unavailable."
+                          Classes="dim"
+                          TextWrapping="Wrap" />
+                    </Border>
+
+                    <ListBox
+                        x:Name="ServerLanCandidatesList"
+                        IsVisible="False"
+                        SelectionChanged="ServerLanCandidatesList_OnSelectionChanged" />
                   </StackPanel>
-
-                  <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="6">
-                    <Border Classes="inset"><StackPanel><TextBlock Text="IDENTITY" Classes="eyebrow" /><TextBlock x:Name="ServerIdentityText" Text="--" FontWeight="SemiBold" TextWrapping="Wrap" /></StackPanel></Border>
-                    <Border Grid.Column="1" Classes="inset"><StackPanel><TextBlock Text="OPERATING SYSTEM" Classes="eyebrow" /><TextBlock x:Name="ServerOperatingSystemText" Text="--" TextWrapping="Wrap" /></StackPanel></Border>
-                  </Grid>
-                  <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="6">
-                    <Border Classes="inset"><StackPanel><TextBlock Text="KERNEL" Classes="eyebrow" /><TextBlock x:Name="ServerKernelText" Text="--" /></StackPanel></Border>
-                    <Border Grid.Column="1" Classes="inset"><StackPanel><TextBlock Text="UPTIME" Classes="eyebrow" /><TextBlock x:Name="ServerUptimeText" Text="--" /></StackPanel></Border>
-                  </Grid>
-                  <Grid Grid.Row="3" ColumnDefinitions="*,*" ColumnSpacing="6">
-                    <Border Classes="inset"><StackPanel><TextBlock Text="CPU" Classes="eyebrow" /><TextBlock x:Name="ServerCpuText" Text="--" TextWrapping="Wrap" /></StackPanel></Border>
-                    <Border Grid.Column="1" Classes="inset"><StackPanel><TextBlock Text="MEMORY" Classes="eyebrow" /><TextBlock x:Name="ServerMemoryText" Text="--" TextWrapping="Wrap" /></StackPanel></Border>
-                  </Grid>
-
-                  <ListBox Grid.Row="4" x:Name="ServerDetectedIntegrationsList" Classes="dataList" MinHeight="76" MaxHeight="230" />
-                  <TextBlock Grid.Row="5" x:Name="ServerNetworkText" Text="--" Classes="dim" TextWrapping="Wrap" />
-
-                  <ListBox x:Name="ServerLanCandidatesList" IsVisible="False" SelectionChanged="ServerLanCandidatesList_OnSelectionChanged" />
-                </Grid>
+                </ScrollViewer>
               </Border>
             </Grid>
             <!-- Windows-reference Media Hub -->
@@ -4537,10 +4743,10 @@
 
                       <Border Grid.Row="2" Classes="inset" Padding="6">
                         <WrapPanel>
-                          <Button x:Name="DockerDetailOverviewButton" Classes="primary compact" Content="Overview" Margin="0,0,6,0" Click="DockerDetailOverviewButton_OnClick" />
-                          <Button x:Name="DockerDetailPortsButton" Classes="compact" Content="Ports" Margin="0,0,6,0" Click="DockerDetailPortsButton_OnClick" />
-                          <Button x:Name="DockerDetailMountsButton" Classes="compact" Content="Mounts" Margin="0,0,6,0" Click="DockerDetailMountsButton_OnClick" />
-                          <Button x:Name="DockerDetailEnvironmentButton" Classes="compact" Content="Environment" Click="DockerDetailEnvironmentButton_OnClick" />
+                          <Button x:Name="DockerDetailOverviewButton" Classes="segment compact" Content="Overview" Margin="0,0,6,0" Click="DockerDetailOverviewButton_OnClick" />
+                          <Button x:Name="DockerDetailPortsButton" Classes="segment compact" Content="Ports" Margin="0,0,6,0" Click="DockerDetailPortsButton_OnClick" />
+                          <Button x:Name="DockerDetailMountsButton" Classes="segment compact" Content="Mounts" Margin="0,0,6,0" Click="DockerDetailMountsButton_OnClick" />
+                          <Button x:Name="DockerDetailEnvironmentButton" Classes="segment compact" Content="Environment" Click="DockerDetailEnvironmentButton_OnClick" />
                         </WrapPanel>
                       </Border>
 
@@ -4602,13 +4808,13 @@
                         <WrapPanel Grid.Column="1" VerticalAlignment="Center">
                           <Button
                               x:Name="DockerCleanedLogsButton"
-                              Classes="primary compact"
+                              Classes="segment compact"
                               Content="Cleaned"
                               Margin="0,0,6,0"
                               Click="DockerCleanedLogsButton_OnClick" />
                           <Button
                               x:Name="DockerRawLogsButton"
-                              Classes="compact"
+                              Classes="segment compact"
                               Content="Raw"
                               Margin="0,0,8,0"
                               Click="DockerRawLogsButton_OnClick" />

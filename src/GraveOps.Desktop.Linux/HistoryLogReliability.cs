@@ -10,9 +10,10 @@ public sealed class ReliableLogRow
     }
 
     public OpsLogGroup Original { get; }
-    public OpsSeverity Severity => Original.Severity;
+    public OpsSeverity Severity =>
+        SignalQualityPolicy.DisplaySeverity(Original);
     public string SeverityLabel =>
-        LinuxOpsAnalyzer.SeverityLabel(Original.Severity);
+        LinuxOpsAnalyzer.SeverityLabel(Severity);
     public string Source => Original.Source;
     public string DisplayTime =>
         Original.LastSeen.ToLocalTime().ToString("g");
@@ -185,9 +186,11 @@ public static class HistoryLogReliabilityPresenter
         IReadOnlyList<string>? providerWarnings)
     {
         var active = source.Count(item =>
-            item.Severity >= OpsSeverity.Warning);
+            SignalQualityPolicy.DisplaySeverity(item) >=
+            OpsSeverity.Warning);
         var background = source.Count(item =>
-            item.Severity == OpsSeverity.Info);
+            SignalQualityPolicy.DisplaySeverity(item) ==
+            OpsSeverity.Info);
 
         var since = LogSince(timeFilter);
         var minimum = severityFilter.Equals(
@@ -200,7 +203,8 @@ public static class HistoryLogReliabilityPresenter
 
         var rows = source
             .Where(item =>
-                item.Severity >= minimum)
+                SignalQualityPolicy.DisplaySeverity(item) >=
+                minimum)
             .Where(item =>
                 item.LastSeen >= since)
             .Where(item =>
@@ -212,7 +216,8 @@ public static class HistoryLogReliabilityPresenter
                     textFilter,
                     item.Message,
                     item.Source))
-            .OrderByDescending(item => item.Severity)
+            .OrderByDescending(item =>
+                SignalQualityPolicy.DisplaySeverity(item))
             .ThenByDescending(item => item.LastSeen)
             .Select(item =>
                 new ReliableLogRow(item))
@@ -382,62 +387,98 @@ public static class HistoryLogReliabilityPresenter
         var ordered = source
             .OrderByDescending(item => item.Timestamp)
             .ToArray();
+        var groups =
+            new List<List<InsightHistoryRow>>();
+
+        foreach (var item in ordered)
+        {
+            var window =
+                HistoryCollapseWindow(item);
+            var group =
+                groups.FirstOrDefault(candidate =>
+                    candidate.Count > 0 &&
+                    SameHistorySignature(
+                        candidate[0],
+                        item) &&
+                    candidate[^1].Timestamp -
+                        item.Timestamp <=
+                    window);
+
+            if (group is null)
+            {
+                groups.Add(
+                    new List<InsightHistoryRow>
+                    {
+                        item
+                    });
+            }
+            else
+            {
+                group.Add(item);
+            }
+        }
+
         var result =
             new List<InsightHistoryRow>();
 
-        var index = 0;
-        while (index < ordered.Length)
+        foreach (var group in groups)
         {
-            var first = ordered[index];
-            var group =
-                new List<InsightHistoryRow> { first };
-            var next = index + 1;
-
-            while (next < ordered.Length &&
-                   SameHistorySignature(
-                       first,
-                       ordered[next]) &&
-                   group[^1].Timestamp -
-                       ordered[next].Timestamp <=
-                   TimeSpan.FromMinutes(15))
-            {
-                group.Add(ordered[next]);
-                next++;
-            }
+            var first =
+                group[0];
 
             if (group.Count == 1)
             {
                 result.Add(first);
-            }
-            else
-            {
-                collapsedCount += group.Count - 1;
-                var oldest =
-                    group[^1].Timestamp.ToLocalTime();
-                var newest =
-                    group[0].Timestamp.ToLocalTime();
-                var detail =
-                    string.IsNullOrWhiteSpace(first.Detail)
-                        ? string.Empty
-                        : first.Detail.TrimEnd() +
-                          Environment.NewLine +
-                          Environment.NewLine;
-
-                detail +=
-                    $"Repeated {group.Count} times between " +
-                    $"{oldest:g} and {newest:g}. " +
-                    "The underlying retained events remain unchanged.";
-
-                result.Add(Clone(
-                    first,
-                    first.Stream,
-                    detail: detail));
+                continue;
             }
 
-            index = next;
+            collapsedCount += group.Count - 1;
+            var oldest =
+                group[^1].Timestamp.ToLocalTime();
+            var newest =
+                group[0].Timestamp.ToLocalTime();
+            var detail =
+                string.IsNullOrWhiteSpace(first.Detail)
+                    ? string.Empty
+                    : first.Detail.TrimEnd() +
+                      Environment.NewLine +
+                      Environment.NewLine;
+
+            detail +=
+                $"Repeated {group.Count} times between " +
+                $"{oldest:g} and {newest:g}. " +
+                "The underlying retained events remain unchanged.";
+
+            result.Add(Clone(
+                first,
+                first.Stream,
+                detail: detail));
         }
 
-        return result;
+        return result
+            .OrderByDescending(item => item.Timestamp)
+            .ToArray();
+    }
+
+    private static TimeSpan HistoryCollapseWindow(
+        InsightHistoryRow row)
+    {
+        var routine =
+            row.Stream.Equals(
+                "Operator action",
+                StringComparison.OrdinalIgnoreCase) &&
+            (
+                row.Transition.Equals(
+                    "Environment refreshed",
+                    StringComparison.OrdinalIgnoreCase) ||
+                row.Transition.Equals(
+                    "GraveOps control plane started",
+                    StringComparison.OrdinalIgnoreCase)
+            );
+
+        return routine
+            ? TimeSpan.FromHours(1)
+            : TimeSpan.FromMinutes(15);
     }
 
     private static bool SameHistorySignature(

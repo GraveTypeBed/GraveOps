@@ -1090,10 +1090,14 @@ public partial class MainWindow : Window
                     .Where(item =>
                         !IsPlexTokenProbePrivilegeNoise(item))
                     .ToArray();
+            var analysisLogs =
+                SignalQualityPolicy.ForHealthAnalysis(
+                    _logs,
+                    out _signalQualityExcludedGroups);
             _rawAnalysis = LinuxOpsAnalyzer.Analyze(
                 _snapshot,
                 _backup,
-                _logs,
+                analysisLogs,
                 _integrations);
             _rawLifecycle = LinuxOpsAnalyzer.BuildLifecycle(
                 _snapshot,
@@ -1225,6 +1229,7 @@ public partial class MainWindow : Window
         Get<TextBlock>("ServerCpuText").Text = $"CPU · {snapshot.CpuModel}\nLoad · {snapshot.LoadAverage}";
         Get<TextBlock>("ServerMemoryText").Text = $"Memory · {snapshot.MemorySummary}";
         Get<TextBlock>("ServerNetworkText").Text = $"Addresses · {snapshot.IpAddresses}";
+        PopulateSignalQualitySummary();
     }
 
     private void ApplyLogsFilter() =>

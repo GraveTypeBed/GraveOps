@@ -58,12 +58,13 @@ public partial class MainWindow
         RefreshHostProfileLists();
         PopulateControlPlaneFoundation();
 
-        _controlPlane.State.RecordActivity(
+        RecordRoutineControlPlaneActivity(
             "System",
             _controlPlane.ActiveProfile.DisplayName,
             "GraveOps control plane started",
             "Host profiles, jobs, activity and maintenance state loaded.",
             "DashboardNav",
+            TimeSpan.FromHours(6),
             unread: false);
     }
 
@@ -217,12 +218,13 @@ public partial class MainWindow
 
             if (!background)
             {
-                _controlPlane.State.RecordActivity(
+                RecordRoutineControlPlaneActivity(
                     "Capture",
                     profile.DisplayName,
                     "Environment refreshed",
                     $"{snapshot.Hostname} · {snapshot.OperatingSystem}",
                     "DashboardNav",
+                    TimeSpan.FromMinutes(30),
                     unread: false);
             }
 
@@ -635,6 +637,10 @@ public partial class MainWindow
 
     private void UpdateServerFormCapability()
     {
+        var selected =
+            Get<ListBox>("ServerProfilesList")
+                .SelectedItem as
+            LinuxHostProfile;
         var kind =
             ParseEnum(
                 Get<ComboBox>(
@@ -648,39 +654,99 @@ public partial class MainWindow
                     .SelectedItem as string,
                 LinuxHostAuthentication.Agent);
 
+        var localProfile =
+            selected?.IsLocal == true;
         var remote =
             kind == LinuxHostKind.RemoteLinux;
-        var key =
+        var privateKey =
+            remote &&
             authentication ==
             LinuxHostAuthentication.PrivateKey;
-
-        Get<TextBox>("ServerHostTextBox")
-            .IsEnabled = remote;
-        Get<TextBox>("ServerPortTextBox")
-            .IsEnabled = remote;
-        Get<TextBox>("ServerUsernameTextBox")
-            .IsEnabled = remote;
-        Get<ComboBox>("ServerAuthenticationComboBox")
-            .IsEnabled = remote;
-        Get<TextBox>("ServerPrivateKeyPathTextBox")
-            .IsEnabled = remote && key;
-        Get<Button>("BrowsePrivateKeyButton")
-            .IsEnabled = remote && key;
-        Get<TextBox>("ServerFingerprintTextBox")
-            .IsEnabled = remote;
-        Get<TextBox>("ServerSecretTextBox")
-            .IsEnabled =
+        var secret =
             remote &&
             authentication !=
             LinuxHostAuthentication.Agent;
+
+        Get<ComboBox>("ServerConnectionTypeComboBox")
+            .IsEnabled =
+            !localProfile;
+
+        Get<Border>("ServerLocalProviderPanel")
+            .IsVisible =
+            !remote;
+        Get<Border>("ServerRemoteConnectionPanel")
+            .IsVisible =
+            remote;
+        Get<Border>("ServerPrivateKeyPanel")
+            .IsVisible =
+            privateKey;
+        Get<Border>("ServerFingerprintPanel")
+            .IsVisible =
+            remote;
+        Get<Border>("ServerSecretPanel")
+            .IsVisible =
+            secret;
+
+        Get<TextBox>("ServerHostTextBox")
+            .IsEnabled =
+            remote;
+        Get<TextBox>("ServerPortTextBox")
+            .IsEnabled =
+            remote;
+        Get<TextBox>("ServerUsernameTextBox")
+            .IsEnabled =
+            remote;
+        Get<ComboBox>("ServerAuthenticationComboBox")
+            .IsEnabled =
+            remote;
+        Get<TextBox>("ServerPrivateKeyPathTextBox")
+            .IsEnabled =
+            privateKey;
+        Get<Button>("BrowsePrivateKeyButton")
+            .IsEnabled =
+            privateKey;
+        Get<TextBox>("ServerFingerprintTextBox")
+            .IsEnabled =
+            remote;
+        Get<Button>("ScanFingerprintButton")
+            .IsEnabled =
+            remote;
+        Get<TextBox>("ServerSecretTextBox")
+            .IsEnabled =
+            secret;
         Get<CheckBox>("ServerSaveSecretCheckBox")
             .IsEnabled =
-            remote &&
-            authentication !=
-            LinuxHostAuthentication.Agent &&
+            secret &&
             _controlPlane.Credentials.IsAvailable;
-        Get<Button>("ScanFingerprintButton")
-            .IsEnabled = remote;
+
+        Get<Button>("ServerSaveButton")
+            .IsEnabled =
+            true;
+        Get<Button>("ServerTestButton")
+            .IsVisible =
+            remote;
+        Get<Button>("ServerTestButton")
+            .IsEnabled =
+            remote;
+        Get<Button>("ServerDetectButton")
+            .IsEnabled =
+            selected is not null;
+
+        Get<TextBlock>("ServerProfileModeText")
+            .Text =
+            remote
+                ? authentication switch
+                {
+                    LinuxHostAuthentication.Agent =>
+                        "Remote Linux over pinned SSH · SSH agent authentication",
+                    LinuxHostAuthentication.PrivateKey =>
+                        "Remote Linux over pinned SSH · private key and optional passphrase",
+                    LinuxHostAuthentication.Password =>
+                        "Remote Linux over pinned SSH · keyring-backed password",
+                    _ =>
+                        "Remote Linux over pinned SSH"
+                }
+                : "Native local provider · no SSH credentials required";
     }
 
     private static T ParseEnum<T>(
@@ -1542,4 +1608,3 @@ public partial class MainWindow
             "No local API endpoint was queried while a remote target was selected.";
     }
 }
-
