@@ -102,7 +102,7 @@ public partial class MainWindow : Window
             ["SabnzbdNav"] = new("DownloadClientWorkspacePage", "SABnzbd", "Usenet queue analytics, progress, history and explicit operations"),
             ["QBittorrentNav"] = new("DownloadClientWorkspacePage", "qBittorrent", "Torrent transfer analytics, progress, seeding and explicit operations"),
             ["DecypharrNav"] = new("ApplicationWorkspacePage", "Decypharr", "Debrid processing and related findings"),
-            ["RecyclarrNav"] = new("ArrWorkspacePage", "Recyclarr", "Configurable synchronization and drift workspace"),
+            ["RecyclarrNav"] = new("RecyclarrWorkspacePage", "Recyclarr", "Container runtime, configuration targets, read-only preview and synchronization evidence"),
             ["ZurgNav"] = new("ApplicationWorkspacePage", "Zurg", "Debrid mount availability and related findings"),
             ["ServicesNav"] = new("ServicesPage", "Services & Actions", "Native systemd inventory and guarded actions"),
             ["DockerNav"] = new("DockerPage", "Docker", "Containers, images, state, ports and guarded actions"),
@@ -142,6 +142,7 @@ public partial class MainWindow : Window
         InitializeDownloadClientWorkspace();
         InitializeMediaWorkspace();
         InitializePlexWorkspace();
+        InitializeRecyclarrWorkspace();
 
         _arrLiveTimer = new DispatcherTimer
         {
@@ -303,6 +304,12 @@ public partial class MainWindow : Window
                          StringComparison.Ordinal))
             {
                 ActivatePlexWorkspace();
+            }
+            else if (target.PageName.Equals(
+                         "RecyclarrWorkspacePage",
+                         StringComparison.Ordinal))
+            {
+                ActivateRecyclarrWorkspace();
             }
             else if (target.PageName.Equals(
                          "ApplicationWorkspacePage",
@@ -1175,6 +1182,7 @@ public partial class MainWindow : Window
         PopulateDirectIntegrationWorkspace();
         PopulateDownloadClientWorkspace();
         PopulateArrApplicationPage();
+        PopulateRecyclarrWorkspace();
         ApplyServicesFilter();
         ApplyDockerFilter();
         ApplyStorageFilter();
