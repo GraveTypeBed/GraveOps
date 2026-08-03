@@ -78,7 +78,7 @@ public sealed record ModularApplicationDescriptor(
 
 public sealed class ModularLayoutContract
 {
-    public string Version { get; set; } = "4.9.0-G";
+    public string Version { get; set; } = "4.9.0-H";
     public bool ViewportFirst { get; set; } = true;
     public bool PageLevelScrollDisabled { get; set; } = false;
     public bool DirectAppsUseDedicatedWorkspace { get; set; } = true;
@@ -202,6 +202,14 @@ public sealed class ModularLayoutContract
     public bool PrivateDestinationProbePolicy { get; set; } = true;
     public bool NoVerificationBackgroundPolling { get; set; } = true;
     public bool MultipleVerifiedArrInstances { get; set; } = true;
+    public bool CompactGroupedMediaHub { get; set; } = true;
+    public bool MediaHubCategorySections { get; set; } = true;
+    public bool MediaHubProductInstanceGrouping { get; set; } = true;
+    public bool MediaHubBoundedInternalScroll { get; set; } = true;
+    public bool MediaHubThreeColumnNaturalWrap { get; set; } = true;
+    public bool MediaHubEvidenceInRegistryOnly { get; set; } = true;
+    public bool StrongestVerificationResultWins { get; set; } = true;
+    public bool AuxiliaryProbeFailureRetention { get; set; } = true;
     public int PrimaryReferenceWidth { get; set; } = 1920;
     public int PrimaryReferenceHeight { get; set; } = 1040;
     public int SidebarWidth { get; set; } = 260;

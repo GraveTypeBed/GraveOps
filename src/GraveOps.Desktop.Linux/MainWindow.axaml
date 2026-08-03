@@ -2308,8 +2308,15 @@
                       <StackPanel>
                         <TextBlock Text="Application health" Classes="sectionTitle" />
                         <TextBlock
-                            Text="Detected media applications use the same card composition as the Windows control center."
+                            Text="Applications are grouped by category and product; each verified runtime stays visible as a compact instance row."
                             Classes="pageSubtitle"
+                            Margin="0,3,0,0"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            x:Name="MediaFleetGroupingSummaryText"
+                            Text="Waiting for grouped fleet projection."
+                            Classes="dim"
+                            FontSize="9.5"
                             Margin="0,3,0,0" />
                       </StackPanel>
 
@@ -2329,95 +2336,160 @@
                           Click="MediaHubShowHiddenButton_OnClick" />
                     </Grid>
 
-                    <ListBox
+                    <ScrollViewer
                         Grid.Row="1"
-                        x:Name="IntegrationsList"
-                        Classes="mediaCards"
-                        MinHeight="190"
-                        SelectionChanged="IntegrationsList_OnSelectionChanged">
-                      <ListBox.ItemsPanel>
-                        <ItemsPanelTemplate>
-                          <WrapPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                      </ListBox.ItemsPanel>
-                      <ListBox.ItemTemplate>
-                        <DataTemplate x:CompileBindings="False">
-                          <Border Classes="mediaCard">
-                            <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="9">
-                              <Grid ColumnDefinitions="*,Auto">
+                        x:Name="MediaCategoryGroupsScrollViewer"
+                        MaxHeight="520"
+                        VerticalScrollBarVisibility="Auto"
+                        HorizontalScrollBarVisibility="Disabled">
+                      <ItemsControl
+                          x:Name="MediaCategoryGroupsList"
+                          Margin="0,0,4,0">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <StackPanel Spacing="8" Margin="0,0,0,9">
+                              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                                 <StackPanel>
-                                  <TextBlock
-                                      Text="{ReflectionBinding DisplayName}"
-                                      FontSize="16"
-                                      FontWeight="SemiBold"
-                                      TextTrimming="CharacterEllipsis"
-                                      ToolTip.Tip="{ReflectionBinding DisplayName}" />
                                   <TextBlock
                                       Text="{ReflectionBinding Category}"
-                                      Classes="muted"
-                                      FontSize="10.5"
-                                      TextTrimming="CharacterEllipsis"
-                                      ToolTip.Tip="{ReflectionBinding Category}" />
-                                </StackPanel>
-
-                                <Border
-                                    Grid.Column="1"
-                                    Classes="badge"
-                                    Background="{ReflectionBinding StateBackground}">
-                                  <TextBlock
-                                      Text="{ReflectionBinding StateLabel}"
-                                      Foreground="{ReflectionBinding StateForeground}"
-                                      FontSize="10"
+                                      FontSize="14"
                                       FontWeight="SemiBold" />
-                                </Border>
-                              </Grid>
-
-                              <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="12">
-                                <StackPanel>
-                                  <TextBlock Text="RUNTIME" Classes="eyebrow" />
                                   <TextBlock
-                                      Text="{ReflectionBinding RuntimeText}"
-                                      FontSize="15"
-                                      FontWeight="SemiBold"
-                                      TextTrimming="CharacterEllipsis"
-                                      ToolTip.Tip="{ReflectionBinding RuntimeText}" />
+                                      Text="{ReflectionBinding Summary}"
+                                      Classes="muted"
+                                      FontSize="10"
+                                      Margin="0,2,0,0" />
                                 </StackPanel>
-                                <StackPanel Grid.Column="1">
-                                  <TextBlock Text="ENDPOINT" Classes="eyebrow" />
-                                  <TextBlock
-                                      Text="{ReflectionBinding EndpointText}"
-                                      FontSize="15"
-                                      FontWeight="SemiBold"
-                                      TextTrimming="CharacterEllipsis"
-                                      ToolTip.Tip="{ReflectionBinding EndpointText}" />
-                                </StackPanel>
-                              </Grid>
-
-                              <StackPanel Grid.Row="2" Spacing="3">
                                 <TextBlock
-                                    Text="{ReflectionBinding Evidence}"
-                                    Classes="muted"
-                                    FontSize="10.5"
-                                    TextWrapping="Wrap"
-                                    MaxHeight="38"
-                                    ToolTip.Tip="{ReflectionBinding Evidence}" />
-                                <TextBlock
-                                    Text="{ReflectionBinding VisibilityText}"
+                                    Grid.Column="1"
+                                    Text="{ReflectionBinding ProductCountText}"
                                     Classes="dim"
-                                    FontSize="9.5" />
-                              </StackPanel>
+                                    FontSize="10"
+                                    VerticalAlignment="Center" />
+                              </Grid>
 
-                              <Button
-                                  Grid.Row="3"
-                                  Classes="mediaCardAction"
-                                  Content="{ReflectionBinding OpenLabel}"
-                                  Tag="{ReflectionBinding IntegrationName}"
-                                  Click="MediaCardOpenButton_OnClick" />
-                            </Grid>
-                          </Border>
-                        </DataTemplate>
-                      </ListBox.ItemTemplate>
-                    </ListBox>
+                              <ItemsControl
+                                  ItemsSource="{ReflectionBinding Products}">
+                                <ItemsControl.ItemsPanel>
+                                  <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                  </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                  <DataTemplate x:CompileBindings="False">
+                                    <Border Classes="mediaProductCard">
+                                      <Grid RowDefinitions="Auto,*,Auto" RowSpacing="9">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                          <StackPanel>
+                                            <TextBlock
+                                                Text="{ReflectionBinding ProductName}"
+                                                FontSize="16"
+                                                FontWeight="SemiBold"
+                                                TextTrimming="CharacterEllipsis" />
+                                            <TextBlock
+                                                Text="{ReflectionBinding InstanceCountText}"
+                                                Classes="muted"
+                                                FontSize="10"
+                                                Margin="0,2,0,0" />
+                                          </StackPanel>
+                                          <Border
+                                              Grid.Column="1"
+                                              Classes="badge"
+                                              Background="{ReflectionBinding StateBackground}">
+                                            <TextBlock
+                                                Text="{ReflectionBinding StateLabel}"
+                                                Foreground="{ReflectionBinding StateForeground}"
+                                                FontSize="10"
+                                                FontWeight="SemiBold" />
+                                          </Border>
+                                        </Grid>
+
+                                        <ItemsControl
+                                            Grid.Row="1"
+                                            ItemsSource="{ReflectionBinding Instances}">
+                                          <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:CompileBindings="False">
+                                              <Border Classes="mediaInstanceRow">
+                                                <Grid RowDefinitions="Auto,Auto" RowSpacing="4">
+                                                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                                    <TextBlock
+                                                        Text="{ReflectionBinding DisplayName}"
+                                                        FontWeight="SemiBold"
+                                                        TextTrimming="CharacterEllipsis" />
+                                                    <Border
+                                                        Grid.Column="1"
+                                                        Classes="compactStateBadge"
+                                                        Background="{ReflectionBinding StateBackground}">
+                                                      <TextBlock
+                                                          Text="{ReflectionBinding StateLabel}"
+                                                          Foreground="{ReflectionBinding StateForeground}"
+                                                          FontSize="9"
+                                                          FontWeight="SemiBold" />
+                                                    </Border>
+                                                  </Grid>
+                                                  <Grid
+                                                      Grid.Row="1"
+                                                      ColumnDefinitions="Auto,*"
+                                                      ColumnSpacing="10">
+                                                    <TextBlock
+                                                        Text="{ReflectionBinding MetaText}"
+                                                        Classes="dim"
+                                                        FontSize="9.5"
+                                                        TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock
+                                                        Grid.Column="1"
+                                                        Text="{ReflectionBinding EndpointText}"
+                                                        Classes="muted"
+                                                        FontSize="9.5"
+                                                        HorizontalAlignment="Right"
+                                                        TextTrimming="CharacterEllipsis"
+                                                        ToolTip.Tip="{ReflectionBinding FullEndpointText}" />
+                                                  </Grid>
+                                                </Grid>
+                                              </Border>
+                                            </DataTemplate>
+                                          </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <Grid
+                                            Grid.Row="2"
+                                            ColumnDefinitions="*,Auto,Auto"
+                                            ColumnSpacing="7">
+                                          <TextBlock
+                                              Text="{ReflectionBinding SummaryText}"
+                                              Classes="dim"
+                                              FontSize="9.5"
+                                              VerticalAlignment="Center"
+                                              TextTrimming="CharacterEllipsis" />
+                                          <Button
+                                              Grid.Column="1"
+                                              Classes="compact mediaGroupAction"
+                                              Content="Identity"
+                                              Tag="{ReflectionBinding PrimarySourceKey}"
+                                              Click="MediaGroupIdentityButton_OnClick" />
+                                          <Button
+                                              Grid.Column="2"
+                                              Classes="compact mediaGroupAction"
+                                              Content="{ReflectionBinding OpenLabel}"
+                                              Tag="{ReflectionBinding ProductName}"
+                                              Click="MediaCardOpenButton_OnClick" />
+                                        </Grid>
+                                      </Grid>
+                                    </Border>
+                                  </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                              </ItemsControl>
+                            </StackPanel>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </ScrollViewer>
+
+                    <!-- Hidden selection contract retained for generic integration detail code. -->
+                    <ListBox
+                        x:Name="IntegrationsList"
+                        IsVisible="False"
+                        SelectionChanged="IntegrationsList_OnSelectionChanged" />
 
                     <Border
                         Grid.Row="1"

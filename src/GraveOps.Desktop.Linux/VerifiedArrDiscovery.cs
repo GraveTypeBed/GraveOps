@@ -298,6 +298,25 @@ public static class VerifiedArrDiscoveryService
             string.Empty);
     }
 
+    internal static ApplicationIdentityRecord
+        ApplyFailedOutcomeForTesting(
+            ApplicationIdentityRecord verified,
+            string state,
+            string detail) =>
+        ApplyOutcome(
+            verified,
+            new ArrProbeOutcome(
+                false,
+                state,
+                detail,
+                verified.ProbeUrl,
+                verified.LaunchUrl,
+                null,
+                null),
+            "fixture",
+            new[] { verified },
+            null);
+
     internal static string StableVerifiedKeyForTesting(
         string hostScope,
         string parent,
@@ -460,6 +479,23 @@ public static class VerifiedArrDiscoveryService
         if (!outcome.Success ||
             outcome.Fingerprint is null)
         {
+            if (detected.IsVerified &&
+                detected.VerificationState.Equals(
+                    ApplicationVerificationStates.Verified,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return detected with
+                {
+                    LastVerificationAt =
+                        now,
+                    VerificationDetail =
+                        PreserveVerifiedDetail(
+                            detected.VerificationDetail,
+                            outcome.State,
+                            outcome.Detail)
+                };
+            }
+
             return detected with
             {
                 VerificationState =
@@ -2681,6 +2717,35 @@ public static class VerifiedArrDiscoveryService
         return builder.Uri
             .ToString()
             .TrimEnd('/');
+    }
+
+    private static string PreserveVerifiedDetail(
+        string existing,
+        string state,
+        string detail)
+    {
+        var secondary =
+            $"Additional probe returned {state}";
+
+        if (!string.IsNullOrWhiteSpace(detail))
+        {
+            secondary +=
+                $": {detail}";
+        }
+
+        secondary +=
+            ". The strongest verified result from this capture was retained.";
+
+        if (existing.Contains(
+                secondary,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return existing;
+        }
+
+        return string.IsNullOrWhiteSpace(existing)
+            ? secondary
+            : existing + " " + secondary;
     }
 
     private static string AppendEvidence(

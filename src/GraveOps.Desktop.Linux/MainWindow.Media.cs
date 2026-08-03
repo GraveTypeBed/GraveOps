@@ -13,6 +13,10 @@ public sealed class LinuxMediaApplicationRow
     public required string DisplayName { get; init; }
     public required string Category { get; init; }
     public required string RuntimeText { get; init; }
+    public required string RuntimeLabel { get; init; }
+    public required string VersionText { get; init; }
+    public required string CompactDisplayName { get; init; }
+    public required string CompactEndpointText { get; init; }
     public required string EndpointText { get; init; }
     public required string Evidence { get; init; }
     public required string OpenLabel { get; init; }
@@ -21,7 +25,45 @@ public sealed class LinuxMediaApplicationRow
     public required string StateLabel { get; init; }
     public required IBrush StateForeground { get; init; }
     public required IBrush StateBackground { get; init; }
+    public required OpsSeverity Severity { get; init; }
+    public bool IsVerified { get; init; }
     public bool IsVisible { get; init; }
+}
+
+public sealed class LinuxMediaInstanceRow
+{
+    public required string SourceKey { get; init; }
+    public required string DisplayName { get; init; }
+    public required string MetaText { get; init; }
+    public required string EndpointText { get; init; }
+    public required string FullEndpointText { get; init; }
+    public required string StateLabel { get; init; }
+    public required IBrush StateForeground { get; init; }
+    public required IBrush StateBackground { get; init; }
+}
+
+public sealed class LinuxMediaProductGroup
+{
+    public required string ProductName { get; init; }
+    public required string Category { get; init; }
+    public required string InstanceCountText { get; init; }
+    public required string SummaryText { get; init; }
+    public required string OpenLabel { get; init; }
+    public required string PrimarySourceKey { get; init; }
+    public required string StateLabel { get; init; }
+    public required IBrush StateForeground { get; init; }
+    public required IBrush StateBackground { get; init; }
+    public required IReadOnlyList<LinuxMediaInstanceRow>
+        Instances { get; init; }
+}
+
+public sealed class LinuxMediaCategoryGroup
+{
+    public required string Category { get; init; }
+    public required string Summary { get; init; }
+    public required string ProductCountText { get; init; }
+    public required IReadOnlyList<LinuxMediaProductGroup>
+        Products { get; init; }
 }
 
 public partial class MainWindow
@@ -92,6 +134,24 @@ public partial class MainWindow
                         item.EndpointText,
                         item.Evidence))
                 .ToArray();
+
+        var categoryGroups =
+            BuildMediaCategoryGroups(
+                visibleRows);
+
+        Get<ItemsControl>(
+                "MediaCategoryGroupsList")
+            .ItemsSource =
+            categoryGroups;
+
+        Get<TextBlock>(
+                "MediaFleetGroupingSummaryText")
+            .Text =
+            $"{categoryGroups.Sum(group => group.Products.Count)} " +
+            $"application group(s) · " +
+            $"{visibleRows.Length} visible instance(s) · " +
+            $"{_identityResolution.Records.Count(item => !item.IsVerified)} " +
+            $"candidate(s)";
 
         var cards =
             Get<ListBox>("IntegrationsList");
@@ -232,6 +292,13 @@ public partial class MainWindow
             ResolveIntegrationUrl(
                 integration);
 
+        var identity =
+            _identityResolution.Records
+                .FirstOrDefault(item =>
+                    item.SourceKey.Equals(
+                        integration.InstanceKey,
+                        StringComparison.OrdinalIgnoreCase));
+
         LinuxPlexSnapshot? plexSnapshot =
             null;
 
@@ -292,6 +359,21 @@ public partial class MainWindow
                 category,
             RuntimeText =
                 runtimeText,
+            RuntimeLabel =
+                CompactRuntimeLabel(
+                    integration),
+            VersionText =
+                string.IsNullOrWhiteSpace(
+                    identity?.ApplicationVersion)
+                    ? "--"
+                    : identity.ApplicationVersion,
+            CompactDisplayName =
+                CompactInstanceName(
+                    integration.Name,
+                    displayName),
+            CompactEndpointText =
+                CompactEndpoint(
+                    endpointText),
             EndpointText =
                 endpointText,
             Evidence =
@@ -319,9 +401,274 @@ public partial class MainWindow
             StateBackground =
                 OpsPalette.Background(
                     liveSeverity),
+            Severity =
+                liveSeverity,
+            IsVerified =
+                integration.IsVerified,
             IsVisible =
                 integration.IsVisible
         };
+    }
+
+    private IReadOnlyList<LinuxMediaCategoryGroup>
+        BuildMediaCategoryGroups(
+            IReadOnlyList<LinuxMediaApplicationRow> rows) =>
+        rows
+            .GroupBy(
+                item => item.Category,
+                StringComparer.OrdinalIgnoreCase)
+            .OrderBy(group =>
+                MediaCategoryRank(
+                    group.Key))
+            .ThenBy(group =>
+                group.Key)
+            .Select(group =>
+            {
+                var products =
+                    group
+                        .GroupBy(
+                            item => item.IntegrationName,
+                            StringComparer.OrdinalIgnoreCase)
+                        .OrderBy(product =>
+                            product.Key)
+                        .Select(product =>
+                            BuildMediaProductGroup(
+                                product.Key,
+                                group.Key,
+                                product.ToArray()))
+                        .ToArray();
+
+                return new LinuxMediaCategoryGroup
+                {
+                    Category =
+                        group.Key,
+                    Summary =
+                        MediaCategorySummary(
+                            group.Key),
+                    ProductCountText =
+                        $"{products.Length} " +
+                        $"{(products.Length == 1 ? "application" : "applications")}",
+                    Products =
+                        products
+                };
+            })
+            .ToArray();
+
+    private LinuxMediaProductGroup
+        BuildMediaProductGroup(
+            string productName,
+            string category,
+            IReadOnlyList<LinuxMediaApplicationRow> rows)
+    {
+        var ordered =
+            rows
+                .OrderBy(item =>
+                    item.CompactDisplayName)
+                .ThenBy(item =>
+                    item.SourceKey)
+                .ToArray();
+
+        var verified =
+            ordered.Count(item =>
+                item.IsVerified);
+        var healthy =
+            ordered.Count(item =>
+                item.IsVerified &&
+                item.Severity < OpsSeverity.Warning);
+        var attention =
+            ordered.Count(item =>
+                item.IsVerified &&
+                item.Severity >= OpsSeverity.Warning);
+
+        var groupSeverity =
+            ordered
+                .Where(item =>
+                    item.IsVerified)
+                .Select(item =>
+                    item.Severity)
+                .DefaultIfEmpty(
+                    OpsSeverity.Info)
+                .Max();
+
+        var stateLabel =
+            verified == 0
+                ? "UNVERIFIED"
+                : verified != ordered.Length
+                    ? "MIXED"
+                    : LinuxOpsAnalyzer.SeverityLabel(
+                        groupSeverity);
+
+        var summary =
+            verified == 0
+                ? $"{ordered.Length} candidate " +
+                  $"{(ordered.Length == 1 ? "instance" : "instances")}"
+                : attention == 0
+                    ? $"{verified} verified · all healthy"
+                    : $"{healthy} healthy · {attention} attention";
+
+        var instances =
+            ordered
+                .Select(item =>
+                    new LinuxMediaInstanceRow
+                    {
+                        SourceKey =
+                            item.SourceKey,
+                        DisplayName =
+                            item.CompactDisplayName,
+                        MetaText =
+                            item.VersionText == "--"
+                                ? item.RuntimeLabel
+                                : $"v{item.VersionText} · " +
+                                  item.RuntimeLabel,
+                        EndpointText =
+                            item.CompactEndpointText,
+                        FullEndpointText =
+                            item.EndpointText,
+                        StateLabel =
+                            item.StateLabel,
+                        StateForeground =
+                            item.StateForeground,
+                        StateBackground =
+                            item.StateBackground
+                    })
+                .ToArray();
+
+        var primary =
+            ordered
+                .OrderByDescending(item =>
+                    item.IsVerified)
+                .ThenByDescending(item =>
+                    item.Severity < OpsSeverity.Warning)
+                .First();
+
+        return new LinuxMediaProductGroup
+        {
+            ProductName =
+                productName,
+            Category =
+                category,
+            InstanceCountText =
+                $"{ordered.Length} " +
+                $"{(ordered.Length == 1 ? "instance" : "instances")}",
+            SummaryText =
+                summary,
+            OpenLabel =
+                NavigationForIntegration(
+                    productName) is null
+                    ? "Open interface"
+                    : "Open workspace",
+            PrimarySourceKey =
+                primary.SourceKey,
+            StateLabel =
+                stateLabel,
+            StateForeground =
+                OpsPalette.Foreground(
+                    groupSeverity),
+            StateBackground =
+                OpsPalette.Background(
+                    groupSeverity),
+            Instances =
+                instances
+        };
+    }
+
+    private static int MediaCategoryRank(
+        string category) =>
+        category.ToLowerInvariant() switch
+        {
+            "library" => 0,
+            "acquisition" => 1,
+            "processing" => 2,
+            "orchestration" => 3,
+            "requests" => 4,
+            "network" => 5,
+            "supporting service" => 6,
+            _ => 7
+        };
+
+    private static string MediaCategorySummary(
+        string category) =>
+        category.ToLowerInvariant() switch
+        {
+            "library" =>
+                "Playback, libraries and metadata ownership",
+            "acquisition" =>
+                "Automation, indexers and download services",
+            "processing" =>
+                "Import, post-processing and maintenance",
+            "orchestration" =>
+                "Stack ownership and control-plane services",
+            "requests" =>
+                "User-facing request and discovery services",
+            "network" =>
+                "DNS, access and network dependencies",
+            "supporting service" =>
+                "Supporting runtime dependencies",
+            _ =>
+                "Verified application instances"
+        };
+
+    private static string CompactInstanceName(
+        string product,
+        string displayName)
+    {
+        var prefix =
+            product + " — ";
+
+        if (displayName.StartsWith(
+                prefix,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return displayName[prefix.Length..];
+        }
+
+        return displayName.Equals(
+                product,
+                StringComparison.OrdinalIgnoreCase)
+            ? "Default"
+            : displayName;
+    }
+
+    private static string CompactRuntimeLabel(
+        OpsIntegration integration)
+    {
+        var role =
+            integration.Role
+                ?.Replace(
+                    " application",
+                    string.Empty,
+                    StringComparison.OrdinalIgnoreCase)
+                .Trim();
+
+        if (!string.IsNullOrWhiteSpace(role))
+            return role;
+
+        return string.IsNullOrWhiteSpace(
+            integration.Kind)
+            ? "Runtime"
+            : integration.Kind;
+    }
+
+    private static string CompactEndpoint(
+        string endpoint)
+    {
+        if (!Uri.TryCreate(
+                endpoint,
+                UriKind.Absolute,
+                out var uri))
+        {
+            return endpoint;
+        }
+
+        var path =
+            uri.AbsolutePath.TrimEnd('/');
+
+        return
+            $"{uri.DnsSafeHost}:{uri.Port}" +
+            (string.IsNullOrWhiteSpace(path) ||
+             path == "/"
+                ? string.Empty
+                : path);
     }
 
     private static string DefaultMediaCategory(
@@ -543,6 +890,25 @@ public partial class MainWindow
             _ = OpenMediaIntegrationAsync(
                 integration,
                 "IntegrationActionStatusText");
+    }
+
+    private void MediaGroupIdentityButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        if (sender is not Button button ||
+            button.Tag is not string sourceKey ||
+            string.IsNullOrWhiteSpace(sourceKey))
+        {
+            return;
+        }
+
+        _selectedIdentitySourceKey =
+            sourceKey;
+
+        ShowMediaLauncherSettings();
+        SelectIdentityRegistrySource(
+            sourceKey);
     }
 
     private void
