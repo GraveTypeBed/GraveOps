@@ -80,13 +80,19 @@ public sealed class RecyclarrWorkspaceService
             RegexOptions.Compiled);
 
     private static readonly Regex ServiceRegex =
-        new("^(sonarr|radarr):\\s*(?:#.*)?$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        new(
+            "^(sonarr|radarr):\\s*(?:#.*)?$",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private static readonly Regex InstanceRegex =
-        new("^ {2}([^:#][^:]*):\\s*(?:#.*)?$", RegexOptions.Compiled);
+        new(
+            "^ {2}([^\\s:#][^:]*):\\s*(?:#.*)?$",
+            RegexOptions.Compiled);
 
     private static readonly Regex BaseUrlRegex =
-        new("^ {4,}base_url:\\s*(.+?)\\s*(?:#.*)?$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        new(
+            "^ {4}base_url:\\s*(.+?)\\s*(?:#.*)?$",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     public async Task<RecyclarrWorkspaceSnapshot> CaptureAsync(
         CancellationToken cancellationToken = default)
@@ -597,8 +603,36 @@ public sealed class RecyclarrWorkspaceService
 
     private static string SanitizeEndpoint(string endpoint)
     {
-        if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var uri))
-            return endpoint;
+        var trimmed = TrimYamlScalar(endpoint);
+
+        if (string.IsNullOrWhiteSpace(trimmed) ||
+            trimmed == "--")
+        {
+            return "--";
+        }
+
+        if (trimmed.StartsWith(
+                "!secret",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return "Configured through secret";
+        }
+
+        if (trimmed.StartsWith(
+                "!env_var",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return "Configured through environment";
+        }
+
+        if (trimmed[0] == '!')
+            return "Configured through tagged value";
+
+        if (trimmed[0] == '*')
+            return "Configured through YAML reference";
+
+        if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri))
+            return "Configured";
 
         var builder = new UriBuilder(uri)
         {

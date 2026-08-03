@@ -78,7 +78,7 @@ public sealed record ModularApplicationDescriptor(
 
 public sealed class ModularLayoutContract
 {
-    public string Version { get; set; } = "4.9.0-B";
+    public string Version { get; set; } = "4.9.0-B1";
     public bool ViewportFirst { get; set; } = true;
     public bool PageLevelScrollDisabled { get; set; } = false;
     public bool DirectAppsUseDedicatedWorkspace { get; set; } = true;
@@ -136,6 +136,9 @@ public sealed class ModularLayoutContract
     public bool RecyclarrConfigTargetInventory { get; set; } = true;
     public bool RecyclarrReadOnlyPreview { get; set; } = true;
     public bool RecyclarrSecretRedaction { get; set; } = true;
+    public bool RecyclarrDirectInstanceParsing { get; set; } = true;
+    public bool RecyclarrNestedKeyExclusion { get; set; } = true;
+    public bool RecyclarrSecretReferenceLabels { get; set; } = true;
     public int PrimaryReferenceWidth { get; set; } = 1920;
     public int PrimaryReferenceHeight { get; set; } = 1040;
     public int SidebarWidth { get; set; } = 260;
