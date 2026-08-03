@@ -143,6 +143,7 @@ public partial class MainWindow : Window
         InitializeMediaWorkspace();
         InitializePlexWorkspace();
         InitializeRecyclarrWorkspace();
+        InitializeDockerWorkspace();
 
         _arrLiveTimer = new DispatcherTimer
         {
@@ -282,6 +283,13 @@ public partial class MainWindow : Window
             navigationName,
             unread: false);
         PopulateControlPlaneFoundation();
+
+        if (target.PageName.Equals(
+                "DockerPage",
+                StringComparison.Ordinal))
+        {
+            ActivateDockerWorkspace();
+        }
 
         if (IntegrationNavigationTargets.TryGetValue(
                 navigationName,
@@ -722,7 +730,7 @@ public partial class MainWindow : Window
         if (_snapshot is not null)
         {
             ApplyLogsFilter();
-            ApplyDockerFilter();
+            ApplyDockerWorkspaceFilter();
             UpdateActionButtons();
             PopulateOperatorShell();
         }
@@ -1184,7 +1192,7 @@ public partial class MainWindow : Window
         PopulateArrApplicationPage();
         PopulateRecyclarrWorkspace();
         ApplyServicesFilter();
-        ApplyDockerFilter();
+        PopulateDockerWorkspaceFallback();
         ApplyStorageFilter();
         ApplyLogsFilter();
         PopulateBackups();
@@ -1999,61 +2007,8 @@ public partial class MainWindow : Window
         UpdateServiceDetail();
     }
 
-    private void ApplyDockerFilter()
-    {
-        if (_snapshot is null)
-            return;
-
-        var list = Get<ListBox>("DockerList");
-        var selectedName =
-            (list.SelectedItem as DockerContainerSnapshot)?.Name;
-        var filter =
-            Get<TextBox>("DockerFilterText").Text?.Trim();
-        var showInformational =
-            Get<CheckBox>("ShowInformationalContainersCheckBox")
-                .IsChecked == true;
-
-        var all = _snapshot.Containers;
-        var rows = all
-            .Where(item =>
-                showInformational ||
-                LinuxOpsAnalyzer.ContainerSeverity(item) >=
-                    OpsSeverity.Warning ||
-                item.State.Equals(
-                    "running",
-                    StringComparison.OrdinalIgnoreCase))
-            .Where(item => Matches(
-                filter,
-                item.Name,
-                item.Image,
-                item.State,
-                item.Status,
-                item.Ports))
-            .ToArray();
-
-        list.ItemsSource = rows;
-        list.SelectedItem = rows.FirstOrDefault(item =>
-            item.Name.Equals(
-                selectedName,
-                StringComparison.OrdinalIgnoreCase));
-
-        var running = rows.Count(item =>
-            item.State.Equals(
-                "running",
-                StringComparison.OrdinalIgnoreCase));
-        var hiddenInformational = all.Count(item =>
-            LinuxOpsAnalyzer.ContainerSeverity(item) ==
-                OpsSeverity.Info &&
-            !item.State.Equals(
-                "running",
-                StringComparison.OrdinalIgnoreCase));
-
-        Get<TextBlock>("DockerSummaryText").Text =
-            $"{running} running · {rows.Length} shown · " +
-            $"{(showInformational ? 0 : hiddenInformational)} background hidden";
-
-        UpdateDockerDetail();
-    }
+    private void ApplyDockerFilter() =>
+        ApplyDockerWorkspaceFilter();
 
     private void ApplyStorageFilter()
     {
@@ -2705,14 +2660,6 @@ public partial class MainWindow : Window
         UpdateServiceDetail();
     }
 
-    private void DockerList_OnSelectionChanged(
-        object? sender,
-        SelectionChangedEventArgs e)
-    {
-        UpdateActionButtons();
-        UpdateDockerDetail();
-    }
-
     private void SafeModeCheckBox_OnClick(
         object? sender,
         RoutedEventArgs e)
@@ -2753,58 +2700,28 @@ public partial class MainWindow : Window
             $"Unit-file state · {selected.UnitFileState}";
     }
 
-    private void UpdateDockerDetail()
-    {
-        var selected =
-            Get<ListBox>("DockerList").SelectedItem
-            as DockerContainerSnapshot;
-
-        if (selected is null)
-        {
-            Get<TextBlock>("DockerSelectedNameText").Text =
-                "No container selected";
-            Get<TextBlock>("DockerSelectedStateText").Text = "--";
-            Get<TextBlock>("DockerSelectedImageText").Text = "--";
-            Get<TextBlock>("DockerSelectedPortsText").Text = "--";
-            return;
-        }
-
-        var severity =
-            LinuxOpsAnalyzer.ContainerSeverity(selected);
-        Get<TextBlock>("DockerSelectedNameText").Text =
-            selected.Name;
-        Get<TextBlock>("DockerSelectedStateText").Text =
-            $"{LinuxOpsAnalyzer.SeverityLabel(severity)} · " +
-            $"{selected.State} · {selected.Status}";
-        Get<TextBlock>("DockerSelectedImageText").Text =
-            selected.Image;
-        Get<TextBlock>("DockerSelectedPortsText").Text =
-            string.IsNullOrWhiteSpace(selected.Ports)
-                ? "No published ports"
-                : selected.Ports;
-    }
-
     private void UpdateActionButtons()
     {
-        var service = Get<ListBox>("ServicesList").SelectedItem is ServiceSnapshot;
-        var container = Get<ListBox>("DockerList").SelectedItem is DockerContainerSnapshot;
-        var safe = Get<CheckBox>("SafeModeCheckBox").IsChecked == true;
+        var service =
+            Get<ListBox>("ServicesList").SelectedItem
+            is ServiceSnapshot;
+        var safe =
+            Get<CheckBox>("SafeModeCheckBox").IsChecked == true;
         var local = CanRunLocalMutations();
 
-        Get<Button>("ServiceStartButton").IsEnabled = service && local;
-        Get<Button>("ServiceStopButton").IsEnabled = service && local && !safe;
-        Get<Button>("ServiceRestartButton").IsEnabled = service && local && !safe;
-        Get<Button>("DockerStartButton").IsEnabled = container && local;
-        Get<Button>("DockerStopButton").IsEnabled = container && local && !safe;
-        Get<Button>("DockerRestartButton").IsEnabled = container && local && !safe;
+        Get<Button>("ServiceStartButton").IsEnabled =
+            service && local;
+        Get<Button>("ServiceStopButton").IsEnabled =
+            service && local && !safe;
+        Get<Button>("ServiceRestartButton").IsEnabled =
+            service && local && !safe;
+
+        UpdateDockerWorkspaceActionButtons();
     }
 
     private async void ServiceStartButton_OnClick(object? sender, RoutedEventArgs e) => await RunServiceActionAsync("start");
     private async void ServiceStopButton_OnClick(object? sender, RoutedEventArgs e) => await RunServiceActionAsync("stop");
     private async void ServiceRestartButton_OnClick(object? sender, RoutedEventArgs e) => await RunServiceActionAsync("restart");
-    private async void DockerStartButton_OnClick(object? sender, RoutedEventArgs e) => await RunContainerActionAsync("start");
-    private async void DockerStopButton_OnClick(object? sender, RoutedEventArgs e) => await RunContainerActionAsync("stop");
-    private async void DockerRestartButton_OnClick(object? sender, RoutedEventArgs e) => await RunContainerActionAsync("restart");
 
     private async Task RunServiceActionAsync(string action)
     {
@@ -2835,38 +2752,6 @@ public partial class MainWindow : Window
             result.Summary,
             "ServicesNav");
         Get<TextBlock>("ServiceActionStatusText").Text = result.Summary;
-        await RefreshAsync();
-    }
-
-    private async Task RunContainerActionAsync(string action)
-    {
-        if (Get<ListBox>("DockerList").SelectedItem is not DockerContainerSnapshot container)
-            return;
-        if (!CanRunLocalMutations())
-        {
-            Get<TextBlock>("DockerActionStatusText").Text =
-                "Remote Docker mutations are disabled in the V4.2 provider foundation.";
-            return;
-        }
-        if (BlockedBySafeMode(action))
-        {
-            Get<TextBlock>("DockerActionStatusText").Text = "Disable Safe Mode to stop or restart containers.";
-            return;
-        }
-        if (!await ConfirmActionAsync($"{action} {container.Name}?",
-                action == "start" ? "Start this Docker container?" : "This can interrupt dependent applications. Continue only after reviewing storage, network and upstream dependencies."))
-            return;
-
-        Get<TextBlock>("DockerActionStatusText").Text = $"{action} in progress...";
-        var result = await _actions.ContainerAsync(container.Name, action);
-        _history.RecordAction(container.Name, action, result);
-        _controlPlane.State.RecordActivity(
-            "Action",
-            _controlPlane.ActiveProfile.DisplayName,
-            $"{action} {container.Name}",
-            result.Summary,
-            "DockerNav");
-        Get<TextBlock>("DockerActionStatusText").Text = result.Summary;
         await RefreshAsync();
     }
 

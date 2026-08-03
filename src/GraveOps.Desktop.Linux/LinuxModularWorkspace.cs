@@ -78,7 +78,7 @@ public sealed record ModularApplicationDescriptor(
 
 public sealed class ModularLayoutContract
 {
-    public string Version { get; set; } = "4.9.0-B1";
+    public string Version { get; set; } = "4.9.0-C";
     public bool ViewportFirst { get; set; } = true;
     public bool PageLevelScrollDisabled { get; set; } = false;
     public bool DirectAppsUseDedicatedWorkspace { get; set; } = true;
@@ -139,6 +139,13 @@ public sealed class ModularLayoutContract
     public bool RecyclarrDirectInstanceParsing { get; set; } = true;
     public bool RecyclarrNestedKeyExclusion { get; set; } = true;
     public bool RecyclarrSecretReferenceLabels { get; set; } = true;
+    public bool DockerOperationalDrilldown { get; set; } = true;
+    public bool DockerComposeOwnershipGrouping { get; set; } = true;
+    public bool DockerOneShotResourceCapture { get; set; } = true;
+    public bool DockerBoundedRedactedLogs { get; set; } = true;
+    public bool DockerEnvironmentNamesOnly { get; set; } = true;
+    public bool DockerVerifiedContainerActions { get; set; } = true;
+    public bool DockerGuardedDumbProjectRestart { get; set; } = true;
     public int PrimaryReferenceWidth { get; set; } = 1920;
     public int PrimaryReferenceHeight { get; set; } = 1040;
     public int SidebarWidth { get; set; } = 260;
