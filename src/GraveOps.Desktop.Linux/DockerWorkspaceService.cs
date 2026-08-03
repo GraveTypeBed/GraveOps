@@ -84,7 +84,11 @@ public sealed record DockerContainerDetailSnapshot(
     string Networks,
     string Mounts,
     string EnvironmentNames,
-    string RecentLogs,
+    string RawLogs,
+    string CleanedLogs,
+    int RawLogLineCount,
+    int CleanedLogEntryCount,
+    int CollapsedLogLineCount,
     string Evidence);
 
 public sealed record DockerWorkspaceCommandResult(
@@ -318,9 +322,16 @@ public sealed class DockerWorkspaceService
 
         var createdAt = FormatTimestamp(StringProperty(root, "Created", "--"));
         var startedAt = FormatTimestamp(StringProperty(state, "StartedAt", row.StartedAt));
-        var finishedAt = FormatTimestamp(StringProperty(state, "FinishedAt", row.FinishedAt));
-        var lifecycle =
-            $"Created {createdAt} · Started {startedAt} · Finished {finishedAt} · Exit {row.ExitCode}";
+        var finishedAt = row.IsRunning
+            ? "Still running"
+            : FormatTimestamp(
+                StringProperty(
+                    state,
+                    "FinishedAt",
+                    row.FinishedAt));
+        var lifecycle = row.IsRunning
+            ? $"Created {createdAt} · Started {startedAt} · Still running"
+            : $"Created {createdAt} · Started {startedAt} · Finished {finishedAt} · Exit {row.ExitCode}";
 
         var composeOwnership = composeProject == "--"
             ? "Standalone container"
@@ -349,6 +360,9 @@ public sealed class DockerWorkspaceService
                 : "Container logs were unavailable.";
         }
 
+        var logPresentation =
+            DockerLogPresenter.Present(recentLogs);
+
         return new DockerContainerDetailSnapshot(
             DateTimeOffset.Now,
             row,
@@ -359,8 +373,12 @@ public sealed class DockerWorkspaceService
             ReadNetworks(root),
             ReadMounts(root),
             ReadEnvironmentNames(config),
-            recentLogs,
-            $"Docker inspect and the last {LogTailLines} log lines were captured on demand. Environment values were not read into the view model.");
+            logPresentation.RawText,
+            logPresentation.CleanedText,
+            logPresentation.RawLineCount,
+            logPresentation.CleanedEntryCount,
+            logPresentation.CollapsedLineCount,
+            $"Docker inspect and the last {LogTailLines} log lines were captured on demand. Cleaned logs preserve a separate redacted raw view, and environment values were not read into the view model.");
     }
 
     public async Task<DockerWorkspaceCommandResult> RestartDumbProjectAsync(
@@ -528,7 +546,13 @@ public sealed class DockerWorkspaceService
                     restartCount,
                     exitCode,
                     FormatTimestamp(StringProperty(state, "StartedAt", "--")),
-                    FormatTimestamp(StringProperty(state, "FinishedAt", "--")),
+                    running
+                        ? "Still running"
+                        : FormatTimestamp(
+                            StringProperty(
+                                state,
+                                "FinishedAt",
+                                "--")),
                     ValueOr(ps, "Ports", "--"),
                     cpu,
                     memory,

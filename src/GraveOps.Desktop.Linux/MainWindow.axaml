@@ -4587,23 +4587,55 @@
 
                   <Border Classes="module adaptive">
                     <Grid RowDefinitions="Auto,*" RowSpacing="8">
-                      <Grid ColumnDefinitions="*,220,Auto,Auto" ColumnSpacing="8">
+                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                         <StackPanel>
                           <TextBlock Text="Recent container logs" Classes="sectionTitle" />
                           <TextBlock
                               x:Name="DockerLogsStatusText"
                               Text="Not captured"
                               Classes="pageSubtitle"
-                              Margin="0,3,0,0" />
+                              Margin="0,3,0,0"
+                              TextWrapping="Wrap" />
                         </StackPanel>
-                        <TextBox
-                            Grid.Column="1"
-                            x:Name="DockerLogFilterText"
-                            Classes="filter"
-                            PlaceholderText="Filter captured log lines"
-                            TextChanged="DockerLogFilterText_OnTextChanged" />
-                        <Button Grid.Column="2" x:Name="DockerRefreshLogsButton" Classes="compact" Content="Refresh logs" Click="DockerRefreshLogsButton_OnClick" />
-                        <Button Grid.Column="3" x:Name="DockerCopyLogsButton" Classes="compact" Content="Copy displayed" Click="DockerCopyLogsButton_OnClick" />
+
+                        <WrapPanel Grid.Column="1" VerticalAlignment="Center">
+                          <Button
+                              x:Name="DockerCleanedLogsButton"
+                              Classes="primary compact"
+                              Content="Cleaned"
+                              Margin="0,0,6,0"
+                              Click="DockerCleanedLogsButton_OnClick" />
+                          <Button
+                              x:Name="DockerRawLogsButton"
+                              Classes="compact"
+                              Content="Raw"
+                              Margin="0,0,8,0"
+                              Click="DockerRawLogsButton_OnClick" />
+                          <TextBox
+                              x:Name="DockerLogFilterText"
+                              Classes="filter"
+                              Width="220"
+                              PlaceholderText="Filter source, file or message"
+                              Margin="0,0,8,0"
+                              TextChanged="DockerLogFilterText_OnTextChanged" />
+                          <Button
+                              x:Name="DockerRefreshLogsButton"
+                              Classes="compact"
+                              Content="Refresh logs"
+                              Margin="0,0,8,0"
+                              Click="DockerRefreshLogsButton_OnClick" />
+                          <Button
+                              x:Name="DockerCopyCleanedLogsButton"
+                              Classes="compact"
+                              Content="Copy cleaned"
+                              Margin="0,0,6,0"
+                              Click="DockerCopyCleanedLogsButton_OnClick" />
+                          <Button
+                              x:Name="DockerCopyRawLogsButton"
+                              Classes="compact"
+                              Content="Copy raw"
+                              Click="DockerCopyRawLogsButton_OnClick" />
+                        </WrapPanel>
                       </Grid>
 
                       <TextBox
@@ -4611,10 +4643,10 @@
                           x:Name="DockerLogsText"
                           Classes="console workspaceOutput"
                           MinHeight="190"
-                          MaxHeight="320"
+                          MaxHeight="340"
                           IsReadOnly="True"
                           AcceptsReturn="True"
-                          TextWrapping="NoWrap"
+                          TextWrapping="Wrap"
                           ScrollViewer.VerticalScrollBarVisibility="Auto"
                           ScrollViewer.HorizontalScrollBarVisibility="Auto" />
                     </Grid>

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 
 namespace GraveOps.Desktop.Linux;
 
@@ -13,6 +14,7 @@ public partial class MainWindow
     private DockerContainerDetailSnapshot? _dockerDetailSnapshot;
     private bool _dockerFleetBusy;
     private bool _dockerActionBusy;
+    private bool _dockerShowRawLogs;
     private int _dockerDetailRequest;
 
     private void InitializeDockerWorkspace()
@@ -24,6 +26,8 @@ public partial class MainWindow
         Get<TextBlock>("DockerProjectMetricText").Text = "0";
         Get<TextBox>("DockerLogsText").Text =
             "Select a container to capture the last 200 log lines on demand.";
+        _dockerShowRawLogs = false;
+        UpdateDockerLogModeButtons();
         ClearDockerWorkspaceDetail();
         UpdateDockerWorkspaceActionButtons();
     }
@@ -227,7 +231,9 @@ public partial class MainWindow
         Get<TextBlock>("DockerSelectedRestartText").Text =
             $"{row.RestartPolicy} · {row.RestartCount} restart(s)";
         Get<TextBlock>("DockerSelectedLifecycleText").Text =
-            $"Started {row.StartedAt} · Exit {row.ExitCode}";
+            row.IsRunning
+                ? $"Started {row.StartedAt} · Still running"
+                : $"Started {row.StartedAt} · Finished {row.FinishedAt} · Exit {row.ExitCode}";
         Get<TextBlock>("DockerSelectedResourcesText").Text =
             row.Resources;
         Get<TextBlock>("DockerSelectedPortsText").Text =
@@ -299,8 +305,7 @@ public partial class MainWindow
             detail.EnvironmentNames;
         Get<TextBlock>("DockerDetailStatusText").Text =
             detail.Evidence;
-        Get<TextBlock>("DockerLogsStatusText").Text =
-            $"Captured {detail.CapturedAt:t} · last 200 lines";
+        UpdateDockerLogModeButtons();
         ApplyDockerLogFilter();
     }
 
@@ -324,6 +329,8 @@ public partial class MainWindow
             "Environment-variable names only. Values are never displayed.";
         Get<TextBlock>("DockerDetailStatusText").Text =
             "Select a fleet row to capture inspect metadata.";
+        _dockerShowRawLogs = false;
+        UpdateDockerLogModeButtons();
         Get<TextBlock>("DockerLogsStatusText").Text = "Not captured";
         Get<TextBox>("DockerLogsText").Text =
             "Select a container to capture the last 200 log lines on demand.";
@@ -376,6 +383,38 @@ public partial class MainWindow
         TextChangedEventArgs e) =>
         ApplyDockerLogFilter();
 
+    private void DockerCleanedLogsButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        _dockerShowRawLogs = false;
+        UpdateDockerLogModeButtons();
+        ApplyDockerLogFilter();
+    }
+
+    private void DockerRawLogsButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        _dockerShowRawLogs = true;
+        UpdateDockerLogModeButtons();
+        ApplyDockerLogFilter();
+    }
+
+    private void UpdateDockerLogModeButtons()
+    {
+        var cleaned = Get<Button>("DockerCleanedLogsButton");
+        var raw = Get<Button>("DockerRawLogsButton");
+
+        cleaned.IsEnabled = _dockerShowRawLogs;
+        raw.IsEnabled = !_dockerShowRawLogs;
+
+        var output = Get<TextBox>("DockerLogsText");
+        output.TextWrapping = _dockerShowRawLogs
+            ? TextWrapping.NoWrap
+            : TextWrapping.Wrap;
+    }
+
     private void ApplyDockerLogFilter()
     {
         var output = Get<TextBox>("DockerLogsText");
@@ -383,29 +422,91 @@ public partial class MainWindow
         if (detail is null)
             return;
 
+        var source = _dockerShowRawLogs
+            ? detail.RawLogs
+            : detail.CleanedLogs;
         var filter =
             Get<TextBox>("DockerLogFilterText").Text?.Trim();
+
         if (string.IsNullOrWhiteSpace(filter))
         {
-            output.Text = detail.RecentLogs;
-            return;
+            output.Text = source;
+        }
+        else if (_dockerShowRawLogs)
+        {
+            var rows = source
+                .Split('\n')
+                .Where(line => line.Contains(
+                    filter,
+                    StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+            output.Text = rows.Length == 0
+                ? $"No raw log line contains '{filter}'."
+                : string.Join(Environment.NewLine, rows);
+        }
+        else
+        {
+            var blocks = source
+                .Replace(
+                    "\r\n",
+                    "\n",
+                    StringComparison.Ordinal)
+                .Split(
+                    "\n\n",
+                    StringSplitOptions.RemoveEmptyEntries)
+                .Where(block => block.Contains(
+                    filter,
+                    StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+            output.Text = blocks.Length == 0
+                ? $"No cleaned log incident contains '{filter}'."
+                : string.Join(
+                    Environment.NewLine +
+                    Environment.NewLine,
+                    blocks);
         }
 
-        var rows = detail.RecentLogs
-            .Split('\n')
-            .Where(line => line.Contains(
-                filter,
-                StringComparison.OrdinalIgnoreCase))
-            .ToArray();
-
-        output.Text = rows.Length == 0
-            ? $"No captured log line contains '{filter}'."
-            : string.Join(Environment.NewLine, rows);
+        var mode = _dockerShowRawLogs
+            ? "Raw"
+            : "Cleaned";
+        Get<TextBlock>("DockerLogsStatusText").Text =
+            $"Captured {detail.CapturedAt:t} · {mode} · " +
+            $"{detail.CleanedLogEntryCount} cleaned incident(s) from " +
+            $"{detail.RawLogLineCount} raw line(s) · " +
+            $"{detail.CollapsedLogLineCount} line(s) collapsed";
     }
 
-    private async void DockerCopyLogsButton_OnClick(
+    private async void DockerCopyCleanedLogsButton_OnClick(
         object? sender,
         RoutedEventArgs e)
+    {
+        var detail = _dockerDetailSnapshot;
+        if (detail is null)
+            return;
+
+        await CopyDockerLogTextAsync(
+            detail.CleanedLogs,
+            "Cleaned Docker log summary copied.");
+    }
+
+    private async void DockerCopyRawLogsButton_OnClick(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        var detail = _dockerDetailSnapshot;
+        if (detail is null)
+            return;
+
+        await CopyDockerLogTextAsync(
+            detail.RawLogs,
+            "Redacted raw Docker log output copied.");
+    }
+
+    private async Task CopyDockerLogTextAsync(
+        string text,
+        string successMessage)
     {
         var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
         if (clipboard is null)
@@ -417,9 +518,9 @@ public partial class MainWindow
 
         await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(
             clipboard,
-            Get<TextBox>("DockerLogsText").Text ?? string.Empty);
+            text);
         Get<TextBlock>("DockerLogsStatusText").Text =
-            "Displayed redacted log output copied.";
+            successMessage;
     }
 
     private async void DockerStartButton_OnClick(
