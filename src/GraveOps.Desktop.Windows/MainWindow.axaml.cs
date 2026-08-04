@@ -15,7 +15,25 @@ public partial class MainWindow : Window
         new Dictionary<string, NavigationTarget>(StringComparer.Ordinal)
         {
             ["DashboardNav"] = new("DashboardPage", "Dashboard",
-                "Live Windows host state and read-only operational evidence"),
+                "Interactive environment health, ownership and active-host operations"),
+            ["IntelligenceNav"] = new("WarningsPage", "Intelligence",
+                "Fleet impact, root cause, evidence and contextual next actions"),
+            ["LifecycleNav"] = new("ParityPage", "Media Lifecycle",
+                "Track active media across acquisition, download, import and library stages"),
+            ["HistoryNav"] = new("ParityPage", "History & Incidents",
+                "Health transitions, GraveOps activity and incident replay"),
+            ["ServersNav"] = new("ParityPage", "Servers",
+                "Local and remote host profiles, capabilities and secure connections"),
+            ["MediaHubNav"] = new("IntegrationsPage", "Media Hub",
+                "Fleet health, discovery and all media applications"),
+            ["LogsNav"] = new("WarningsPage", "Logs",
+                "Grouped warnings, provider output and crash evidence"),
+            ["BackupsNav"] = new("ParityPage", "Backups",
+                "Schedule, artifact and restore-readiness evidence"),
+            ["SettingsNav"] = new("ParityPage", "Settings",
+                "Windows paths, provider state and parity configuration"),
+            ["ToolsNav"] = new("ParityPage", "Operator Tools",
+                "Redacted diagnostics, validation and safe local access"),
             ["ServicesNav"] = new("ServicesPage", "Services",
                 "Cataloged Windows service inventory and state"),
             ["DockerNav"] = new("DockerPage", "Docker",
@@ -36,6 +54,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        InitializeLinuxShellParity();
 
         Opened += async (_, _) =>
         {
@@ -124,6 +143,7 @@ public partial class MainWindow : Window
 
         Get<TextBlock>("PageTitleText").Text = target.Title;
         Get<TextBlock>("PageSubtitleText").Text = target.Subtitle;
+        UpdateLinuxParityPage(target);
 
         RecordActivity(
             "Navigation",
@@ -214,7 +234,7 @@ public partial class MainWindow : Window
         SetText("SidebarHostname", snapshot.Hostname);
         SetText(
             "SidebarOperatingSystem",
-            $"{snapshot.OperatingSystem} Â· {snapshot.Kernel}");
+            $"{snapshot.OperatingSystem} Ã‚| {snapshot.Kernel}");
 
         SetText(
             "LastUpdatedText",
@@ -315,13 +335,14 @@ public partial class MainWindow : Window
 
         SetText(
             "DockerPageSummaryText",
-            $"{NormalizeDisplay(snapshot.DockerState)} Â· " +
+            $"{NormalizeDisplay(snapshot.DockerState)} Ã‚| " +
             $"{snapshot.Containers.Count} container(s)");
 
         SetText(
             "FooterStatusText",
-            $"Windows Avalonia Phase 2 Â· {snapshot.Hostname} Â· read-only");
+            $"Windows Avalonia Phase 2 Ã‚| {snapshot.Hostname} Ã‚| read-only");
 
+        PopulateLinuxShellParity(snapshot);
         PopulateActivity();
     }
 
