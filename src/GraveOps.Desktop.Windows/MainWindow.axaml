@@ -1,0 +1,186 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Class="GraveOps.Desktop.Windows.MainWindow"
+    Title="GraveOps - Windows Avalonia Preview"
+    Width="1180"
+    Height="760"
+    MinWidth="980"
+    MinHeight="640"
+    WindowStartupLocation="CenterScreen">
+
+  <Grid ColumnDefinitions="248,*">
+    <Border
+        Grid.Column="0"
+        Background="{DynamicResource SidebarBrush}"
+        BorderBrush="{DynamicResource BorderBrush}"
+        BorderThickness="0,0,1,0">
+      <Grid Margin="22" RowDefinitions="Auto,Auto,*,Auto">
+        <StackPanel Spacing="5">
+          <TextBlock
+              Text="GRAVEOPS"
+              FontSize="23"
+              FontWeight="Bold"
+              Foreground="{DynamicResource AccentBrush}" />
+          <TextBlock
+              Text="WINDOWS AVALONIA PREVIEW"
+              Classes="muted"
+              FontSize="10"
+              FontWeight="SemiBold" />
+        </StackPanel>
+
+        <Border
+            Grid.Row="1"
+            Margin="0,24,0,0"
+            Classes="card">
+          <StackPanel Spacing="7">
+            <TextBlock Text="Migration state" FontWeight="SemiBold" />
+            <TextBlock
+                Text="Parallel preview"
+                Foreground="{DynamicResource SuccessBrush}" />
+            <TextBlock
+                Text="The WPF legacy application and publish\win-x64 output are not replaced by this build."
+                Classes="muted"
+                TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <StackPanel Grid.Row="2" Margin="0,28,0,0" Spacing="10">
+          <TextBlock Text="FOUNDATION SCOPE" Classes="dim" FontSize="10" />
+          <TextBlock Text="- Avalonia 12 / .NET 10" Classes="muted" />
+          <TextBlock Text="- Shared GraveOps.Core" Classes="muted" />
+          <TextBlock Text="- Native Windows provider" Classes="muted" />
+          <TextBlock Text="- Local read-only snapshot" Classes="muted" />
+          <TextBlock Text="- Separate preview output" Classes="muted" />
+        </StackPanel>
+
+        <TextBlock
+            Grid.Row="3"
+            Text="No mutation controls are included in this first scaffold."
+            Classes="dim"
+            FontSize="10"
+            TextWrapping="Wrap" />
+      </Grid>
+    </Border>
+
+    <Grid
+        Grid.Column="1"
+        Margin="24"
+        RowDefinitions="Auto,Auto,Auto,*"
+        RowSpacing="18">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="4">
+          <TextBlock
+              Text="Windows host foundation"
+              FontSize="25"
+              FontWeight="SemiBold" />
+          <TextBlock
+              Text="First isolated Avalonia runtime using the shared GraveOps host contract."
+              Classes="muted" />
+        </StackPanel>
+
+        <Button
+            x:Name="RefreshButton"
+            Grid.Column="1"
+            Classes="primary"
+            Content="Refresh snapshot"
+            Click="RefreshButton_Click" />
+      </Grid>
+
+      <Border Grid.Row="1" Classes="card">
+        <Grid ColumnDefinitions="2*,2*,*,*" ColumnSpacing="18">
+          <StackPanel Spacing="4">
+            <TextBlock Text="HOST" Classes="dim" FontSize="10" />
+            <TextBlock x:Name="HostnameText" Text="Loading..." Classes="metric" />
+            <TextBlock x:Name="OsText" Text="--" Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <StackPanel Grid.Column="1" Spacing="4">
+            <TextBlock Text="NETWORK" Classes="dim" FontSize="10" />
+            <TextBlock x:Name="AddressText" Text="--" TextWrapping="Wrap" />
+            <TextBlock x:Name="MemoryText" Text="--" Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <StackPanel Grid.Column="2" Spacing="4">
+            <TextBlock Text="UPTIME" Classes="dim" FontSize="10" />
+            <TextBlock x:Name="UptimeText" Text="--" Classes="metric" />
+            <TextBlock x:Name="SystemText" Text="--" Classes="muted" />
+          </StackPanel>
+
+          <StackPanel Grid.Column="3" Spacing="4">
+            <TextBlock Text="DOCKER" Classes="dim" FontSize="10" />
+            <TextBlock x:Name="DockerText" Text="--" Classes="metric" TextWrapping="Wrap" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <Border Grid.Row="2" Classes="card">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+          <TextBlock Text="STATUS" Classes="dim" FontSize="10" VerticalAlignment="Center" />
+          <TextBlock
+              x:Name="StatusText"
+              Grid.Column="1"
+              Text="Initializing Windows preview..."
+              Classes="muted"
+              TextWrapping="Wrap" />
+        </Grid>
+      </Border>
+
+      <TabControl Grid.Row="3">
+        <TabItem Header="Storage">
+          <TextBox
+              x:Name="StorageText"
+              Classes="output"
+              IsReadOnly="True"
+              AcceptsReturn="True"
+              TextWrapping="NoWrap"
+              ScrollViewer.HorizontalScrollBarVisibility="Auto"
+              ScrollViewer.VerticalScrollBarVisibility="Auto" />
+        </TabItem>
+
+        <TabItem Header="Services">
+          <TextBox
+              x:Name="ServicesText"
+              Classes="output"
+              IsReadOnly="True"
+              AcceptsReturn="True"
+              TextWrapping="NoWrap"
+              ScrollViewer.HorizontalScrollBarVisibility="Auto"
+              ScrollViewer.VerticalScrollBarVisibility="Auto" />
+        </TabItem>
+
+        <TabItem Header="Docker">
+          <TextBox
+              x:Name="ContainersText"
+              Classes="output"
+              IsReadOnly="True"
+              AcceptsReturn="True"
+              TextWrapping="NoWrap"
+              ScrollViewer.HorizontalScrollBarVisibility="Auto"
+              ScrollViewer.VerticalScrollBarVisibility="Auto" />
+        </TabItem>
+
+        <TabItem Header="Integrations">
+          <TextBox
+              x:Name="IntegrationsText"
+              Classes="output"
+              IsReadOnly="True"
+              AcceptsReturn="True"
+              TextWrapping="NoWrap"
+              ScrollViewer.HorizontalScrollBarVisibility="Auto"
+              ScrollViewer.VerticalScrollBarVisibility="Auto" />
+        </TabItem>
+
+        <TabItem Header="Warnings">
+          <TextBox
+              x:Name="WarningsText"
+              Classes="output"
+              IsReadOnly="True"
+              AcceptsReturn="True"
+              TextWrapping="Wrap"
+              ScrollViewer.VerticalScrollBarVisibility="Auto" />
+        </TabItem>
+      </TabControl>
+    </Grid>
+  </Grid>
+</Window>
