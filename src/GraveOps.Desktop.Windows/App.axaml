@@ -11,6 +11,7 @@
     <SolidColorBrush x:Key="HeaderBrush" Color="#0F1113" />
     <SolidColorBrush x:Key="SurfaceBrush" Color="#171A1E" />
     <SolidColorBrush x:Key="Surface2Brush" Color="#1C2025" />
+    <SolidColorBrush x:Key="Surface3Brush" Color="#242930" />
     <SolidColorBrush x:Key="InputBrush" Color="#121519" />
     <SolidColorBrush x:Key="ConsoleBrush" Color="#0C0F12" />
     <SolidColorBrush x:Key="BorderBrush" Color="#292E35" />
@@ -24,6 +25,9 @@
     <SolidColorBrush x:Key="SuccessBrush" Color="#63CC8B" />
     <SolidColorBrush x:Key="WarnBrush" Color="#E0B24F" />
     <SolidColorBrush x:Key="DangerBrush" Color="#E16B75" />
+    <SolidColorBrush x:Key="SuccessTintBrush" Color="#14291F" />
+    <SolidColorBrush x:Key="WarnTintBrush" Color="#2B2517" />
+    <SolidColorBrush x:Key="DangerTintBrush" Color="#2D181C" />
   </Application.Resources>
 
   <Application.Styles>
@@ -39,6 +43,32 @@
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     </Style>
 
+    <Style Selector="TextBlock.pageTitle">
+      <Setter Property="FontSize" Value="22" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="TextBlock.pageSubtitle">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.sectionTitle">
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="TextBlock.eyebrow">
+      <Setter Property="FontSize" Value="9.5" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.metricValue">
+      <Setter Property="FontSize" Value="20" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
     <Style Selector="TextBlock.muted">
       <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
     </Style>
@@ -47,30 +77,197 @@
       <Setter Property="Foreground" Value="{DynamicResource DimBrush}" />
     </Style>
 
-    <Style Selector="TextBlock.metric">
-      <Setter Property="FontSize" Value="19" />
-      <Setter Property="FontWeight" Value="SemiBold" />
+    <Style Selector="TextBlock.mono">
+      <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, monospace" />
+      <Setter Property="FontSize" Value="10.5" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
     </Style>
 
     <Style Selector="Border.card">
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
       <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Padding" Value="18" />
+    </Style>
+
+    <Style Selector="Border.flatCard">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="12" />
-      <Setter Property="Padding" Value="16" />
+      <Setter Property="Padding" Value="15" />
+    </Style>
+
+    <Style Selector="Border.inset">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="13" />
+    </Style>
+
+    <Style Selector="Border.healthPass">
+      <Setter Property="Background" Value="{DynamicResource SuccessTintBrush}" />
+      <Setter Property="BorderBrush" Value="#1C5A32" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="9" />
+      <Setter Property="Padding" Value="13" />
+    </Style>
+
+    <Style Selector="Border.healthWarn">
+      <Setter Property="Background" Value="{DynamicResource WarnTintBrush}" />
+      <Setter Property="BorderBrush" Value="#5B4A18" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="9" />
+      <Setter Property="Padding" Value="13" />
+    </Style>
+
+    <Style Selector="Border.healthFail">
+      <Setter Property="Background" Value="{DynamicResource DangerTintBrush}" />
+      <Setter Property="BorderBrush" Value="#65232B" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="9" />
+      <Setter Property="Padding" Value="13" />
+    </Style>
+
+    <Style Selector="Border.selectionRow">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="10,8" />
+    </Style>
+
+    <Style Selector="Border.emptyState">
+      <Setter Property="Background" Value="#121719" />
+      <Setter Property="BorderBrush" Value="#26352D" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="18" />
+    </Style>
+
+    <Style Selector="Button">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="13,7" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <Style Selector="Button:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
+
+    <Style Selector="Button:pressed">
+      <Setter Property="Opacity" Value="0.78" />
+    </Style>
+
+    <Style Selector="Button:disabled">
+      <Setter Property="Opacity" Value="0.38" />
     </Style>
 
     <Style Selector="Button.primary">
+      <Setter Property="Foreground" Value="#15120D" />
       <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
-      <Setter Property="Foreground" Value="#101214" />
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-      <Setter Property="Padding" Value="16,8" />
-      <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
     <Style Selector="Button.primary:pointerover">
       <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
+    </Style>
+
+    <Style Selector="Button.compact">
+      <Setter Property="MinHeight" Value="32" />
+      <Setter Property="Padding" Value="10,6" />
+    </Style>
+
+    <Style Selector="Button.ghost">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    </Style>
+
+    <Style Selector="Button.ghost:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+
+    <Style Selector="Button.nav">
+      <Setter Property="MinHeight" Value="42" />
+      <Setter Property="Padding" Value="11,8" />
+      <Setter Property="Margin" Value="0,0,0,4" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    </Style>
+
+    <Style Selector="Button.nav:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+
+    <Style Selector="Button.nav.selected">
+      <Setter Property="Background" Value="{DynamicResource AccentTintBrush}" />
+      <Setter Property="BorderBrush" Value="#5D4B2A" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+
+    <Style Selector="Button.quickModule">
+      <Setter Property="MinHeight" Value="72" />
+      <Setter Property="Padding" Value="12,10" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    </Style>
+
+    <Style Selector="Button.titlebar">
+      <Setter Property="Width" Value="46" />
+      <Setter Property="Height" Value="37" />
+      <Setter Property="MinHeight" Value="37" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="0" />
+    </Style>
+
+    <Style Selector="Button.titlebar:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <Style Selector="Button.titlebar.close:pointerover">
+      <Setter Property="Background" Value="#B83A42" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+
+    <Style Selector="ListBox.dataList">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <Style Selector="ListBox.dataList > ListBoxItem">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+
+    <Style Selector="ListBox.dataList > ListBoxItem:pointerover">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.dataList > ListBoxItem:selected">
+      <Setter Property="Background" Value="Transparent" />
     </Style>
 
     <Style Selector="TextBox.output">
@@ -80,6 +277,10 @@
       <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, monospace" />
       <Setter Property="FontSize" Value="11" />
       <Setter Property="Padding" Value="12" />
+    </Style>
+
+    <Style Selector="ScrollViewer">
+      <Setter Property="AllowAutoHide" Value="True" />
     </Style>
   </Application.Styles>
 </Application>
