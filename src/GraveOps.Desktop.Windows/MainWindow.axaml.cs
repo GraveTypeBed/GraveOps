@@ -234,7 +234,7 @@ public partial class MainWindow : Window
         SetText("SidebarHostname", snapshot.Hostname);
         SetText(
             "SidebarOperatingSystem",
-            $"{snapshot.OperatingSystem} Ã‚| {snapshot.Kernel}");
+            $"{snapshot.OperatingSystem} | {snapshot.Kernel}");
 
         SetText(
             "LastUpdatedText",
@@ -335,12 +335,12 @@ public partial class MainWindow : Window
 
         SetText(
             "DockerPageSummaryText",
-            $"{NormalizeDisplay(snapshot.DockerState)} Ã‚| " +
+            $"{NormalizeDisplay(snapshot.DockerState)} | " +
             $"{snapshot.Containers.Count} container(s)");
 
         SetText(
             "FooterStatusText",
-            $"Windows Avalonia Phase 2 Ã‚| {snapshot.Hostname} Ã‚| read-only");
+            $"Windows provider | {snapshot.Hostname} | read-only");
 
         PopulateLinuxShellParity(snapshot);
         PopulateActivity();
