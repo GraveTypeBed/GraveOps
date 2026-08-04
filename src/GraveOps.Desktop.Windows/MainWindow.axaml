@@ -260,6 +260,63 @@
                   </Grid>
                 </Button>
 
+                <TextBlock
+                    x:Name="LibraryGroupLabel"
+                    Text="LIBRARY"
+                    Classes="eyebrow"
+                    Margin="22,10,0,4"
+                    IsVisible="False" />
+
+                <Button
+                    x:Name="PlexNav"
+                    Classes="nav sub"
+                    IsVisible="False"
+                    Click="NavigationButton_OnClick">
+                  <Grid ColumnDefinitions="24,*">
+                    <Path
+                        Width="16"
+                        Height="16"
+                        Stretch="Uniform"
+                        Data="M3,2 L8.2,2 L13,8 L8.2,14 L3,14 L8.1,8 Z"
+                        Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        Stroke="Transparent"
+                        StrokeThickness="0" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="Plex"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                  </Grid>
+                </Button>
+
+                <TextBlock
+                    x:Name="AcquisitionGroupLabel"
+                    Text="ACQUISITION"
+                    Classes="eyebrow"
+                    Margin="22,10,0,4"
+                    IsVisible="False" />
+
+                <Button
+                    x:Name="QBittorrentNav"
+                    Classes="nav sub"
+                    IsVisible="False"
+                    Click="NavigationButton_OnClick">
+                  <Grid ColumnDefinitions="24,*">
+                    <Path
+                        Width="16"
+                        Height="16"
+                        Stretch="Uniform"
+                        Data="M2,3 L14,3 L14,13 L2,13 Z M4,6 L7,8 L4,10 M8,10 L11,10"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.45"
+                        StrokeLineCap="Round" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="qBittorrent"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                  </Grid>
+                </Button>
                 <TextBlock Text="INFRASTRUCTURE" Classes="eyebrow" Margin="10,15,0,6" />
 
                 <Button x:Name="ServicesNav" Classes="nav" Click="NavigationButton_OnClick">
@@ -476,8 +533,14 @@
                     <Border Classes="flatCard" Width="235" MinHeight="96" Margin="0,0,8,8">
                       <StackPanel>
                         <TextBlock Text="DOCKER" Classes="eyebrow" />
-                        <TextBlock x:Name="DashboardDockerText" Text="CHECKING" FontSize="18" FontWeight="SemiBold"
-                                   Margin="0,9,0,2" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock
+                            x:Name="DashboardDockerText"
+                            Text="CHECKING"
+                            FontSize="14"
+                            FontWeight="SemiBold"
+                            Margin="0,9,0,2"
+                            TextWrapping="Wrap"
+                            MaxHeight="38" />
                         <TextBlock x:Name="DashboardDockerSummaryText" Text="Selected-host container state"
                                    Classes="dim" FontSize="10.5" TextWrapping="Wrap" />
                       </StackPanel>
@@ -541,7 +604,7 @@
                                   BorderThickness="1"
                                   VerticalAlignment="Center">
                                 <TextBlock
-                                    Text="ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ"
+                                    Text="ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“"
                                     Foreground="{DynamicResource SuccessBrush}"
                                     FontSize="18"
                                     FontWeight="SemiBold"
@@ -847,25 +910,100 @@
               </Border>
             </Grid>
 
-            <Grid x:Name="IntegrationsPage" IsVisible="False">
+<Grid x:Name="IntegrationsPage" IsVisible="False">
               <Border Classes="card">
-                <Grid RowDefinitions="Auto,*" RowSpacing="12">
-                  <StackPanel>
-                    <TextBlock Text="Detected integrations" Classes="sectionTitle" />
-                    <TextBlock Text="Read-only application and endpoint evidence from the Windows provider."
-                               Classes="pageSubtitle" Margin="0,3,0,0" />
-                  </StackPanel>
-                  <ListBox Grid.Row="1" x:Name="IntegrationsList" Classes="dataList">
+                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="12">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel>
+                      <TextBlock Text="Media application fleet" Classes="sectionTitle" />
+                      <TextBlock
+                          Text="Detected Windows media applications and read-only provider evidence."
+                          Classes="pageSubtitle"
+                          Margin="0,3,0,0" />
+                    </StackPanel>
+
+                    <StackPanel
+                        Grid.Column="1"
+                        Orientation="Horizontal"
+                        Spacing="8"
+                        VerticalAlignment="Center">
+                      <Border Classes="statusBadge">
+                        <TextBlock
+                            x:Name="MediaHubDetectedCountText"
+                            Text="0 detected"
+                            Foreground="{DynamicResource AccentBrush}" />
+                      </Border>
+                      <Border Classes="statusBadge">
+                        <TextBlock
+                            x:Name="MediaHubRunningCountText"
+                            Text="0 running"
+                            Foreground="{DynamicResource SuccessBrush}" />
+                      </Border>
+                    </StackPanel>
+                  </Grid>
+
+                  <Border
+                      Grid.Row="1"
+                      x:Name="MediaHubEmptyPanel"
+                      Classes="emptyState"
+                      IsVisible="True">
+                    <StackPanel Spacing="5">
+                      <TextBlock
+                          Text="No media applications were detected."
+                          FontWeight="SemiBold" />
+                      <TextBlock
+                          Text="Installed applications, Windows processes, services and Docker containers are checked without changing the host."
+                          Classes="muted"
+                          TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+
+                  <ListBox
+                      Grid.Row="2"
+                      x:Name="IntegrationsList"
+                      Classes="dataList"
+                      IsVisible="False">
                     <ListBox.ItemTemplate>
                       <DataTemplate x:CompileBindings="False">
-                        <Border Classes="selectionRow" Margin="0,0,0,6">
-                          <Grid ColumnDefinitions="210,180,140,*" ColumnSpacing="12">
-                            <TextBlock Text="{ReflectionBinding Name}" FontWeight="SemiBold"
-                                       TextTrimming="CharacterEllipsis" />
-                            <TextBlock Grid.Column="1" Text="{ReflectionBinding Kind}" Classes="muted" />
-                            <TextBlock Grid.Column="2" Text="{ReflectionBinding State}" />
-                            <TextBlock Grid.Column="3" Text="{ReflectionBinding Evidence}" Classes="dim"
-                                       TextTrimming="CharacterEllipsis" />
+                        <Border Classes="selectionRow" Margin="0,0,0,7" Padding="13">
+                          <Grid ColumnDefinitions="190,150,130,*" ColumnSpacing="14">
+                            <StackPanel Spacing="3">
+                              <TextBlock
+                                  Text="{ReflectionBinding Name}"
+                                  FontSize="13"
+                                  FontWeight="SemiBold"
+                                  TextTrimming="CharacterEllipsis" />
+                              <TextBlock
+                                  Text="Windows media application"
+                                  Classes="dim"
+                                  FontSize="9.5" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Spacing="3">
+                              <TextBlock Text="DISCOVERY" Classes="eyebrow" />
+                              <TextBlock
+                                  Text="{ReflectionBinding Kind}"
+                                  Classes="muted"
+                                  TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" Spacing="3">
+                              <TextBlock Text="STATE" Classes="eyebrow" />
+                              <TextBlock
+                                  Text="{ReflectionBinding State}"
+                                  Foreground="{DynamicResource SuccessBrush}"
+                                  FontWeight="SemiBold" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="3" Spacing="3">
+                              <TextBlock Text="EVIDENCE" Classes="eyebrow" />
+                              <TextBlock
+                                  Text="{ReflectionBinding Evidence}"
+                                  Classes="mono"
+                                  FontSize="10"
+                                  TextWrapping="Wrap"
+                                  MaxHeight="42" />
+                            </StackPanel>
                           </Grid>
                         </Border>
                       </DataTemplate>
@@ -875,7 +1013,208 @@
               </Border>
             </Grid>
 
-            <Grid x:Name="WarningsPage" IsVisible="False">
+            <Grid x:Name="PlexPage" IsVisible="False">
+              <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="10">
+                  <Grid ColumnDefinitions="2*,1*" ColumnSpacing="10">
+                    <Border Classes="card">
+                      <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                          <Border
+                              Width="42"
+                              Height="42"
+                              CornerRadius="10"
+                              Background="{DynamicResource AccentTintBrush}">
+                            <Path
+                                Width="22"
+                                Height="22"
+                                Stretch="Uniform"
+                                Data="M3,2 L8.2,2 L13,8 L8.2,14 L3,14 L8.1,8 Z"
+                                Fill="{DynamicResource AccentBrush}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center" />
+                          </Border>
+
+                          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                            <TextBlock Text="Plex Media Server" FontSize="18" FontWeight="SemiBold" />
+                            <TextBlock
+                                Text="Windows discovery workspace"
+                                Classes="pageSubtitle" />
+                          </StackPanel>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                          <Border Classes="inset">
+                            <StackPanel>
+                              <TextBlock Text="STATE" Classes="eyebrow" />
+                              <TextBlock
+                                  x:Name="PlexWorkspaceStateText"
+                                  Text="Not detected"
+                                  FontSize="17"
+                                  FontWeight="SemiBold" />
+                            </StackPanel>
+                          </Border>
+                          <Border Grid.Column="1" Classes="inset">
+                            <StackPanel>
+                              <TextBlock Text="DISCOVERY" Classes="eyebrow" />
+                              <TextBlock
+                                  x:Name="PlexWorkspaceKindText"
+                                  Text="--"
+                                  FontSize="13"
+                                  FontWeight="SemiBold"
+                                  TextWrapping="Wrap" />
+                            </StackPanel>
+                          </Border>
+                        </Grid>
+
+                        <Border Classes="inset">
+                          <StackPanel Spacing="5">
+                            <TextBlock Text="PROVIDER EVIDENCE" Classes="eyebrow" />
+                            <TextBlock
+                                x:Name="PlexWorkspaceEvidenceText"
+                                Text="No Plex evidence was reported."
+                                Classes="mono"
+                                TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Border>
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Classes="card">
+                      <StackPanel Spacing="10">
+                        <TextBlock Text="Parity status" Classes="sectionTitle" />
+                        <Border Classes="inset">
+                          <StackPanel Spacing="5">
+                            <TextBlock Text="PRESENCE" Classes="eyebrow" />
+                            <TextBlock
+                                x:Name="PlexWorkspacePresenceText"
+                                Text="Unavailable"
+                                FontWeight="SemiBold" />
+                          </StackPanel>
+                        </Border>
+                        <TextBlock
+                            Text="This phase establishes the Linux-style Plex workspace and provider evidence. Sessions, libraries and server API telemetry remain read-only follow-up work."
+                            Classes="muted"
+                            TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+                  </Grid>
+
+                  <Border Classes="card">
+                    <StackPanel Spacing="8">
+                      <TextBlock Text="Next Plex parity layer" Classes="sectionTitle" />
+                      <TextBlock
+                          Text="Server identity, claim state, library health, active sessions and scan evidence will be connected through the shared GraveOps integration contract."
+                          Classes="muted"
+                          TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+              </ScrollViewer>
+            </Grid>
+
+            <Grid x:Name="QBittorrentPage" IsVisible="False">
+              <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="10">
+                  <Grid ColumnDefinitions="2*,1*" ColumnSpacing="10">
+                    <Border Classes="card">
+                      <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                          <Border
+                              Width="42"
+                              Height="42"
+                              CornerRadius="10"
+                              Background="{DynamicResource AccentTintBrush}">
+                            <Path
+                                Width="22"
+                                Height="22"
+                                Stretch="Uniform"
+                                Data="M2,3 L14,3 L14,13 L2,13 Z M4,6 L7,8 L4,10 M8,10 L11,10"
+                                Stroke="{DynamicResource AccentBrush}"
+                                StrokeThickness="1.5"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center" />
+                          </Border>
+
+                          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                            <TextBlock Text="qBittorrent" FontSize="18" FontWeight="SemiBold" />
+                            <TextBlock
+                                Text="Windows discovery workspace"
+                                Classes="pageSubtitle" />
+                          </StackPanel>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                          <Border Classes="inset">
+                            <StackPanel>
+                              <TextBlock Text="STATE" Classes="eyebrow" />
+                              <TextBlock
+                                  x:Name="QBittorrentWorkspaceStateText"
+                                  Text="Not detected"
+                                  FontSize="17"
+                                  FontWeight="SemiBold" />
+                            </StackPanel>
+                          </Border>
+                          <Border Grid.Column="1" Classes="inset">
+                            <StackPanel>
+                              <TextBlock Text="DISCOVERY" Classes="eyebrow" />
+                              <TextBlock
+                                  x:Name="QBittorrentWorkspaceKindText"
+                                  Text="--"
+                                  FontSize="13"
+                                  FontWeight="SemiBold"
+                                  TextWrapping="Wrap" />
+                            </StackPanel>
+                          </Border>
+                        </Grid>
+
+                        <Border Classes="inset">
+                          <StackPanel Spacing="5">
+                            <TextBlock Text="PROVIDER EVIDENCE" Classes="eyebrow" />
+                            <TextBlock
+                                x:Name="QBittorrentWorkspaceEvidenceText"
+                                Text="No qBittorrent evidence was reported."
+                                Classes="mono"
+                                TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Border>
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Classes="card">
+                      <StackPanel Spacing="10">
+                        <TextBlock Text="Parity status" Classes="sectionTitle" />
+                        <Border Classes="inset">
+                          <StackPanel Spacing="5">
+                            <TextBlock Text="PRESENCE" Classes="eyebrow" />
+                            <TextBlock
+                                x:Name="QBittorrentWorkspacePresenceText"
+                                Text="Unavailable"
+                                FontWeight="SemiBold" />
+                          </StackPanel>
+                        </Border>
+                        <TextBlock
+                            Text="This phase establishes the Linux-style qBittorrent workspace and provider evidence. Queue, transfer and history telemetry remain read-only follow-up work."
+                            Classes="muted"
+                            TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+                  </Grid>
+
+                  <Border Classes="card">
+                    <StackPanel Spacing="8">
+                      <TextBlock Text="Next qBittorrent parity layer" Classes="sectionTitle" />
+                      <TextBlock
+                          Text="Web UI identity, transfer rates, queue state, categories and recent history will be connected through the shared GraveOps integration contract."
+                          Classes="muted"
+                          TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+              </ScrollViewer>
+            </Grid>
+
+                        <Grid x:Name="WarningsPage" IsVisible="False">
               <Border Classes="card">
                 <Grid RowDefinitions="Auto,*" RowSpacing="12">
                   <StackPanel>
@@ -932,7 +1271,7 @@
             <Grid ColumnDefinitions="*,Auto" Margin="28,0">
               <TextBlock
                   x:Name="FooterStatusText"
-                  Text="Windows Avalonia Phase 2 ÃƒÆ’Ã¢â‚¬Å¡| read-only"
+                  Text="Windows Avalonia Phase 2 ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡| read-only"
                   Classes="dim"
                   FontSize="9.5"
                   VerticalAlignment="Center" />

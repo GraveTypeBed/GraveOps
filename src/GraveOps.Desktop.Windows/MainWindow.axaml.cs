@@ -24,8 +24,12 @@ public partial class MainWindow : Window
                 "Health transitions, GraveOps activity and incident replay"),
             ["ServersNav"] = new("ParityPage", "Servers",
                 "Local and remote host profiles, capabilities and secure connections"),
-            ["MediaHubNav"] = new("IntegrationsPage", "Media Hub",
+                        ["MediaHubNav"] = new("IntegrationsPage", "Media Hub",
                 "Fleet health, discovery and all media applications"),
+            ["PlexNav"] = new("PlexPage", "Plex",
+                "Server identity, library and session workspace"),
+            ["QBittorrentNav"] = new("QBittorrentPage", "qBittorrent",
+                "Transfer queue, categories and history workspace"),
             ["LogsNav"] = new("WarningsPage", "Logs",
                 "Grouped warnings, provider output and crash evidence"),
             ["BackupsNav"] = new("ParityPage", "Backups",
@@ -59,7 +63,7 @@ public partial class MainWindow : Window
         Opened += async (_, _) =>
         {
             Navigate("DashboardNav");
-            RecordActivity("Preview opened", "Windows Avalonia Phase 2 shell initialized.");
+            RecordActivity("Client opened", "Windows Avalonia Linux-shell client initialized.");
             await RefreshAsync();
         };
     }
@@ -327,6 +331,7 @@ public partial class MainWindow : Window
         SetList("ServicesList", snapshot.Services);
         SetList("ContainersList", snapshot.Containers);
         SetList("IntegrationsList", snapshot.Integrations);
+        PopulateMediaWorkspaces(snapshot.Integrations);
 
         var warnings = snapshot.Warnings.Count == 0
             ? new[] { "No provider warnings." }
@@ -345,7 +350,111 @@ public partial class MainWindow : Window
         PopulateLinuxShellParity(snapshot);
         PopulateActivity();
     }
+    private void PopulateMediaWorkspaces(
+        IReadOnlyList<IntegrationSnapshot> integrations)
+    {
+        var plex =
+            integrations.FirstOrDefault(integration =>
+                integration.Name.Equals(
+                    "Plex",
+                    StringComparison.OrdinalIgnoreCase));
 
+        var qbittorrent =
+            integrations.FirstOrDefault(integration =>
+                integration.Name.Equals(
+                    "qBittorrent",
+                    StringComparison.OrdinalIgnoreCase));
+
+        var detectedCount =
+            integrations.Count;
+
+        var runningCount =
+            integrations.Count(integration =>
+                IsHealthyState(integration.State));
+
+        SetText(
+            "MediaHubDetectedCountText",
+            $"{detectedCount} detected");
+
+        SetText(
+            "MediaHubRunningCountText",
+            $"{runningCount} running");
+
+        Get<Border>("MediaHubEmptyPanel").IsVisible =
+            detectedCount == 0;
+
+        Get<ListBox>("IntegrationsList").IsVisible =
+            detectedCount > 0;
+
+        var plexVisible =
+            plex is not null;
+
+        Get<TextBlock>("LibraryGroupLabel").IsVisible =
+            plexVisible;
+
+        Get<Button>("PlexNav").IsVisible =
+            plexVisible;
+
+        PopulateMediaWorkspace(
+            plex,
+            "PlexWorkspaceStateText",
+            "PlexWorkspaceKindText",
+            "PlexWorkspaceEvidenceText",
+            "PlexWorkspacePresenceText");
+
+        var qbittorrentVisible =
+            qbittorrent is not null;
+
+        Get<TextBlock>("AcquisitionGroupLabel").IsVisible =
+            qbittorrentVisible;
+
+        Get<Button>("QBittorrentNav").IsVisible =
+            qbittorrentVisible;
+
+        PopulateMediaWorkspace(
+            qbittorrent,
+            "QBittorrentWorkspaceStateText",
+            "QBittorrentWorkspaceKindText",
+            "QBittorrentWorkspaceEvidenceText",
+            "QBittorrentWorkspacePresenceText");
+    }
+
+    private void PopulateMediaWorkspace(
+        IntegrationSnapshot? integration,
+        string stateControl,
+        string kindControl,
+        string evidenceControl,
+        string presenceControl)
+    {
+        if (integration is null)
+        {
+            SetText(stateControl, "Not detected");
+            SetText(kindControl, "--");
+            SetText(
+                evidenceControl,
+                "No provider evidence was reported.");
+            SetText(presenceControl, "Unavailable");
+            return;
+        }
+
+        SetText(
+            stateControl,
+            NormalizeDisplay(integration.State));
+
+        SetText(
+            kindControl,
+            NormalizeDisplay(integration.Kind));
+
+        SetText(
+            evidenceControl,
+            NormalizeDisplay(integration.Evidence));
+
+        SetText(
+            presenceControl,
+            IsHealthyState(integration.State)
+                ? "Running"
+                : "Installed");
+    }
     private static IReadOnlyList<RecommendationRow> BuildRecommendations(
         HostSnapshot snapshot)
     {

@@ -270,7 +270,7 @@ public sealed class LocalWindowsHostProbe : ILocalHostProbe
             return Array.Empty<ServiceSnapshot>();
 
         return SplitOutputLines(output)
-            .Select(line => line.Split('\t'))
+            .Select(SplitColumns)
             .Where(columns => columns.Length >= 4)
             .Select(columns =>
                 new ServiceSnapshot(
@@ -320,7 +320,7 @@ public sealed class LocalWindowsHostProbe : ILocalHostProbe
             return Array.Empty<ProcessEvidence>();
 
         return SplitOutputLines(output)
-            .Select(line => line.Split('\t'))
+            .Select(SplitColumns)
             .Where(columns =>
                 columns.Length >= 2 &&
                 int.TryParse(columns[1], out _))
@@ -380,16 +380,16 @@ public sealed class LocalWindowsHostProbe : ILocalHostProbe
             return Array.Empty<InstalledApplicationEvidence>();
 
         return SplitOutputLines(output)
-            .Select(line => line.Split('\t'))
+            .Select(SplitColumns)
             .Where(columns => columns.Length >= 1)
             .Select(columns =>
                 new InstalledApplicationEvidence(
-                    columns[0],
+                    columns[0].Trim(),
                     columns.Length >= 2
-                        ? columns[1]
+                        ? NormalizeRegistryPath(columns[1])
                         : string.Empty,
                     columns.Length >= 3
-                        ? columns[2]
+                        ? NormalizeRegistryPath(columns[2])
                         : string.Empty))
             .GroupBy(
                 row => row.Name,
@@ -441,7 +441,7 @@ public sealed class LocalWindowsHostProbe : ILocalHostProbe
             return Array.Empty<ListenerEvidence>();
 
         return SplitOutputLines(output)
-            .Select(line => line.Split('\t'))
+            .Select(SplitColumns)
             .Where(columns =>
                 columns.Length >= 3 &&
                 int.TryParse(columns[1], out _) &&
@@ -483,7 +483,7 @@ public sealed class LocalWindowsHostProbe : ILocalHostProbe
             return Array.Empty<DockerContainerSnapshot>();
 
         return SplitOutputLines(output)
-            .Select(line => line.Split('\t'))
+            .Select(SplitColumns)
             .Where(columns => columns.Length >= 4)
             .Select(columns =>
                 new DockerContainerSnapshot(
@@ -593,7 +593,11 @@ public sealed class LocalWindowsHostProbe : ILocalHostProbe
                         installedApplication.Name);
 
                 evidence.Add(
-                    $"installed {location}");
+                    location.Equals(
+                        installedApplication.Name,
+                        StringComparison.OrdinalIgnoreCase)
+                        ? $"installed {installedApplication.Name}"
+                        : $"installed {installedApplication.Name} at {location}");
             }
 
             var state = process is not null
@@ -658,7 +662,34 @@ public sealed class LocalWindowsHostProbe : ILocalHostProbe
                 StringSplitOptions.RemoveEmptyEntries)
             .Select(line => line.TrimEnd('\r'))
             .Where(line => !string.IsNullOrWhiteSpace(line));
+    private static string[] SplitColumns(
+        string line) =>
+        line.Replace(
+                "`t",
+                "\t",
+                StringComparison.Ordinal)
+            .Split('\t');
 
+    private static string NormalizeRegistryPath(
+        string value)
+    {
+        var normalized =
+            value.Trim().Trim('"');
+
+        var commaIndex =
+            normalized.LastIndexOf(',');
+
+        if (commaIndex > 1 &&
+            int.TryParse(
+                normalized[(commaIndex + 1)..],
+                out _))
+        {
+            normalized =
+                normalized[..commaIndex];
+        }
+
+        return normalized.Trim().Trim('"');
+    }
     private static string NormalizeWindowsState(
         string state) =>
         state.Trim() switch
