@@ -29,6 +29,27 @@ public sealed record IntegrationSnapshot(
     string State,
     string Evidence);
 
+public sealed record ProcessSnapshot(
+    int ProcessId,
+    string Name,
+    string ExecutablePath,
+    string WorkingSet,
+    string CpuTime);
+
+public sealed record InstalledApplicationSnapshot(
+    string Name,
+    string Version,
+    string Publisher,
+    string InstallLocation,
+    string Source);
+
+public sealed record NetworkListenerSnapshot(
+    string Protocol,
+    string LocalAddress,
+    int LocalPort,
+    int ProcessId,
+    string ProcessName);
+
 public sealed record HostSnapshot(
     DateTimeOffset CapturedAt,
     string Hostname,
@@ -47,7 +68,19 @@ public sealed record HostSnapshot(
     IReadOnlyList<IntegrationSnapshot> Integrations,
     IReadOnlyList<string> FailedUnits,
     IReadOnlyList<string> RecentLogs,
-    IReadOnlyList<string> Warnings);
+    IReadOnlyList<string> Warnings)
+{
+    public IReadOnlyList<ProcessSnapshot> Processes { get; init; } =
+        Array.Empty<ProcessSnapshot>();
+
+    public IReadOnlyList<InstalledApplicationSnapshot>
+        InstalledApplications { get; init; } =
+            Array.Empty<InstalledApplicationSnapshot>();
+
+    public IReadOnlyList<NetworkListenerSnapshot>
+        NetworkListeners { get; init; } =
+            Array.Empty<NetworkListenerSnapshot>();
+}
 
 public interface ILocalHostProbe
 {
