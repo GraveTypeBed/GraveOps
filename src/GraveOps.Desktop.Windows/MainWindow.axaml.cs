@@ -36,6 +36,8 @@ public partial class MainWindow : Window
                 "Artist, album and music queue telemetry"),
             ["ProwlarrNav"] = new("ArrPage", "Prowlarr",
                 "Indexer inventory, availability and protected API health"),
+            ["SABnzbdNav"] = new("SABnzbdPage", "SABnzbd",
+                "Usenet queue, transfer and recent-history workspace"),
             ["QBittorrentNav"] = new("QBittorrentPage", "qBittorrent",
                 "Transfer queue, categories and history workspace"),
             ["LogsNav"] = new("WarningsPage", "Logs",
@@ -71,6 +73,7 @@ public partial class MainWindow : Window
         InitializePlexWorkspace();
         InitializeArrWorkspace();
         InitializeQBittorrentWorkspace();
+        InitializeSABnzbdWorkspace();
 
         Opened += async (_, _) =>
         {
@@ -234,6 +237,17 @@ public partial class MainWindow : Window
         else
         {
             UpdateQBittorrentTimerCadence();
+        }
+
+        if (navigationName.Equals(
+                "SABnzbdNav",
+                StringComparison.Ordinal))
+        {
+            ActivateWindowsSABnzbdWorkspace();
+        }
+        else
+        {
+            UpdateSABnzbdTimerCadence();
         }
 
         RecordActivity(
@@ -538,6 +552,12 @@ public partial class MainWindow : Window
                     "qBittorrent",
                     StringComparison.OrdinalIgnoreCase));
 
+        var sabnzbd =
+            integrations.FirstOrDefault(integration =>
+                integration.Name.Equals(
+                    "SABnzbd",
+                    StringComparison.OrdinalIgnoreCase));
+
         var detectedCount =
             integrations.Count;
 
@@ -581,7 +601,13 @@ public partial class MainWindow : Window
         UpdateQBittorrentDiscovery(
             qbittorrent);
 
+        UpdateSABnzbdDiscovery(
+            sabnzbd);
+
         Get<TextBlock>("AcquisitionGroupLabel").IsVisible =
+            true;
+
+        Get<Button>("SABnzbdNav").IsVisible =
             true;
 
         Get<Button>("QBittorrentNav").IsVisible =

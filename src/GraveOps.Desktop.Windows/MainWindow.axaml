@@ -385,6 +385,29 @@
                 </Button>
 
                 <Button
+                    x:Name="SABnzbdNav"
+                    Classes="nav sub"
+                    IsVisible="False"
+                    Click="NavigationButton_OnClick">
+                  <Grid ColumnDefinitions="24,*">
+                    <Path
+                        Width="16"
+                        Height="16"
+                        Stretch="Uniform"
+                        Data="M2,3 L14,3 L14,13 L2,13 Z M4,6 L12,6 M4,9 L10,9 M4,11 L8,11"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.45"
+                        StrokeLineCap="Round" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="SABnzbd"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                  </Grid>
+                </Button>
+
+
+                <Button
                     x:Name="QBittorrentNav"
                     Classes="nav sub"
                     IsVisible="False"
@@ -1708,6 +1731,306 @@
                                      Text="Waiting for Arr API telemetry."
                                      Classes="muted"
                                      TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+                    </StackPanel>
+                  </Grid>
+                </StackPanel>
+              </ScrollViewer>
+            </Grid>
+
+
+            <Grid x:Name="SABnzbdPage" IsVisible="False">
+              <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="10">
+                  <Border Classes="card">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                      <Border
+                          Width="44"
+                          Height="44"
+                          CornerRadius="10"
+                          Background="{DynamicResource AccentTintBrush}">
+                        <Path
+                            Width="22"
+                            Height="22"
+                            Stretch="Uniform"
+                            Data="M2,3 L14,3 L14,13 L2,13 Z M4,6 L12,6 M4,9 L10,9 M4,11 L8,11"
+                            Stroke="{DynamicResource AccentBrush}"
+                            StrokeThickness="1.5"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+                      </Border>
+
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                        <TextBlock Text="SABnzbd" FontSize="18" FontWeight="SemiBold" />
+                        <TextBlock
+                            Text="Authenticated queue, transfer, disk and recent-history telemetry."
+                            Classes="pageSubtitle"
+                            TextWrapping="Wrap" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                          <TextBlock x:Name="SABnzbdTargetText" Text="Local Windows" Classes="dim" FontSize="10" />
+                          <TextBlock x:Name="SABnzbdFreshnessText" Text="CHECKING..." Classes="dim" FontSize="10" />
+                        </StackPanel>
+                      </StackPanel>
+
+                      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Classes="compact" Content="Open SABnzbd" Click="SABnzbdOpenButton_OnClick" />
+                        <Button Classes="primary compact" Content="Refresh" Click="SABnzbdRefreshButton_OnClick" />
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+
+                  <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+                    <Border Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="STATE" Classes="eyebrow" />
+                        <TextBlock x:Name="SABnzbdStateText" Text="CHECKING" FontSize="17" FontWeight="SemiBold" />
+                        <TextBlock x:Name="SABnzbdConnectionText" Text="--" Classes="dim" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="VERSION" Classes="eyebrow" />
+                        <TextBlock x:Name="SABnzbdVersionText" Text="--" FontSize="17" FontWeight="SemiBold" />
+                        <TextBlock Text="Read-only JSON API" Classes="dim" />
+                      </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="QUEUE" Classes="eyebrow" />
+                        <TextBlock x:Name="SABnzbdQueueText" Text="--" FontSize="20" FontWeight="SemiBold" />
+                        <TextBlock Text="Current queued jobs" Classes="dim" />
+                      </StackPanel>
+                    </Border>
+                    <Border Grid.Column="3" Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="ACTIVE" Classes="eyebrow" />
+                        <TextBlock x:Name="SABnzbdActiveText" Text="--" FontSize="20" FontWeight="SemiBold" />
+                        <TextBlock Text="Downloading or processing" Classes="dim" />
+                      </StackPanel>
+                    </Border>
+                  </Grid>
+
+                  <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+                    <Border Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="DOWNLOAD" Classes="eyebrow" />
+                        <TextBlock x:Name="SABnzbdDownloadSpeedText" Text="--" FontSize="17" FontWeight="SemiBold" />
+                      </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="REMAINING" Classes="eyebrow" />
+                        <TextBlock x:Name="SABnzbdRemainingText" Text="--" FontSize="17" FontWeight="SemiBold" />
+                      </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="ETA" Classes="eyebrow" />
+                        <TextBlock x:Name="SABnzbdEtaText" Text="--" FontSize="17" FontWeight="SemiBold" />
+                      </StackPanel>
+                    </Border>
+                    <Border Grid.Column="3" Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="FAILED RECENT" Classes="eyebrow" />
+                        <TextBlock x:Name="SABnzbdFailedRecentText" Text="--" FontSize="17" FontWeight="SemiBold" />
+                      </StackPanel>
+                    </Border>
+                  </Grid>
+
+                  <Grid ColumnDefinitions="2*,1*" ColumnSpacing="10">
+                    <StackPanel Spacing="10">
+                      <Border Classes="card">
+                        <Grid RowDefinitions="Auto,*" RowSpacing="10">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel>
+                              <TextBlock Text="Current downloads" Classes="sectionTitle" />
+                              <TextBlock
+                                  Text="Queue state, progress, remaining data, ETA, category and processing detail."
+                                  Classes="pageSubtitle"
+                                  Margin="0,3,0,0"
+                                  TextWrapping="Wrap" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" x:Name="SABnzbdQueueCountText" Text="--" Classes="dim" VerticalAlignment="Center" />
+                          </Grid>
+
+                          <Grid Grid.Row="1">
+                            <ListBox x:Name="SABnzbdQueueList" Classes="dataList" IsVisible="False" MaxHeight="500">
+                              <ListBox.ItemTemplate>
+                                <DataTemplate x:CompileBindings="False">
+                                  <Border Classes="selectionRow" Margin="0,0,0,7" Padding="12">
+                                    <Grid ColumnDefinitions="2*,1*,1*,Auto" ColumnSpacing="12">
+                                      <StackPanel Spacing="3">
+                                        <TextBlock Text="{ReflectionBinding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                        <TextBlock Text="{ReflectionBinding Category}" Classes="dim" />
+                                        <TextBlock Text="{ReflectionBinding Detail}" Classes="dim" FontSize="9.5" TextWrapping="Wrap" />
+                                      </StackPanel>
+                                      <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="STATE / PROGRESS" Classes="eyebrow" />
+                                        <TextBlock Text="{ReflectionBinding State}" />
+                                        <TextBlock Text="{ReflectionBinding Progress}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{ReflectionBinding Remaining}" Classes="dim" />
+                                      </StackPanel>
+                                      <StackPanel Grid.Column="2" Spacing="3">
+                                        <TextBlock Text="SIZE / SPEED" Classes="eyebrow" />
+                                        <TextBlock Text="{ReflectionBinding Size}" />
+                                        <TextBlock Text="{ReflectionBinding Downloaded}" />
+                                        <TextBlock Text="{ReflectionBinding DownloadSpeed}" Classes="dim" />
+                                      </StackPanel>
+                                      <StackPanel Grid.Column="3" Spacing="3" HorizontalAlignment="Right">
+                                        <TextBlock Text="ETA" Classes="eyebrow" />
+                                        <TextBlock Text="{ReflectionBinding Eta}" HorizontalAlignment="Right" />
+                                        <TextBlock Text="{ReflectionBinding Added}" Classes="mono" FontSize="9" HorizontalAlignment="Right" />
+                                      </StackPanel>
+                                    </Grid>
+                                  </Border>
+                                </DataTemplate>
+                              </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <Border x:Name="SABnzbdQueueEmptyState" Classes="emptyState" IsVisible="True">
+                              <TextBlock
+                                  x:Name="SABnzbdQueueEmptyText"
+                                  Text="Live SABnzbd queue detail is loading."
+                                  Classes="muted"
+                                  TextWrapping="Wrap" />
+                            </Border>
+                          </Grid>
+                        </Grid>
+                      </Border>
+
+                      <Border Classes="card">
+                        <Grid RowDefinitions="Auto,*" RowSpacing="10">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel>
+                              <TextBlock Text="Recent history" Classes="sectionTitle" />
+                              <TextBlock
+                                  Text="Recent completed and failed SABnzbd jobs with privacy-safe processing detail."
+                                  Classes="pageSubtitle"
+                                  Margin="0,3,0,0"
+                                  TextWrapping="Wrap" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" x:Name="SABnzbdHistoryCountText" Text="--" Classes="dim" VerticalAlignment="Center" />
+                          </Grid>
+
+                          <Grid Grid.Row="1">
+                            <ListBox x:Name="SABnzbdHistoryList" Classes="dataList" IsVisible="False" MaxHeight="360">
+                              <ListBox.ItemTemplate>
+                                <DataTemplate x:CompileBindings="False">
+                                  <Border Classes="selectionRow" Margin="0,0,0,7" Padding="12">
+                                    <Grid ColumnDefinitions="2*,1*,Auto" ColumnSpacing="12">
+                                      <StackPanel Spacing="3">
+                                        <TextBlock Text="{ReflectionBinding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                        <TextBlock Text="{ReflectionBinding Category}" Classes="dim" />
+                                        <TextBlock
+                                            Text="{ReflectionBinding Detail}"
+                                            Classes="dim"
+                                            FontSize="9.5"
+                                            TextWrapping="Wrap"
+                                            MaxWidth="560" />
+                                      </StackPanel>
+                                      <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="STATE / SIZE" Classes="eyebrow" />
+                                        <TextBlock Text="{ReflectionBinding State}" />
+                                        <TextBlock Text="{ReflectionBinding Size}" Classes="dim" />
+                                      </StackPanel>
+                                      <StackPanel Grid.Column="2" Spacing="3" HorizontalAlignment="Right">
+                                        <TextBlock Text="COMPLETED" Classes="eyebrow" />
+                                        <TextBlock Text="{ReflectionBinding Completed}" Classes="mono" HorizontalAlignment="Right" />
+                                        <TextBlock Text="{ReflectionBinding Duration}" Classes="dim" HorizontalAlignment="Right" />
+                                      </StackPanel>
+                                    </Grid>
+                                  </Border>
+                                </DataTemplate>
+                              </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <Border x:Name="SABnzbdHistoryEmptyState" Classes="emptyState" IsVisible="True">
+                              <TextBlock
+                                  x:Name="SABnzbdHistoryEmptyText"
+                                  Text="Recent SABnzbd history is loading."
+                                  Classes="muted"
+                                  TextWrapping="Wrap" />
+                            </Border>
+                          </Grid>
+                        </Grid>
+                      </Border>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Spacing="10">
+                      <Border Classes="card">
+                        <StackPanel Spacing="9">
+                          <TextBlock Text="API connection" Classes="sectionTitle" />
+                          <TextBlock
+                              Text="The endpoint is stored without secrets. The API key is stored only in Windows Credential Manager."
+                              Classes="muted"
+                              TextWrapping="Wrap" />
+                          <TextBlock Text="ENDPOINT" Classes="eyebrow" />
+                          <TextBox
+                              x:Name="SABnzbdEndpointTextBox"
+                              Text="http://127.0.0.1:8080/"
+                              PlaceholderText="http://server:8080/" />
+                          <TextBlock Text="API KEY" Classes="eyebrow" />
+                          <TextBox
+                              x:Name="SABnzbdApiKeyTextBox"
+                              PasswordChar="*"
+                              PlaceholderText="Leave blank to preserve the saved key" />
+                          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <Button Classes="primary" Content="Save + test" Click="SABnzbdSaveTestButton_OnClick" />
+                            <Button Grid.Column="1" Classes="danger" Content="Clear saved key" Click="SABnzbdClearSavedApiKeyButton_OnClick" />
+                          </Grid>
+                        </StackPanel>
+                      </Border>
+
+                      <Border Classes="card">
+                        <StackPanel Spacing="7">
+                          <TextBlock Text="Transfer analytics" Classes="sectionTitle" />
+                          <TextBlock
+                              x:Name="SABnzbdTransferAnalyticsText"
+                              Text="Waiting for the first authenticated SABnzbd sample."
+                              Classes="mono"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+
+                      <Border Classes="card">
+                        <StackPanel Spacing="7">
+                          <TextBlock Text="History analytics" Classes="sectionTitle" />
+                          <TextBlock
+                              x:Name="SABnzbdHistoryAnalyticsText"
+                              Text="Waiting for the first authenticated SABnzbd sample."
+                              Classes="mono"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+
+                      <Border Classes="card">
+                        <StackPanel Spacing="7">
+                          <TextBlock Text="Security and evidence" Classes="sectionTitle" />
+                          <TextBlock Text="PROVIDER EVIDENCE" Classes="eyebrow" />
+                          <TextBlock
+                              x:Name="SABnzbdDiscoveryEvidenceText"
+                              Text="No Windows provider evidence was reported."
+                              Classes="mono"
+                              FontSize="10"
+                              TextWrapping="Wrap" />
+                          <TextBlock Text="KEY HANDLING" Classes="eyebrow" Margin="0,5,0,0" />
+                          <TextBlock
+                              x:Name="SABnzbdSecurityText"
+                              Text="The API key stays in Windows Credential Manager."
+                              Classes="muted"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+
+                      <Border Classes="card">
+                        <StackPanel Spacing="5">
+                          <TextBlock Text="Telemetry status" Classes="sectionTitle" />
+                          <TextBlock
+                              x:Name="SABnzbdStatusText"
+                              Text="Waiting for SABnzbd API telemetry."
+                              Classes="muted"
+                              TextWrapping="Wrap" />
                         </StackPanel>
                       </Border>
                     </StackPanel>

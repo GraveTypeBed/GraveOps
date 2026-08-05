@@ -101,6 +101,7 @@ public partial class MainWindow
             OnPlexTargetChanged();
             OnArrTargetChanged();
             OnQBittorrentTargetChanged();
+            OnSABnzbdTargetChanged();
         }
         catch (Exception exception)
         {
