@@ -60,6 +60,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         InitializeLinuxShellParity();
         InitializeServersEditor();
+        InitializePlexWorkspace();
 
         Opened += async (_, _) =>
         {
@@ -173,6 +174,17 @@ public partial class MainWindow : Window
         Get<TextBlock>("PageTitleText").Text = target.Title;
         Get<TextBlock>("PageSubtitleText").Text = target.Subtitle;
         UpdateLinuxParityPage(target);
+
+        if (navigationName.Equals(
+                "PlexNav",
+                StringComparison.Ordinal))
+        {
+            ActivateWindowsPlexWorkspace();
+        }
+        else
+        {
+            UpdatePlexTimerCadence();
+        }
 
         RecordActivity(
             "Navigation",
@@ -473,21 +485,8 @@ public partial class MainWindow : Window
         Get<ListBox>("IntegrationsList").IsVisible =
             detectedCount > 0;
 
-        var plexVisible =
-            plex is not null;
-
-        Get<TextBlock>("LibraryGroupLabel").IsVisible =
-            plexVisible;
-
-        Get<Button>("PlexNav").IsVisible =
-            plexVisible;
-
-        PopulateMediaWorkspace(
-            plex,
-            "PlexWorkspaceStateText",
-            "PlexWorkspaceKindText",
-            "PlexWorkspaceEvidenceText",
-            "PlexWorkspacePresenceText");
+        UpdatePlexDiscovery(
+            plex);
 
         var qbittorrentVisible =
             qbittorrent is not null;

@@ -1016,95 +1016,305 @@
             <Grid x:Name="PlexPage" IsVisible="False">
               <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="10">
-                  <Grid ColumnDefinitions="2*,1*" ColumnSpacing="10">
+                  <Border Classes="card">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                      <Border
+                          Width="44"
+                          Height="44"
+                          CornerRadius="10"
+                          Background="{DynamicResource AccentTintBrush}">
+                        <Path
+                            Width="23"
+                            Height="23"
+                            Stretch="Uniform"
+                            Data="M3,2 L8.2,2 L13,8 L8.2,14 L3,14 L8.1,8 Z"
+                            Fill="{DynamicResource AccentBrush}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+                      </Border>
+
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                        <TextBlock Text="Plex Media Server" FontSize="18" FontWeight="SemiBold" />
+                        <TextBlock
+                            x:Name="PlexTargetText"
+                            Text="Local Windows"
+                            Classes="pageSubtitle" />
+                        <TextBlock
+                            x:Name="PlexFreshnessText"
+                            Text="CHECKING..."
+                            Classes="dim"
+                            FontSize="10" />
+                      </StackPanel>
+
+                      <StackPanel
+                          Grid.Column="2"
+                          Orientation="Horizontal"
+                          Spacing="8"
+                          VerticalAlignment="Center">
+                        <Button
+                            Classes="compact"
+                            Content="Open Plex"
+                            Click="PlexOpenButton_OnClick" />
+                        <Button
+                            Classes="primary compact"
+                            Content="Refresh"
+                            Click="PlexRefreshButton_OnClick" />
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+
+                  <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
                     <Border Classes="card">
-                      <StackPanel Spacing="12">
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                          <Border
-                              Width="42"
-                              Height="42"
-                              CornerRadius="10"
-                              Background="{DynamicResource AccentTintBrush}">
-                            <Path
-                                Width="22"
-                                Height="22"
-                                Stretch="Uniform"
-                                Data="M3,2 L8.2,2 L13,8 L8.2,14 L3,14 L8.1,8 Z"
-                                Fill="{DynamicResource AccentBrush}"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center" />
-                          </Border>
-
-                          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
-                            <TextBlock Text="Plex Media Server" FontSize="18" FontWeight="SemiBold" />
-                            <TextBlock
-                                Text="Windows discovery workspace"
-                                Classes="pageSubtitle" />
-                          </StackPanel>
-                        </Grid>
-
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                          <Border Classes="inset">
-                            <StackPanel>
-                              <TextBlock Text="STATE" Classes="eyebrow" />
-                              <TextBlock
-                                  x:Name="PlexWorkspaceStateText"
-                                  Text="Not detected"
-                                  FontSize="17"
-                                  FontWeight="SemiBold" />
-                            </StackPanel>
-                          </Border>
-                          <Border Grid.Column="1" Classes="inset">
-                            <StackPanel>
-                              <TextBlock Text="DISCOVERY" Classes="eyebrow" />
-                              <TextBlock
-                                  x:Name="PlexWorkspaceKindText"
-                                  Text="--"
-                                  FontSize="13"
-                                  FontWeight="SemiBold"
-                                  TextWrapping="Wrap" />
-                            </StackPanel>
-                          </Border>
-                        </Grid>
-
-                        <Border Classes="inset">
-                          <StackPanel Spacing="5">
-                            <TextBlock Text="PROVIDER EVIDENCE" Classes="eyebrow" />
-                            <TextBlock
-                                x:Name="PlexWorkspaceEvidenceText"
-                                Text="No Plex evidence was reported."
-                                Classes="mono"
-                                TextWrapping="Wrap" />
-                          </StackPanel>
-                        </Border>
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="SERVICE" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="PlexServiceText"
+                            Text="CHECKING"
+                            FontSize="17"
+                            FontWeight="SemiBold" />
+                        <TextBlock
+                            x:Name="PlexServiceDetailText"
+                            Text="Waiting for API identity"
+                            Classes="dim"
+                            TextWrapping="Wrap" />
                       </StackPanel>
                     </Border>
 
                     <Border Grid.Column="1" Classes="card">
-                      <StackPanel Spacing="10">
-                        <TextBlock Text="Parity status" Classes="sectionTitle" />
-                        <Border Classes="inset">
-                          <StackPanel Spacing="5">
-                            <TextBlock Text="PRESENCE" Classes="eyebrow" />
-                            <TextBlock
-                                x:Name="PlexWorkspacePresenceText"
-                                Text="Unavailable"
-                                FontWeight="SemiBold" />
-                          </StackPanel>
-                        </Border>
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="VERSION" Classes="eyebrow" />
                         <TextBlock
-                            Text="This phase establishes the Linux-style Plex workspace and provider evidence. Sessions, libraries and server API telemetry remain read-only follow-up work."
-                            Classes="muted"
+                            x:Name="PlexVersionText"
+                            Text="--"
+                            FontSize="17"
+                            FontWeight="SemiBold" />
+                        <TextBlock
+                            x:Name="PlexConnectionText"
+                            Text="Waiting for Plex API"
+                            Classes="dim"
                             TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="ACTIVE SESSIONS" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="PlexActiveSessionsText"
+                            Text="--"
+                            FontSize="20"
+                            FontWeight="SemiBold" />
+                        <TextBlock
+                            x:Name="PlexBandwidthText"
+                            Text="--"
+                            Classes="dim" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="3" Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="LIBRARIES" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="PlexLibrariesText"
+                            Text="--"
+                            FontSize="20"
+                            FontWeight="SemiBold" />
+                        <TextBlock Text="Protected API sections" Classes="dim" />
                       </StackPanel>
                     </Border>
                   </Grid>
 
+                  <Grid ColumnDefinitions="2*,1*" ColumnSpacing="10">
+                    <Border Classes="card">
+                      <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
+                        <Grid ColumnDefinitions="*,Auto">
+                          <StackPanel>
+                            <TextBlock Text="Live playback" Classes="sectionTitle" />
+                            <TextBlock
+                                Text="Current viewers, playback decisions, progress and bandwidth."
+                                Classes="pageSubtitle"
+                                Margin="0,3,0,0" />
+                          </StackPanel>
+
+                          <TextBlock
+                              Grid.Column="1"
+                              x:Name="PlexSessionCountText"
+                              Text="--"
+                              Classes="dim"
+                              VerticalAlignment="Center" />
+                        </Grid>
+
+                        <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                          <Border Classes="inset">
+                            <StackPanel>
+                              <TextBlock Text="DIRECT PLAY" Classes="eyebrow" />
+                              <TextBlock
+                                  x:Name="PlexDirectPlayText"
+                                  Text="--"
+                                  FontSize="16"
+                                  FontWeight="SemiBold" />
+                            </StackPanel>
+                          </Border>
+
+                          <Border Grid.Column="1" Classes="inset">
+                            <StackPanel>
+                              <TextBlock Text="DIRECT STREAM" Classes="eyebrow" />
+                              <TextBlock
+                                  x:Name="PlexDirectStreamText"
+                                  Text="--"
+                                  FontSize="16"
+                                  FontWeight="SemiBold" />
+                            </StackPanel>
+                          </Border>
+
+                          <Border Grid.Column="2" Classes="inset">
+                            <StackPanel>
+                              <TextBlock Text="TRANSCODE" Classes="eyebrow" />
+                              <TextBlock
+                                  x:Name="PlexTranscodeText"
+                                  Text="--"
+                                  FontSize="16"
+                                  FontWeight="SemiBold" />
+                            </StackPanel>
+                          </Border>
+                        </Grid>
+
+                        <Grid Grid.Row="2">
+                          <ListBox
+                              x:Name="PlexSessionsList"
+                              Classes="dataList"
+                              IsVisible="False">
+                            <ListBox.ItemTemplate>
+                              <DataTemplate x:CompileBindings="False">
+                                <Border Classes="selectionRow" Margin="0,0,0,7" Padding="12">
+                                  <Grid ColumnDefinitions="2*,1.1*,1.1*,Auto" ColumnSpacing="12">
+                                    <StackPanel Spacing="3">
+                                      <TextBlock
+                                          Text="{ReflectionBinding Title}"
+                                          FontWeight="SemiBold"
+                                          TextWrapping="Wrap" />
+                                      <TextBlock
+                                          Text="{ReflectionBinding Detail}"
+                                          Classes="dim"
+                                          FontSize="9.5"
+                                          TextWrapping="Wrap" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                      <TextBlock Text="VIEWER / PLAYER" Classes="eyebrow" />
+                                      <TextBlock Text="{ReflectionBinding User}" />
+                                      <TextBlock
+                                          Text="{ReflectionBinding Player}"
+                                          Classes="dim"
+                                          TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2" Spacing="3">
+                                      <TextBlock Text="PLAYBACK" Classes="eyebrow" />
+                                      <TextBlock Text="{ReflectionBinding VideoDecision}" />
+                                      <TextBlock
+                                          Text="{ReflectionBinding AudioDecision}"
+                                          Classes="dim" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="3" Spacing="3" HorizontalAlignment="Right">
+                                      <TextBlock
+                                          Text="{ReflectionBinding State}"
+                                          FontWeight="SemiBold"
+                                          HorizontalAlignment="Right" />
+                                      <TextBlock
+                                          Text="{ReflectionBinding Progress}"
+                                          Classes="dim"
+                                          HorizontalAlignment="Right" />
+                                      <TextBlock
+                                          Text="{ReflectionBinding Bandwidth}"
+                                          Classes="mono"
+                                          FontSize="9.5"
+                                          HorizontalAlignment="Right" />
+                                    </StackPanel>
+                                  </Grid>
+                                </Border>
+                              </DataTemplate>
+                            </ListBox.ItemTemplate>
+                          </ListBox>
+
+                          <Border
+                              x:Name="PlexSessionsEmptyState"
+                              Classes="emptyState"
+                              IsVisible="True">
+                            <TextBlock
+                                x:Name="PlexSessionsEmptyText"
+                                Text="Plex session telemetry is loading."
+                                Classes="muted"
+                                TextWrapping="Wrap" />
+                          </Border>
+                        </Grid>
+                      </Grid>
+                    </Border>
+
+                    <StackPanel Grid.Column="1" Spacing="10">
+                      <Border Classes="card">
+                        <StackPanel Spacing="9">
+                          <TextBlock Text="Plex API connection" Classes="sectionTitle" />
+                          <TextBlock
+                              Text="Endpoint settings are stored without secrets. The token is stored only in Windows Credential Manager."
+                              Classes="muted"
+                              TextWrapping="Wrap" />
+
+                          <TextBlock Text="ENDPOINT" Classes="eyebrow" />
+                          <TextBox
+                              x:Name="PlexEndpointTextBox"
+                              Text="http://127.0.0.1:32400/"
+                              PlaceholderText="http://127.0.0.1:32400/" />
+
+                          <TextBlock Text="PLEX TOKEN" Classes="eyebrow" />
+                          <TextBox
+                              x:Name="PlexTokenTextBox"
+                              PasswordChar="*"
+                              PlaceholderText="Leave blank to preserve or auto-discover" />
+
+                          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <Button
+                                Classes="primary"
+                                Content="Save + test"
+                                Click="PlexSaveTestButton_OnClick" />
+                            <Button
+                                Grid.Column="1"
+                                Classes="danger"
+                                Content="Clear saved token"
+                                Click="PlexClearTokenButton_OnClick" />
+                          </Grid>
+                        </StackPanel>
+                      </Border>
+
+                      <Border Classes="card">
+                        <StackPanel Spacing="7">
+                          <TextBlock Text="Security and evidence" Classes="sectionTitle" />
+                          <TextBlock Text="PROVIDER EVIDENCE" Classes="eyebrow" />
+                          <TextBlock
+                              x:Name="PlexDiscoveryEvidenceText"
+                              Text="No Windows provider evidence was reported."
+                              Classes="mono"
+                              FontSize="10"
+                              TextWrapping="Wrap" />
+
+                          <TextBlock Text="TOKEN HANDLING" Classes="eyebrow" Margin="0,5,0,0" />
+                          <TextBlock
+                              x:Name="PlexSecurityText"
+                              Text="Tokens remain protected."
+                              Classes="muted"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+                    </StackPanel>
+                  </Grid>
+
                   <Border Classes="card">
-                    <StackPanel Spacing="8">
-                      <TextBlock Text="Next Plex parity layer" Classes="sectionTitle" />
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="Telemetry status" Classes="sectionTitle" />
                       <TextBlock
-                          Text="Server identity, claim state, library health, active sessions and scan evidence will be connected through the shared GraveOps integration contract."
+                          x:Name="PlexStatusText"
+                          Text="Waiting for Plex telemetry."
                           Classes="muted"
                           TextWrapping="Wrap" />
                     </StackPanel>
@@ -1112,7 +1322,6 @@
                 </StackPanel>
               </ScrollViewer>
             </Grid>
-
             <Grid x:Name="QBittorrentPage" IsVisible="False">
               <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="10">

@@ -98,6 +98,7 @@ public partial class MainWindow
                 $"{WindowsTargetUiProjection.ConnectionSummary(selected)}.");
 
             await RefreshAsync();
+            OnPlexTargetChanged();
         }
         catch (Exception exception)
         {

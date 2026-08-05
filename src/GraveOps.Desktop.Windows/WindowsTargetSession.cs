@@ -64,6 +64,21 @@ public static class WindowsTargetCatalog
             $"graveops/target/{targetId.Trim()}/password";
     }
 
+    public static string PlexCredentialReferenceFor(
+        string targetId)
+    {
+        if (string.IsNullOrWhiteSpace(
+                targetId))
+        {
+            throw new ArgumentException(
+                "The target ID is required.",
+                nameof(targetId));
+        }
+
+        return
+            $"graveops/target/{targetId.Trim()}/plex-token";
+    }
+
     public static TargetProfile CreateRemote(
         string targetId,
         string displayName,
@@ -294,6 +309,54 @@ public sealed class WindowsTargetSession
         _credentialVault.DeleteAsync(
             new CredentialReference(
                 WindowsTargetCatalog.CredentialReferenceFor(
+                    targetId)),
+            cancellationToken);
+
+    public async Task StorePlexTokenAsync(
+        string targetId,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        var normalized =
+            token?.Trim() ??
+            string.Empty;
+
+        if (normalized.Length is < 8 or > 512 ||
+            normalized.Contains('\r') ||
+            normalized.Contains('\n'))
+        {
+            throw new ArgumentException(
+                "The Plex token must contain 8 to 512 characters on one line.",
+                nameof(token));
+        }
+
+        using var secret =
+            new SecretValue(
+                normalized);
+
+        await _credentialVault.StoreAsync(
+            new CredentialReference(
+                WindowsTargetCatalog.PlexCredentialReferenceFor(
+                    targetId)),
+            secret,
+            cancellationToken);
+    }
+
+    public Task<SecretValue?> RetrievePlexTokenAsync(
+        string targetId,
+        CancellationToken cancellationToken = default) =>
+        _credentialVault.RetrieveAsync(
+            new CredentialReference(
+                WindowsTargetCatalog.PlexCredentialReferenceFor(
+                    targetId)),
+            cancellationToken);
+
+    public Task DeletePlexTokenAsync(
+        string targetId,
+        CancellationToken cancellationToken = default) =>
+        _credentialVault.DeleteAsync(
+            new CredentialReference(
+                WindowsTargetCatalog.PlexCredentialReferenceFor(
                     targetId)),
             cancellationToken);
 
