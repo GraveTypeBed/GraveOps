@@ -9,6 +9,7 @@ using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using GraveOps.Core.Targets;
 
 namespace GraveOps.Desktop.Linux;
 
@@ -1727,16 +1728,19 @@ public partial class MainWindow
                         StringComparison.OrdinalIgnoreCase))
                 .ToArray();
         var downloadSnapshots =
-            downloaders
-                .Select(item =>
-                    _downloadClientCache.TryGetValue(
-                        item.Name,
-                        out var sample)
-                        ? sample
-                        : null)
-                .Where(item => item is not null)
-                .Cast<LinuxDownloadClientSnapshot>()
-                .ToArray();
+            SupportsTargetCapability(
+                CapabilityIds.ApplicationApiTelemetry)
+                ? downloaders
+                    .Select(item =>
+                        _downloadClientCache.TryGetValue(
+                            item.Name,
+                            out var sample)
+                            ? sample
+                            : null)
+                    .Where(item => item is not null)
+                    .Cast<LinuxDownloadClientSnapshot>()
+                    .ToArray()
+                : Array.Empty<LinuxDownloadClientSnapshot>();
         var activeTransfers =
             downloadSnapshots.Sum(item =>
                 item.ActiveCount);
@@ -2058,14 +2062,29 @@ public partial class MainWindow
                     }
             });
 
+        var targetActivities =
+            ActiveTargetActivities();
         var meaningfulActivity =
-            _controlPlane.State.Activities
+            targetActivities
                 .Where(item =>
                     !item.Kind.Equals(
                         "Navigation",
                         StringComparison.OrdinalIgnoreCase))
                 .Take(8)
                 .ToArray();
+        var targetJobs =
+            ActiveTargetJobs();
+        var targetUnread =
+            targetActivities.Count(item =>
+                item.IsUnread);
+        var targetRunningJobs =
+            targetJobs.Count(item =>
+                item.State.Equals(
+                    "Running",
+                    StringComparison.OrdinalIgnoreCase) ||
+                item.State.Equals(
+                    "Queued",
+                    StringComparison.OrdinalIgnoreCase));
         var recentFailures =
             meaningfulActivity.Count(item =>
                 item.Kind.Equals(
@@ -2082,16 +2101,16 @@ public partial class MainWindow
                 "core:activity",
                 "Recent activity",
                 "Operations",
-                _controlPlane.State.UnreadActivityCount > 0
+                targetUnread > 0
                     ? "NEW"
                     : "CURRENT",
-                _controlPlane.State.UnreadActivityCount > 0
+                targetUnread > 0
                     ? OpsSeverity.Info
                     : OpsSeverity.Healthy,
                 meaningfulActivity.Length.ToString(
                     CultureInfo.InvariantCulture),
-                $"{_controlPlane.State.UnreadActivityCount} unread · " +
-                $"{_controlPlane.State.RunningJobCount} running job(s)",
+                $"{targetUnread} unread · " +
+                $"{targetRunningJobs} running job(s)",
                 string.Join(
                     Environment.NewLine,
                     meaningfulActivity.Select(item =>
@@ -2107,7 +2126,7 @@ public partial class MainWindow
                     {
                         $"{recentFailures} recent failure(s)",
                         $"{recentNotifications} notification(s)",
-                        $"{_controlPlane.State.RunningJobCount} job(s)"
+                        $"{targetRunningJobs} job(s)"
                     },
                 Rows =
                     meaningfulActivity
@@ -2158,6 +2177,15 @@ public partial class MainWindow
                 BuildProviderDashboardCard(
                     group.Key,
                     group.ToArray()));
+        }
+
+        if (!SupportsTargetCapability(
+                CapabilityIds.BackupInventoryRead))
+        {
+            cards.RemoveAll(card =>
+                card.Key.Equals(
+                    "core:backups",
+                    StringComparison.OrdinalIgnoreCase));
         }
 
         var distinctCards =
@@ -2358,7 +2386,9 @@ public partial class MainWindow
                         item.Severity))
                 .ToArray();
 
-        if (product.Equals(
+        if (SupportsTargetCapability(
+                CapabilityIds.ApplicationApiTelemetry) &&
+            product.Equals(
                 "Plex",
                 StringComparison.OrdinalIgnoreCase) &&
             _plexCache.TryGetValue(

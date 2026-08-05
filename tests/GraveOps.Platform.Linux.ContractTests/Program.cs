@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using GraveOps.Core.Hosts;
+using GraveOps.Core.Targets;
 using GraveOps.Platform.Linux;
 
 var tests = new (string Name, Func<Task> Run)[]
@@ -11,7 +12,9 @@ var tests = new (string Name, Func<Task> Run)[]
     ("SSH runner preserves remote exit and stderr", SshRunnerPreservesExitAsync),
     ("SSH runner quotes every command argument", SshRunnerQuotesArgumentsAsync),
     ("SSH runner reads remote text files", SshRunnerReadsTextFileAsync),
-    ("SSH runner reports command timeout", SshRunnerReportsTimeoutAsync)
+    ("SSH runner reports command timeout", SshRunnerReportsTimeoutAsync),
+    ("local Linux advertises local-only capabilities", LocalLinuxCapabilitiesAsync),
+    ("remote Linux omits local-only capabilities", RemoteLinuxCapabilitiesAsync)
 };
 
 var failures = 0;
@@ -289,6 +292,58 @@ static async Task SshRunnerReportsTimeoutAsync()
                     TimeSpan.FromMilliseconds(100)));
 
     True(result.TimedOut, "SSH timeout");
+}
+
+static Task LocalLinuxCapabilitiesAsync()
+{
+    var capabilities =
+        LinuxTargetCapabilityCatalog.ForTarget(
+            isLocal: true);
+
+    True(
+        capabilities.Supports(
+            CapabilityIds.HostSummaryRead),
+        "local host summary capability");
+    True(
+        capabilities.Supports(
+            CapabilityIds.ApplicationApiTelemetry),
+        "local application API telemetry capability");
+    True(
+        capabilities.Supports(
+            CapabilityIds.BackupInventoryRead),
+        "local backup inventory capability");
+
+    return Task.CompletedTask;
+}
+
+static Task RemoteLinuxCapabilitiesAsync()
+{
+    var capabilities =
+        LinuxTargetCapabilityCatalog.ForTarget(
+            isLocal: false);
+
+    True(
+        capabilities.Supports(
+            CapabilityIds.HostSummaryRead),
+        "remote host summary capability");
+    True(
+        capabilities.Supports(
+            CapabilityIds.StorageRead),
+        "remote storage capability");
+    True(
+        capabilities.Supports(
+            CapabilityIds.ApplicationDiscovery),
+        "remote application discovery capability");
+    True(
+        !capabilities.Supports(
+            CapabilityIds.ApplicationApiTelemetry),
+        "remote application API telemetry boundary");
+    True(
+        !capabilities.Supports(
+            CapabilityIds.BackupInventoryRead),
+        "remote backup inventory boundary");
+
+    return Task.CompletedTask;
 }
 
 static string TemporaryCachePath() =>

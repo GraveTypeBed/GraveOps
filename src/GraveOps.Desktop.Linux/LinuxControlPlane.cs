@@ -888,10 +888,18 @@ public sealed class LinuxControlPlaneCoordinator
         State.SetActiveHost(hostId);
     }
 
-    public async Task<HostSnapshot> CaptureActiveAsync(
+    public Task<HostSnapshot> CaptureActiveAsync(
+        CancellationToken cancellationToken = default) =>
+        CaptureAsync(
+            ActiveProfile,
+            cancellationToken);
+
+    public async Task<HostSnapshot> CaptureAsync(
+        LinuxHostProfile profile,
         CancellationToken cancellationToken = default)
     {
-        var profile = ActiveProfile;
+        ArgumentNullException.ThrowIfNull(
+            profile);
 
         if (profile.IsLocal)
         {

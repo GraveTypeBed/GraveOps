@@ -48,6 +48,8 @@ public partial class MainWindow
         Get<ComboBox>("ActivityFilterComboBox")
             .SelectedIndex = 0;
 
+        InitializeTargetSessionState();
+
         _controlPlaneTimer.Interval =
             TimeSpan.FromSeconds(15);
         _controlPlaneTimer.Tick +=
@@ -171,6 +173,7 @@ public partial class MainWindow
 
     private async Task<HostSnapshot>
         CaptureActiveTargetAsync(
+            LinuxHostProfile profile,
             bool background,
             CancellationToken cancellationToken)
     {
@@ -181,8 +184,6 @@ public partial class MainWindow
         }
 
         _controlPlaneCaptureBusy = true;
-        var profile =
-            _controlPlane.ActiveProfile;
 
         var jobId =
             _controlPlane.State.StartJob(
@@ -205,7 +206,8 @@ public partial class MainWindow
             var snapshot =
                 await Task.Run(
                     () =>
-                        _controlPlane.CaptureActiveAsync(
+                        _controlPlane.CaptureAsync(
+                            profile,
                             cancellationToken),
                     cancellationToken);
 
@@ -263,10 +265,11 @@ public partial class MainWindow
 
     private async Task<OpsBackupSnapshot>
         CaptureTargetBackupAsync(
+            LinuxHostProfile profile,
             HostSnapshot snapshot,
             CancellationToken cancellationToken)
     {
-        if (_controlPlane.ActiveProfile.IsLocal)
+        if (profile.IsLocal)
         {
             return await Task.Run(
                 () =>
@@ -281,21 +284,31 @@ public partial class MainWindow
     }
 
     private string ControlPlaneConnectionDetail() =>
-        _controlPlane.ActiveProfile.IsLocal
+        ControlPlaneConnectionDetail(
+            _controlPlane.ActiveProfile);
+
+    private static string ControlPlaneConnectionDetail(
+        LinuxHostProfile profile) =>
+        profile.IsLocal
             ? "Native Linux provider"
-            : $"SSH · {_controlPlane.ActiveProfile.Username}@" +
-              $"{_controlPlane.ActiveProfile.Host}:" +
-              $"{_controlPlane.ActiveProfile.Port}";
+            : $"SSH · {profile.Username}@" +
+              $"{profile.Host}:" +
+              $"{profile.Port}";
 
     private bool CanRunLocalMutations() =>
         _controlPlane.ActiveProfile.IsLocal;
 
-    private string ActiveTargetUrlHost()
+    private string ActiveTargetUrlHost() =>
+        ActiveTargetUrlHost(
+            _controlPlane.ActiveProfile);
+
+    private static string ActiveTargetUrlHost(
+        LinuxHostProfile profile)
     {
         var host =
-            _controlPlane.ActiveProfile.IsLocal
+            profile.IsLocal
                 ? "127.0.0.1"
-                : _controlPlane.ActiveProfile.Host.Trim();
+                : profile.Host.Trim();
 
         return host.Contains(
                 ':',
@@ -308,11 +321,12 @@ public partial class MainWindow
     }
 
     private void RecordRefreshFailure(
+        LinuxHostProfile profile,
         Exception exception)
     {
         _controlPlane.State.RecordActivity(
             "Failure",
-            _controlPlane.ActiveProfile.DisplayName,
+            profile.DisplayName,
             "Control-plane projection failed",
             exception.Message,
             "DashboardNav");
@@ -320,7 +334,8 @@ public partial class MainWindow
         PopulateControlPlaneFoundation();
     }
 
-    private async void RecordRefreshSuccessAndNotify()
+    private async void RecordRefreshSuccessAndNotify(
+        LinuxHostProfile profile)
     {
         if (_snapshot is null ||
             _analysis is null)
@@ -329,7 +344,7 @@ public partial class MainWindow
         }
 
         _controlPlane.Profiles.TouchDetection(
-            _controlPlane.ActiveProfile.Id,
+            profile.Id,
             _snapshot.CapturedAt);
 
         if (_analysis.Severity <
@@ -344,7 +359,7 @@ public partial class MainWindow
         }
 
         var key =
-            $"{_controlPlane.ActiveProfile.Id}|" +
+            $"{profile.Id}|" +
             $"{_analysis.Severity}|" +
             $"{_analysis.Headline}";
 
@@ -360,12 +375,12 @@ public partial class MainWindow
 
         await LinuxDesktopNotifier.NotifyAsync(
             $"GraveOps · {_analysis.Label}",
-            $"{_controlPlane.ActiveProfile.DisplayName}: " +
+            $"{profile.DisplayName}: " +
             _analysis.Headline);
 
         _controlPlane.State.RecordActivity(
             "Notification",
-            _controlPlane.ActiveProfile.DisplayName,
+            profile.DisplayName,
             _analysis.Headline,
             _analysis.RootCause,
             "IntelligenceNav");
@@ -380,6 +395,21 @@ public partial class MainWindow
         PopulateActivityDrawer();
         PopulateMaintenanceProjection();
 
+        var activeProfile =
+            _controlPlane.ActiveProfile;
+        var currentSnapshot =
+            _snapshot is not null &&
+            _acceptedTargetId.Equals(
+                activeProfile.Id,
+                StringComparison.OrdinalIgnoreCase)
+                ? _snapshot
+                : null;
+
+        ProjectActiveTargetShell(
+            activeProfile,
+            currentSnapshot);
+        ApplyActiveTargetCapabilities();
+
         Get<TextBlock>("ServerKeyringStatusText").Text =
             _controlPlane.Credentials.CapabilityText;
         Get<TextBlock>("ServerProfilesSummaryText").Text =
@@ -387,19 +417,19 @@ public partial class MainWindow
             $"{(_controlPlane.Profiles.Profiles.Count == 1 ? "target" : "targets")} · " +
             $"{_controlPlane.Profiles.Profiles.Count(item => !item.IsLocal)} remote";
 
-        if (_snapshot is not null)
+        if (currentSnapshot is not null)
         {
             Get<TextBlock>("SidebarHostname").Text =
-                _snapshot.Hostname;
+                currentSnapshot.Hostname;
             Get<TextBlock>("SidebarOperatingSystem").Text =
-                _snapshot.OperatingSystem;
+                currentSnapshot.OperatingSystem;
         }
         else
         {
             Get<TextBlock>("SidebarHostname").Text =
-                _controlPlane.ActiveProfile.DisplayName;
+                activeProfile.DisplayName;
             Get<TextBlock>("SidebarOperatingSystem").Text =
-                _controlPlane.ActiveProfile.KindLabel;
+                activeProfile.KindLabel;
         }
 
         var local = CanRunLocalMutations();
@@ -488,38 +518,8 @@ public partial class MainWindow
             return;
         }
 
-        _controlPlane.SetActive(profile.Id);
-        _controlPlane.State.RecordActivity(
-            "Target",
-            profile.DisplayName,
-            "Active target changed",
-            profile.ConnectionSummary,
-            "ServersNav");
-
-        _snapshot = null;
-        _backup = null;
-        _analysis = null;
-        _rawAnalysis = null;
-        _integrations =
-            Array.Empty<OpsIntegration>();
-        _identityResolution =
-            ApplicationIdentityResolution.Empty;
-        _logs =
-            Array.Empty<OpsLogGroup>();
-        _arrTelemetrySnapshot = null;
-        _lastNotificationKey =
-            string.Empty;
-
-        SetControlPlaneState(
-            OpsSeverity.Info,
-            "SWITCHING",
-            profile.ConnectionSummary);
-
-        RefreshHostProfileLists(profile.Id);
-        UpdateActionButtons();
-        PopulateControlPlaneFoundation();
-
-        await RefreshAsync();
+        await SwitchActiveTargetAsync(
+            profile);
     }
 
     private void ServerProfilesList_OnSelectionChanged(
@@ -1101,16 +1101,18 @@ public partial class MainWindow
                 selected.Id,
                 StringComparison.OrdinalIgnoreCase))
         {
-            _controlPlane.SetActive(selected.Id);
-            RefreshHostProfileLists(selected.Id);
+            await SwitchActiveTargetAsync(
+                selected);
         }
-
-        await RefreshAsync();
+        else
+        {
+            await RefreshAsync();
+        }
 
         Get<ListBox>("ServerDetectedIntegrationsList")
             .ItemsSource =
             _identityResolution.Records
-                    .Select(IdentityServerSummary)
+                .Select(IdentityServerSummary)
                 .ToArray();
 
         Get<TextBlock>("ServerProfileStatusText").Text =
@@ -1128,19 +1130,8 @@ public partial class MainWindow
             return;
         }
 
-        _controlPlane.SetActive(profile.Id);
-        _controlPlane.State.RecordActivity(
-            "Target",
-            profile.DisplayName,
-            "Active target changed",
-            profile.ConnectionSummary,
-            "ServersNav");
-
-        RefreshHostProfileLists(profile.Id);
-        _arrTelemetrySnapshot = null;
-        _lastNotificationKey =
-            string.Empty;
-        await RefreshAsync();
+        await SwitchActiveTargetAsync(
+            profile);
     }
 
     private async void BrowsePrivateKeyButton_OnClick(

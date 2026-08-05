@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using Avalonia.Controls;
 using GraveOps.Core.Hosts;
+using GraveOps.Core.Snapshots;
 
 namespace GraveOps.Desktop.Linux;
 
@@ -50,6 +51,10 @@ public partial class MainWindow
         long TotalMilliseconds,
         string Error);
 
+    private sealed record TargetBackupCapture(
+        OpsBackupSnapshot Snapshot,
+        bool Refreshed);
+
     private async Task RunCoordinatedRefreshAsync(
         bool background)
     {
@@ -82,6 +87,23 @@ public partial class MainWindow
             previous?.Cancel();
         }
 
+        LinuxTargetRefreshContext context;
+
+        try
+        {
+            context =
+                BeginTargetRefreshContext();
+        }
+        catch
+        {
+            Interlocked.CompareExchange(
+                ref _activeRefreshCancellation,
+                null,
+                request);
+            request.Dispose();
+            throw;
+        }
+
         var entered = false;
         var startedAt =
             DateTimeOffset.UtcNow;
@@ -103,6 +125,9 @@ public partial class MainWindow
             entered = true;
 
             request.Token.ThrowIfCancellationRequested();
+            EnsureTargetRefreshCurrent(
+                context);
+
             SetRefreshPresentation(
                 refreshing: true,
                 failed: false);
@@ -111,12 +136,18 @@ public partial class MainWindow
                 Stopwatch.StartNew();
             var snapshot =
                 await CaptureActiveTargetAsync(
+                    context.Profile,
                     background,
                     request.Token);
+            var envelope =
+                CreateTargetSnapshotEnvelope(
+                    context,
+                    snapshot);
 
-            var backup =
+            var backupCapture =
                 await CaptureBackupIfDueAsync(
-                    snapshot,
+                    context.Profile,
+                    envelope.Snapshot,
                     background,
                     request.Token);
             collectionMs =
@@ -127,10 +158,11 @@ public partial class MainWindow
                 await Task.Run(
                     () =>
                         ApplicationIdentityResolver.ResolveAsync(
-                            snapshot,
-                            _controlPlane.ActiveProfile.Id,
-                            ActiveTargetUrlHost(),
-                            _controlPlane.ActiveProfile.IsLocal,
+                            envelope.Snapshot,
+                            context.Profile.Id,
+                            ActiveTargetUrlHost(
+                                context.Profile),
+                            context.Profile.IsLocal,
                             _applicationIdentityStore,
                             request.Token),
                     request.Token);
@@ -145,7 +177,7 @@ public partial class MainWindow
                         var logs =
                             LinuxOpsAnalyzer
                                 .GroupLogs(
-                                    snapshot.RecentLogs)
+                                    envelope.Snapshot.RecentLogs)
                                 .Where(item =>
                                     !IsPlexTokenProbePrivilegeNoise(
                                         item))
@@ -156,13 +188,13 @@ public partial class MainWindow
                                 out var excluded);
                         var analysis =
                             LinuxOpsAnalyzer.Analyze(
-                                snapshot,
-                                backup,
+                                envelope.Snapshot,
+                                backupCapture.Snapshot,
                                 analysisLogs,
                                 identity.Integrations);
                         var lifecycle =
                             LinuxOpsAnalyzer.BuildLifecycle(
-                                snapshot,
+                                envelope.Snapshot,
                                 identity.Integrations,
                                 analysis);
 
@@ -177,12 +209,32 @@ public partial class MainWindow
                 phase.ElapsedMilliseconds;
 
             request.Token.ThrowIfCancellationRequested();
+            EnsureTargetRefreshCurrent(
+                context);
 
-            _snapshot = snapshot;
-            _backup = backup;
-            _identityResolution = identity;
-            _integrations = identity.Integrations;
-            _logs = analysisBundle.Logs;
+            _activeTargetCapabilities =
+                envelope.Capabilities;
+            _acceptedTargetId =
+                context.Profile.Id;
+            _snapshot =
+                envelope.Snapshot;
+            _backup =
+                backupCapture.Snapshot;
+
+            if (backupCapture.Refreshed)
+            {
+                _lastBackupTargetId =
+                    context.Profile.Id;
+                _lastBackupCaptureAt =
+                    DateTimeOffset.UtcNow;
+            }
+
+            _identityResolution =
+                identity;
+            _integrations =
+                identity.Integrations;
+            _logs =
+                analysisBundle.Logs;
             _signalQualityExcludedGroups =
                 analysisBundle.ExcludedGroupCount;
             var signalObservations =
@@ -201,13 +253,16 @@ public partial class MainWindow
 
             phase.Restart();
             _history.Record(
-                snapshot,
+                envelope.Snapshot,
                 _analysis!,
                 _lifecycle,
-                backup,
+                backupCapture.Snapshot,
                 _findingPolicies.EvaluateStorageSeverity);
             historyMs =
                 phase.ElapsedMilliseconds;
+
+            EnsureTargetRefreshCurrent(
+                context);
 
             phase.Restart();
             BeginUiRefreshProjection();
@@ -215,7 +270,8 @@ public partial class MainWindow
             projectionMs =
                 phase.ElapsedMilliseconds;
 
-            RecordRefreshSuccessAndNotify();
+            RecordRefreshSuccessAndNotify(
+                context.Profile);
 
             if (!background)
             {
@@ -236,6 +292,8 @@ public partial class MainWindow
             cancelled = true;
 
             if (!background &&
+                IsTargetRefreshCurrent(
+                    context) &&
                 ReferenceEquals(
                     Volatile.Read(
                         ref _activeRefreshCancellation),
@@ -249,29 +307,40 @@ public partial class MainWindow
         catch (Exception exception)
         {
             error = exception.Message;
-            try
+
+            if (!IsTargetRefreshCurrent(
+                    context))
             {
-                SignalQualityRefreshFailed(
+                cancelled = true;
+            }
+            else
+            {
+                try
+                {
+                    SignalQualityRefreshFailed(
+                        exception);
+                }
+                catch (Exception signalException)
+                {
+                    Debug.WriteLine(
+                        $"Signal-quality failure projection failed: {signalException}");
+                }
+
+                SetControlPlaneState(
+                    OpsSeverity.Error,
+                    "OFFLINE",
+                    "Provider capture failed");
+                Get<TextBlock>(
+                        "LastUpdatedText")
+                    .Text =
+                    "Refresh failed";
+                RecordRefreshFailure(
+                    context.Profile,
                     exception);
+                SetRefreshPresentation(
+                    refreshing: false,
+                    failed: true);
             }
-            catch (Exception signalException)
-            {
-                Debug.WriteLine(
-                    $"Signal-quality failure projection failed: {signalException}");
-            }
-            SetControlPlaneState(
-                OpsSeverity.Error,
-                "OFFLINE",
-                "Provider capture failed");
-            Get<TextBlock>(
-                    "LastUpdatedText")
-                .Text =
-                "Refresh failed";
-            RecordRefreshFailure(
-                exception);
-            SetRefreshPresentation(
-                refreshing: false,
-                failed: true);
         }
         finally
         {
@@ -304,13 +373,23 @@ public partial class MainWindow
         }
     }
 
-    private async Task<OpsBackupSnapshot>
+    private async Task<TargetBackupCapture>
         CaptureBackupIfDueAsync(
+            LinuxHostProfile profile,
             HostSnapshot snapshot,
             bool background,
             CancellationToken cancellationToken)
     {
+        var sameTarget =
+            _acceptedTargetId.Equals(
+                profile.Id,
+                StringComparison.OrdinalIgnoreCase) &&
+            _lastBackupTargetId.Equals(
+                profile.Id,
+                StringComparison.OrdinalIgnoreCase);
+
         var force =
+            !sameTarget ||
             _backup is null ||
             DateTimeOffset.UtcNow -
                 _lastBackupCaptureAt >=
@@ -321,15 +400,21 @@ public partial class MainWindow
                  StringComparison.Ordinal));
 
         if (!force)
-            return _backup!;
+        {
+            return new TargetBackupCapture(
+                _backup!,
+                Refreshed: false);
+        }
 
         var backup =
             await CaptureTargetBackupAsync(
+                profile,
                 snapshot,
                 cancellationToken);
-        _lastBackupCaptureAt =
-            DateTimeOffset.UtcNow;
-        return backup;
+
+        return new TargetBackupCapture(
+            backup,
+            Refreshed: true);
     }
 
     private void SetRefreshPresentation(
@@ -384,6 +469,11 @@ public partial class MainWindow
             OpsSeverity.Healthy,
             "ONLINE",
             ControlPlaneConnectionDetail());
+
+        ApplyActiveTargetCapabilities();
+        ProjectActiveTargetShell(
+            _controlPlane.ActiveProfile,
+            _snapshot);
 
         UpdateIntegrationNavigation();
         UpdateActionButtons();

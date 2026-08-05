@@ -672,7 +672,8 @@ public partial class MainWindow : Window
             Get<CheckBox>("SafeModeCheckBox").IsChecked == true;
 
         Get<TextBlock>("FooterTargetText").Text =
-            _snapshot.Hostname;
+            ActiveTargetFooterText(
+                _snapshot);
         Get<TextBlock>("FooterConnectionText").Text =
             Get<TextBlock>("ConnectionText").Text;
         Get<TextBlock>("FooterModeText").Text =
@@ -699,7 +700,10 @@ public partial class MainWindow : Window
                 : $"{customPolicies} custom storage " +
                   $"{(customPolicies == 1 ? "policy" : "policies")} active";
         Get<TextBlock>("OverviewBackupText").Text =
-            $"{_backup.State} · {_backup.Summary}";
+            SupportsTargetCapability(
+                GraveOps.Core.Targets.CapabilityIds.BackupInventoryRead)
+                ? $"{_backup.State} · {_backup.Summary}"
+                : "Backup inventory is not available for the active target.";
 
         var top = active
             .OrderByDescending(item => item.Severity)

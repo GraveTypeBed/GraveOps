@@ -16,6 +16,8 @@ public static class CapabilityIds
     public const string ApplicationDiscovery = "applications.discover";
     public const string ApplicationApiTelemetry =
         "applications.api.telemetry.read";
+    public const string BackupInventoryRead =
+        "host.backups.read";
 }
 
 public sealed class TargetCapabilities
