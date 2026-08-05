@@ -1,10 +1,59 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Text.Json;
 using GraveOps.Core.Hosts;
 
 namespace GraveOps.Platform.Linux;
 
 public sealed class LocalLinuxHostProbe : ILocalHostProbe
 {
+    private static readonly SemaphoreSlim
+        ProcessGate =
+            new(4, 4);
+    private static readonly TimeSpan
+        ProcessTimeout =
+            TimeSpan.FromSeconds(15);
+
+    private static readonly string
+        JournalCachePath =
+            ResolveJournalCachePath();
+
+    private bool _journalCacheLoaded;
+    private string _journalBootId =
+        string.Empty;
+    private string _journalCursor =
+        string.Empty;
+    private List<string> _journalLines =
+        new();
+
+    private sealed class JournalCacheDocument
+    {
+        public string BootId { get; set; } =
+            string.Empty;
+        public string Cursor { get; set; } =
+            string.Empty;
+        public List<string> Lines { get; set; } =
+            new();
+    }
+
+    private static string ResolveJournalCachePath()
+    {
+        var root =
+            Environment.GetEnvironmentVariable(
+                "XDG_CACHE_HOME");
+        if (string.IsNullOrWhiteSpace(root))
+        {
+            root = Path.Combine(
+                Environment.GetFolderPath(
+                    Environment.SpecialFolder.UserProfile),
+                ".cache");
+        }
+
+        return Path.Combine(
+            root,
+            "GraveOps",
+            "journal-cursor-cache.json");
+    }
     private static readonly string[] KnownServiceUnits =
     {
         "plexmediaserver.service",
@@ -69,38 +118,36 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
     public async Task<HostSnapshot> CaptureAsync(
         CancellationToken cancellationToken = default)
     {
-        var warnings = new List<string>();
+        var warnings =
+            new ConcurrentBag<string>();
 
         if (!OperatingSystem.IsLinux())
         {
             warnings.Add(
                 "The native Linux provider requires a Linux runtime.");
-
-            return EmptySnapshot(warnings);
+            return EmptySnapshot(
+                warnings.ToArray());
         }
 
-        var hostname = await RunTextAsync(
+        var hostnameTask = RunTextAsync(
             "hostname",
             Array.Empty<string>(),
             cancellationToken,
             warnings,
             "hostname");
-
-        var kernel = await RunTextAsync(
+        var kernelTask = RunTextAsync(
             "uname",
             new[] { "-r" },
             cancellationToken,
             warnings,
             "kernel");
-
-        var uptime = await RunTextAsync(
+        var uptimeTask = RunTextAsync(
             "uptime",
             new[] { "-p" },
             cancellationToken,
             warnings,
             "uptime");
-
-        var systemState = await RunTextAsync(
+        var systemStateTask = RunTextAsync(
             "systemctl",
             new[] { "is-system-running" },
             cancellationToken,
@@ -108,8 +155,7 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
             "systemd state",
             allowNonZeroExit: true,
             warnOnNonZeroExit: false);
-
-        var dockerVersion = await RunTextAsync(
+        var dockerVersionTask = RunTextAsync(
             "docker",
             new[] { "version", "--format", "{{.Server.Version}}" },
             cancellationToken,
@@ -117,8 +163,7 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
             "Docker",
             allowNonZeroExit: true,
             warnOnNonZeroExit: false);
-
-        var ipAddresses = await RunTextAsync(
+        var ipAddressesTask = RunTextAsync(
             "hostname",
             new[] { "-I" },
             cancellationToken,
@@ -126,38 +171,62 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
             "IP addresses",
             allowNonZeroExit: true,
             warnOnNonZeroExit: false);
-
-        var storage = await CaptureStorageAsync(
+        var storageTask = CaptureStorageAsync(
+            cancellationToken,
+            warnings);
+        var servicesTask = CaptureServicesAsync(
+            cancellationToken,
+            warnings);
+        var containersTask = CaptureContainersAsync(
+            cancellationToken,
+            warnings);
+        var failedUnitsTask = CaptureFailedUnitsAsync(
+            cancellationToken,
+            warnings);
+        var logsTask = CaptureLogsAsync(
             cancellationToken,
             warnings);
 
-        var services = await CaptureServicesAsync(
-            cancellationToken,
-            warnings);
+        await Task.WhenAll(
+            hostnameTask,
+            kernelTask,
+            uptimeTask,
+            systemStateTask,
+            dockerVersionTask,
+            ipAddressesTask,
+            storageTask,
+            servicesTask,
+            containersTask,
+            failedUnitsTask,
+            logsTask);
 
-        var containers = await CaptureContainersAsync(
-            cancellationToken,
-            warnings);
-
-        var failedUnits = await CaptureFailedUnitsAsync(
-            cancellationToken,
-            warnings);
-
-        var logs = await CaptureLogsAsync(
-            cancellationToken,
-            warnings);
+        var hostname = await hostnameTask;
+        var kernel = await kernelTask;
+        var uptime = await uptimeTask;
+        var systemState = await systemStateTask;
+        var dockerVersion = await dockerVersionTask;
+        var ipAddresses = await ipAddressesTask;
+        var storage = await storageTask;
+        var services = await servicesTask;
+        var containers = await containersTask;
+        var failedUnits = await failedUnitsTask;
+        var logs = await logsTask;
 
         var integrations = DetectIntegrations(
             services,
             containers);
-
-        var cpuModel = ReadCpuModel(warnings);
-        var loadAverage = ReadLoadAverage(warnings);
-        var memorySummary = ReadMemorySummary(warnings);
-        var operatingSystem = ReadOsRelease(warnings);
+        var cpuModel = ReadCpuModel(
+            warnings);
+        var loadAverage = ReadLoadAverage(
+            warnings);
+        var memorySummary = ReadMemorySummary(
+            warnings);
+        var operatingSystem = ReadOsRelease(
+            warnings);
 
         var dockerState =
-            string.IsNullOrWhiteSpace(dockerVersion)
+            string.IsNullOrWhiteSpace(
+                dockerVersion)
                 ? "Unavailable or not running"
                 : $"Docker {dockerVersion.Trim()} · " +
                   $"{containers.Count(container =>
@@ -167,23 +236,35 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
 
         return new HostSnapshot(
             DateTimeOffset.UtcNow,
-            ValueOrFallback(hostname, Environment.MachineName),
+            ValueOrFallback(
+                hostname,
+                Environment.MachineName),
             operatingSystem,
-            ValueOrFallback(kernel, "--"),
-            ValueOrFallback(uptime, "--"),
-            ValueOrFallback(systemState, "Unknown"),
+            ValueOrFallback(
+                kernel,
+                "--"),
+            ValueOrFallback(
+                uptime,
+                "--"),
+            ValueOrFallback(
+                systemState,
+                "Unknown"),
             dockerState,
             cpuModel,
             loadAverage,
             memorySummary,
-            ValueOrFallback(ipAddresses, "No address reported"),
+            ValueOrFallback(
+                ipAddresses,
+                "No address reported"),
             storage,
             services,
             containers,
             integrations,
             failedUnits,
             logs,
-            warnings.Distinct().ToArray());
+            warnings
+                .Distinct()
+                .ToArray());
     }
 
     private static HostSnapshot EmptySnapshot(
@@ -209,7 +290,7 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
             warnings);
 
     private static string ReadOsRelease(
-        ICollection<string> warnings)
+        ConcurrentBag<string> warnings)
     {
         const string path = "/etc/os-release";
 
@@ -243,7 +324,7 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
     }
 
     private static string ReadCpuModel(
-        ICollection<string> warnings)
+        ConcurrentBag<string> warnings)
     {
         try
         {
@@ -277,7 +358,7 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
     }
 
     private static string ReadLoadAverage(
-        ICollection<string> warnings)
+        ConcurrentBag<string> warnings)
     {
         try
         {
@@ -308,7 +389,7 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
     }
 
     private static string ReadMemorySummary(
-        ICollection<string> warnings)
+        ConcurrentBag<string> warnings)
     {
         try
         {
@@ -375,7 +456,7 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
     private static async Task<IReadOnlyList<StorageVolumeSnapshot>>
         CaptureStorageAsync(
             CancellationToken cancellationToken,
-            ICollection<string> warnings)
+            ConcurrentBag<string> warnings)
     {
         var output = await RunTextAsync(
             "df",
@@ -427,10 +508,8 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
     private static async Task<IReadOnlyList<ServiceSnapshot>>
         CaptureServicesAsync(
             CancellationToken cancellationToken,
-            ICollection<string> warnings)
+            ConcurrentBag<string> warnings)
     {
-        var rows = new List<ServiceSnapshot>();
-
         var discoveredOutput = await RunTextAsync(
             "systemctl",
             new[]
@@ -463,42 +542,76 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
                             StringComparison.OrdinalIgnoreCase))))
             .Cast<string>();
 
-        foreach (var unit in KnownServiceUnits
-                     .Concat(discoveredUnits)
-                     .Distinct(StringComparer.OrdinalIgnoreCase))
-        {
-            var output = await RunTextAsync(
-                "systemctl",
-                new[]
-                {
-                    "show",
+        var units =
+            KnownServiceUnits
+                .Concat(
+                    discoveredUnits)
+                .Distinct(
+                    StringComparer.OrdinalIgnoreCase)
+                .OrderBy(unit =>
                     unit,
-                    "--no-pager",
-                    "--property=Id",
-                    "--property=Description",
-                    "--property=LoadState",
-                    "--property=ActiveState",
-                    "--property=SubState",
-                    "--property=UnitFileState"
-                },
-                cancellationToken,
-                warnings,
-                unit,
-                allowNonZeroExit: true,
-                warnOnNonZeroExit: false);
+                    StringComparer.OrdinalIgnoreCase)
+                .ToArray();
 
-            if (string.IsNullOrWhiteSpace(output))
-                continue;
+        if (units.Length == 0)
+            return Array.Empty<ServiceSnapshot>();
 
-            var values = output
+        var arguments =
+            new List<string>
+            {
+                "show"
+            };
+        arguments.AddRange(
+            units);
+        arguments.AddRange(
+            new[]
+            {
+                "--no-pager",
+                "--property=Id",
+                "--property=Description",
+                "--property=LoadState",
+                "--property=ActiveState",
+                "--property=SubState",
+                "--property=UnitFileState"
+            });
+
+        var output = await RunTextAsync(
+            "systemctl",
+            arguments,
+            cancellationToken,
+            warnings,
+            "service states",
+            allowNonZeroExit: true,
+            warnOnNonZeroExit: false);
+
+        var rows =
+            new List<ServiceSnapshot>();
+        var blocks =
+            output
+                .Replace(
+                    "\r\n",
+                    "\n",
+                    StringComparison.Ordinal)
+                .Split(
+                    "\n\n",
+                    StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (var block in blocks)
+        {
+            var values = block
                 .Split(
                     '\n',
                     StringSplitOptions.RemoveEmptyEntries)
-                .Select(line => line.Split('=', 2))
-                .Where(parts => parts.Length == 2)
-                .ToDictionary(
+                .Select(line =>
+                    line.Split('=', 2))
+                .Where(parts =>
+                    parts.Length == 2)
+                .GroupBy(
                     parts => parts[0],
-                    parts => parts[1],
+                    StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.Last()[1],
                     StringComparer.OrdinalIgnoreCase);
 
             if (values.TryGetValue(
@@ -511,24 +624,48 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
                 continue;
             }
 
+            var id =
+                Value(
+                    values,
+                    "Id",
+                    string.Empty);
+            if (string.IsNullOrWhiteSpace(
+                    id))
+            {
+                continue;
+            }
+
             rows.Add(
                 new ServiceSnapshot(
-                    Value(values, "Id", unit),
-                    Value(values, "Description", unit),
-                    Value(values, "ActiveState", "unknown"),
-                    Value(values, "SubState", "unknown"),
-                    Value(values, "UnitFileState", "unknown")));
+                    id,
+                    Value(
+                        values,
+                        "Description",
+                        id),
+                    Value(
+                        values,
+                        "ActiveState",
+                        "unknown"),
+                    Value(
+                        values,
+                        "SubState",
+                        "unknown"),
+                    Value(
+                        values,
+                        "UnitFileState",
+                        "unknown")));
         }
 
         return rows
-            .OrderBy(service => service.Unit)
+            .OrderBy(service =>
+                service.Unit)
             .ToArray();
     }
 
     private static async Task<IReadOnlyList<DockerContainerSnapshot>>
         CaptureContainersAsync(
             CancellationToken cancellationToken,
-            ICollection<string> warnings)
+            ConcurrentBag<string> warnings)
     {
         var output = await RunTextAsync(
             "docker",
@@ -570,7 +707,7 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
     private static async Task<IReadOnlyList<string>>
         CaptureFailedUnitsAsync(
             CancellationToken cancellationToken,
-            ICollection<string> warnings)
+            ConcurrentBag<string> warnings)
     {
         var output = await RunTextAsync(
             "systemctl",
@@ -599,37 +736,199 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
             .ToArray();
     }
 
-    private static async Task<IReadOnlyList<string>>
+    private async Task<IReadOnlyList<string>>
         CaptureLogsAsync(
             CancellationToken cancellationToken,
-            ICollection<string> warnings)
+            ConcurrentBag<string> warnings)
     {
+        EnsureJournalCacheLoaded();
+
+        var bootId =
+            ReadBootId();
+        if (!_journalBootId.Equals(
+                bootId,
+                StringComparison.Ordinal))
+        {
+            _journalBootId = bootId;
+            _journalCursor =
+                string.Empty;
+            _journalLines.Clear();
+        }
+
+        var arguments =
+            new List<string>
+            {
+                "-p",
+                "warning",
+                "--no-pager",
+                "--output=short-iso",
+                "--show-cursor"
+            };
+
+        if (string.IsNullOrWhiteSpace(
+                _journalCursor))
+        {
+            arguments.Add("-n");
+            arguments.Add("80");
+        }
+        else
+        {
+            arguments.Add("--after-cursor");
+            arguments.Add(_journalCursor);
+        }
+
         var output = await RunTextAsync(
             "journalctl",
-            new[]
-            {
-                "-p", "warning",
-                "-n", "40",
-                "--no-pager",
-                "--output=short-iso"
-            },
+            arguments,
             cancellationToken,
             warnings,
             "journal warnings",
             allowNonZeroExit: true,
             warnOnNonZeroExit: false);
 
-        if (string.IsNullOrWhiteSpace(output))
-            return new[]
+        var newLines =
+            output
+                .Split(
+                    '\n',
+                    StringSplitOptions.RemoveEmptyEntries)
+                .Select(line =>
+                    line.TrimEnd())
+                .ToArray();
+
+        var cursorLine =
+            newLines.LastOrDefault(line =>
+                line.StartsWith(
+                    "-- cursor:",
+                    StringComparison.Ordinal));
+
+        if (!string.IsNullOrWhiteSpace(
+                cursorLine))
+        {
+            _journalCursor =
+                cursorLine["-- cursor:".Length..]
+                    .Trim();
+        }
+
+        foreach (var line in newLines.Where(line =>
+                     !line.StartsWith(
+                         "-- cursor:",
+                         StringComparison.Ordinal) &&
+                     !line.Equals(
+                         "-- No entries --",
+                         StringComparison.OrdinalIgnoreCase)))
+        {
+            _journalLines.Add(
+                line);
+        }
+
+        if (_journalLines.Count > 240)
+        {
+            _journalLines.RemoveRange(
+                0,
+                _journalLines.Count - 240);
+        }
+
+        SaveJournalCache();
+
+        return _journalLines.Count == 0
+            ? new[]
             {
                 "No warning-or-higher journal entries were returned."
-            };
+            }
+            : _journalLines.ToArray();
+    }
 
-        return output
-            .Split(
-                '\n',
-                StringSplitOptions.RemoveEmptyEntries)
-            .ToArray();
+    private void EnsureJournalCacheLoaded()
+    {
+        if (_journalCacheLoaded)
+            return;
+
+        _journalCacheLoaded = true;
+
+        try
+        {
+            if (!File.Exists(
+                    JournalCachePath))
+            {
+                return;
+            }
+
+            var document =
+                JsonSerializer.Deserialize<JournalCacheDocument>(
+                    File.ReadAllText(
+                        JournalCachePath));
+
+            if (document is null)
+                return;
+
+            _journalBootId =
+                document.BootId ??
+                string.Empty;
+            _journalCursor =
+                document.Cursor ??
+                string.Empty;
+            _journalLines =
+                document.Lines?
+                    .TakeLast(240)
+                    .ToList() ??
+                new List<string>();
+        }
+        catch
+        {
+            _journalBootId =
+                string.Empty;
+            _journalCursor =
+                string.Empty;
+            _journalLines.Clear();
+        }
+    }
+
+    private void SaveJournalCache()
+    {
+        try
+        {
+            var directory =
+                Path.GetDirectoryName(
+                    JournalCachePath)!;
+            Directory.CreateDirectory(
+                directory);
+            var temporary =
+                JournalCachePath +
+                ".tmp";
+            File.WriteAllText(
+                temporary,
+                JsonSerializer.Serialize(
+                    new JournalCacheDocument
+                    {
+                        BootId = _journalBootId,
+                        Cursor = _journalCursor,
+                        Lines = _journalLines
+                    }));
+            File.Move(
+                temporary,
+                JournalCachePath,
+                overwrite: true);
+        }
+        catch
+        {
+            // Journal caching is an optimization, never a capture dependency.
+        }
+    }
+
+    private static string ReadBootId()
+    {
+        try
+        {
+            const string path =
+                "/proc/sys/kernel/random/boot_id";
+            return File.Exists(path)
+                ? File.ReadAllText(path).Trim()
+                : string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
     }
 
     private static IReadOnlyList<IntegrationSnapshot>
@@ -691,43 +990,59 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
         string executable,
         IReadOnlyList<string> arguments,
         CancellationToken cancellationToken,
-        ICollection<string> warnings,
+        ConcurrentBag<string> warnings,
         string operationName,
         bool allowNonZeroExit = false,
         bool warnOnNonZeroExit = true)
     {
+        var entered = false;
+        Process? process = null;
+        using var timeout =
+            CancellationTokenSource.CreateLinkedTokenSource(
+                cancellationToken);
+        timeout.CancelAfter(
+            ProcessTimeout);
+
         try
         {
-            using var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
+            await ProcessGate.WaitAsync(
+                timeout.Token);
+            entered = true;
+
+            process =
+                new Process
                 {
-                    FileName = executable,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
+                    StartInfo =
+                        new ProcessStartInfo
+                        {
+                            FileName = executable,
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true,
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        }
+                };
 
             foreach (var argument in arguments)
-                process.StartInfo.ArgumentList.Add(argument);
+                process.StartInfo.ArgumentList.Add(
+                    argument);
 
             process.Start();
 
             var stdoutTask =
                 process.StandardOutput.ReadToEndAsync(
-                    cancellationToken);
-
+                    timeout.Token);
             var stderrTask =
                 process.StandardError.ReadToEndAsync(
-                    cancellationToken);
+                    timeout.Token);
 
             await process.WaitForExitAsync(
-                cancellationToken);
+                timeout.Token);
 
-            var stdout = (await stdoutTask).Trim();
-            var stderr = (await stderrTask).Trim();
+            var stdout =
+                (await stdoutTask).Trim();
+            var stderr =
+                (await stderrTask).Trim();
 
             if (process.ExitCode != 0 &&
                 !allowNonZeroExit)
@@ -739,7 +1054,8 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
             else if (process.ExitCode != 0 &&
                      allowNonZeroExit &&
                      warnOnNonZeroExit &&
-                     !string.IsNullOrWhiteSpace(stderr))
+                     !string.IsNullOrWhiteSpace(
+                         stderr))
             {
                 warnings.Add(
                     $"{operationName}: {stderr}");
@@ -747,13 +1063,55 @@ public sealed class LocalLinuxHostProbe : ILocalHostProbe
 
             return stdout;
         }
+        catch (OperationCanceledException)
+            when (cancellationToken.IsCancellationRequested)
+        {
+            TryKill(
+                process);
+            throw;
+        }
+        catch (OperationCanceledException)
+        {
+            TryKill(
+                process);
+            warnings.Add(
+                $"{operationName} timed out after " +
+                $"{ProcessTimeout.TotalSeconds:0} seconds.");
+            return string.Empty;
+        }
         catch (Exception exception)
         {
+            TryKill(
+                process);
             warnings.Add(
                 $"Unable to query {operationName} using " +
                 $"{executable}: {exception.Message}");
-
             return string.Empty;
+        }
+        finally
+        {
+            process?.Dispose();
+
+            if (entered)
+                ProcessGate.Release();
+        }
+    }
+
+    private static void TryKill(
+        Process? process)
+    {
+        try
+        {
+            if (process is not null &&
+                !process.HasExited)
+            {
+                process.Kill(
+                    entireProcessTree: true);
+            }
+        }
+        catch
+        {
+            // Best-effort timeout cleanup.
         }
     }
 

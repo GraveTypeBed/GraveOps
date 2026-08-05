@@ -16,7 +16,23 @@ public sealed record ArrServiceTelemetryRow(
     string Work,
     string Health,
     string Access,
-    string State);
+    string State)
+{
+    public string DisplayName =>
+        Service;
+
+    public string Detail =>
+        string.Join(
+            " · ",
+            new[]
+            {
+                Work,
+                $"Health {Health}",
+                Access
+            }
+            .Where(value =>
+                !string.IsNullOrWhiteSpace(value)));
+}
 
 public sealed record ArrWorkItemRow(
     string Service,

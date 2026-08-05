@@ -29,6 +29,17 @@
     <SolidColorBrush x:Key="SuccessTintBrush" Color="#14291F" />
     <SolidColorBrush x:Key="WarnTintBrush" Color="#2B2517" />
     <SolidColorBrush x:Key="DangerTintBrush" Color="#2D181C" />
+
+    <SolidColorBrush x:Key="OverviewCommandBrush" Color="#62A7F5" />
+    <SolidColorBrush x:Key="OverviewCommandTintBrush" Color="#16283C" />
+    <SolidColorBrush x:Key="JobsCommandBrush" Color="#E6A44C" />
+    <SolidColorBrush x:Key="JobsCommandTintBrush" Color="#352514" />
+    <SolidColorBrush x:Key="IntelligenceCommandBrush" Color="#B58AF4" />
+    <SolidColorBrush x:Key="IntelligenceCommandTintBrush" Color="#2B1F3C" />
+    <SolidColorBrush x:Key="ActivityCommandBrush" Color="#56C8D8" />
+    <SolidColorBrush x:Key="ActivityCommandTintBrush" Color="#143239" />
+    <SolidColorBrush x:Key="TerminalCommandBrush" Color="#67C68A" />
+    <SolidColorBrush x:Key="TerminalCommandTintBrush" Color="#163323" />
   </Application.Resources>
 
   <Application.Styles>
@@ -323,6 +334,7 @@
       <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
       <Setter Property="BorderThickness" Value="3,1,1,1" />
+      <Setter Property="Padding" Value="10,0,12,0" />
     </Style>
 
     <Style Selector="Button.nav.selected:pointerover">
@@ -330,13 +342,14 @@
       <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
       <Setter Property="BorderThickness" Value="3,1,1,1" />
+      <Setter Property="Padding" Value="10,0,12,0" />
     </Style>
 
     <Style Selector="Button.nav.sub">
       <Setter Property="Height" Value="36" />
       <Setter Property="MinHeight" Value="36" />
-      <Setter Property="Margin" Value="12,1,0,1" />
-      <Setter Property="Padding" Value="10,0" />
+      <Setter Property="Margin" Value="0,1,0,1" />
+      <Setter Property="Padding" Value="12,0" />
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="FontSize" Value="11" />
     </Style>
@@ -344,9 +357,10 @@
     <Style Selector="Button.navGroup">
       <Setter Property="Height" Value="30" />
       <Setter Property="MinHeight" Value="30" />
-      <Setter Property="Margin" Value="4,3,0,0" />
-      <Setter Property="Padding" Value="8,0" />
+      <Setter Property="Margin" Value="0,3,0,0" />
+      <Setter Property="Padding" Value="15,0" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
       <Setter Property="FontSize" Value="10" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="Foreground" Value="{DynamicResource DimBrush}" />
@@ -358,6 +372,33 @@
     <Style Selector="Button.navGroup:pointerover">
       <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
       <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+    </Style>
+
+    <!-- Shared navigation geometry keeps every icon on the same visual axis. -->
+    <Style Selector="Button.nav Path">
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Margin" Value="0" />
+    </Style>
+
+    <Style Selector="Button.nav TextBlock">
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Margin" Value="0" />
+    </Style>
+
+    <Style Selector="Button.nav.sub TextBlock">
+      <Setter Property="Margin" Value="4,0,0,0" />
+    </Style>
+
+    <Style Selector="Button.navGroup Path">
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Margin" Value="0" />
+    </Style>
+
+    <Style Selector="Button.navGroup TextBlock">
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Margin" Value="3,0,0,0" />
     </Style>
 
     <Style Selector="Button.titlebar">
@@ -568,6 +609,22 @@
     <Style Selector="ListBox.arrCards ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <!-- V13: the rounded content row owns hover; list chrome remains transparent. -->
+    <Style Selector="ListBox.arrCards ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.arrCards ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <Style Selector="Border.hoverRow:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
     </Style>
 
     <Style Selector="ListBox.arrTable">
@@ -974,6 +1031,243 @@
       <Setter Property="MinHeight" Value="96" />
       <Setter Property="MaxHeight" Value="260" />
       <Setter Property="Padding" Value="12" />
+    </Style>
+
+
+    <Style Selector="Button.headerCommand.commandOverview">
+      <Setter Property="Foreground" Value="{DynamicResource OverviewCommandBrush}" />
+      <Setter Property="Background" Value="{DynamicResource OverviewCommandTintBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource OverviewCommandBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Button.headerCommand.commandOverview:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
+    </Style>
+
+    <Style Selector="Button.headerCommand.commandJobs">
+      <Setter Property="Foreground" Value="{DynamicResource JobsCommandBrush}" />
+      <Setter Property="Background" Value="{DynamicResource JobsCommandTintBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource JobsCommandBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Button.headerCommand.commandJobs:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
+    </Style>
+
+    <Style Selector="Button.headerCommand.commandIntelligence">
+      <Setter Property="Foreground" Value="{DynamicResource IntelligenceCommandBrush}" />
+      <Setter Property="Background" Value="{DynamicResource IntelligenceCommandTintBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource IntelligenceCommandBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Button.headerCommand.commandIntelligence:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
+    </Style>
+
+    <Style Selector="Button.headerCommand.commandActivity">
+      <Setter Property="Foreground" Value="{DynamicResource ActivityCommandBrush}" />
+      <Setter Property="Background" Value="{DynamicResource ActivityCommandTintBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ActivityCommandBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Button.headerCommand.commandActivity:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
+    </Style>
+
+    <Style Selector="Button.headerCommand.commandTerminal">
+      <Setter Property="Foreground" Value="{DynamicResource TerminalCommandBrush}" />
+      <Setter Property="Background" Value="{DynamicResource TerminalCommandTintBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource TerminalCommandBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Button.headerCommand.commandTerminal:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
+    </Style>
+
+    <Style Selector="Border.dashboardProviderCard">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="11" />
+      <Setter Property="Padding" Value="14" />
+    </Style>
+    <Style Selector="Border.dashboardProviderCard:pointerover">
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+    </Style>
+
+    <Style Selector="Border.unifiedAttentionStrip">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="11,9" />
+    </Style>
+    <Style Selector="Border.unifiedAttentionStrip.healthy">
+      <Setter Property="Background" Value="{DynamicResource SuccessTintBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}" />
+    </Style>
+    <Style Selector="Border.unifiedAttentionStrip.attention">
+      <Setter Property="Background" Value="{DynamicResource WarnTintBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WarnBrush}" />
+    </Style>
+
+    <Style Selector="Border.unifiedDrawer">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
+      <Setter Property="BorderThickness" Value="1,0,0,0" />
+    </Style>
+
+    <Style Selector="Border.setupPanel">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Padding" Value="20" />
+    </Style>
+
+    <Style Selector="Window.compactDensity Border.card">
+      <Setter Property="Padding" Value="13" />
+      <Setter Property="CornerRadius" Value="10" />
+    </Style>
+    <Style Selector="Window.compactDensity Border.module">
+      <Setter Property="Padding" Value="13" />
+      <Setter Property="CornerRadius" Value="10" />
+    </Style>
+    <Style Selector="Window.compactDensity Border.flatCard">
+      <Setter Property="Padding" Value="13" />
+      <Setter Property="CornerRadius" Value="10" />
+    </Style>
+    <Style Selector="Window.compactDensity Border.metric">
+      <Setter Property="MinHeight" Value="76" />
+      <Setter Property="Padding" Value="12" />
+    </Style>
+    <Style Selector="Window.compactDensity Border.mediaProductCard">
+      <Setter Property="Width" Value="330" />
+      <Setter Property="Padding" Value="12" />
+      <Setter Property="CornerRadius" Value="10" />
+    </Style>
+    <Style Selector="Window.compactDensity Button">
+      <Setter Property="MinHeight" Value="31" />
+    </Style>
+
+    <Style Selector="Window.comfortableDensity Border.card">
+      <Setter Property="Padding" Value="18" />
+    </Style>
+    <Style Selector="Window.comfortableDensity Border.module">
+      <Setter Property="Padding" Value="18" />
+    </Style>
+    <Style Selector="Window.comfortableDensity Border.flatCard">
+      <Setter Property="Padding" Value="18" />
+    </Style>
+    <Style Selector="Window.comfortableDensity Border.mediaProductCard">
+      <Setter Property="Width" Value="370" />
+    </Style>
+
+    <!-- V14-B: quiet dashboard controls and click-only detail flyouts. -->
+    <Style Selector="Button.dashboardInfoButton">
+      <Setter Property="Width" Value="28" />
+      <Setter Property="Height" Value="28" />
+      <Setter Property="MinWidth" Value="28" />
+      <Setter Property="MinHeight" Value="28" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
+    </Style>
+
+    <Style Selector="Button.dashboardInfoButton:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
+
+    <Style Selector="FlyoutPresenter.dashboardInfoFlyout">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="0" />
+      <!-- V14-E V3: Fluent caps flyouts at 456 and enables an outer Auto scroller.
+           Dashboard details own their width and vertical scrolling internally. -->
+      <Setter Property="MaxWidth" Value="680" />
+      <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+      <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    </Style>
+
+    <!-- V14-D: structured, readable dashboard detail surfaces. -->
+    <Style Selector="Border.dashboardInfoHeader">
+      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
+      <Setter Property="Padding" Value="16,13" />
+    </Style>
+
+    <Style Selector="Border.dashboardInfoBody">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="Padding" Value="12" />
+    </Style>
+
+    <Style Selector="Border.dashboardInfoDataRow">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="Padding" Value="10,8" />
+    </Style>
+
+    <Style Selector="Border.dashboardInfoFooter">
+      <Setter Property="Background" Value="{DynamicResource Surface3Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
+      <Setter Property="BorderThickness" Value="0,1,0,0" />
+      <Setter Property="Padding" Value="12,10" />
+    </Style>
+
+    <Style Selector="TextBlock.dashboardInfoLabel">
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="FontSize" Value="10" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="TextBlock.dashboardInfoValue">
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="FontSize" Value="10" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="TextBlock.dashboardInfoTechnical">
+      <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, DejaVu Sans Mono, monospace" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="FontSize" Value="9.5" />
+      <Setter Property="LineHeight" Value="14" />
+    </Style>
+
+    <!-- V14-E: reflow long technical detail into bounded metadata tokens. -->
+    <Style Selector="Border.dashboardInfoBody">
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+
+    <Style Selector="Border.dashboardInfoDataRow">
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+
+    <Style Selector="Border.dashboardInfoMetaToken">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="Padding" Value="6,3" />
+    </Style>
+
+    <Style Selector="TextBlock.dashboardInfoMetaText">
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="FontSize" Value="9.5" />
+      <Setter Property="LineHeight" Value="14" />
     </Style>
 
   </Application.Styles>

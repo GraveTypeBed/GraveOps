@@ -258,11 +258,10 @@ public static class LinuxOpsAnalyzer
                 DependencyRank(container.Name)));
         }
 
-        foreach (var log in logs.Where(log => log.Severity >= OpsSeverity.Warning).Take(8))
+        foreach (var log in JournalFindingPolicy.SelectActionable(
+                     logs, snapshot, integrations)
+                     .Take(8))
         {
-            if (log.Message.Contains("world-inaccessible", StringComparison.OrdinalIgnoreCase))
-                continue;
-
             findings.Add(new OpsFinding(
                 log.Message.Contains("dumped core", StringComparison.OrdinalIgnoreCase)
                     ? OpsSeverity.Warning
@@ -271,9 +270,9 @@ public static class LinuxOpsAnalyzer
                 log.Count > 1 ? $"{log.Message} ({log.Count} occurrences)" : log.Message,
                 $"Last seen {log.LastSeen.LocalDateTime:g}",
                 log.Message.Contains("dumped core", StringComparison.OrdinalIgnoreCase)
-                    ? "A process crash occurred and may indicate an application or runtime defect."
-                    : "A recurring journal warning can reveal an unresolved configuration or runtime problem.",
-                "Open Logs and resolve the newest unique event first.",
+                    ? "An owned process crash occurred and may indicate an application or runtime defect."
+                    : "An owned journal warning can reveal an unresolved infrastructure or media-runtime problem.",
+                "Open Logs and resolve the newest unique owned event first.",
                 8));
         }
 
@@ -346,13 +345,13 @@ public static class LinuxOpsAnalyzer
                 "Every media workflow depends on host reachability and runtime health.",
                 "Resolve host and failed-service findings before changing media applications."),
             StorageStage(snapshot),
-            IntegrationStage(3, "Requests", integrations, new[] { "Seerr" }, false,
+            IntegrationStage(3, "Requests", integrations, new[] { "Seerr", "Jellyseerr", "Overseerr" }, false,
                 "Request management feeds acquisition but is optional.",
                 "Configure Seerr/Jellyseerr only when request intake is part of this environment."),
             IntegrationStage(4, "Discovery", integrations, new[] { "Prowlarr" }, false,
                 "Indexer discovery sits upstream of the Arr applications.",
                 "Inspect Prowlarr and indexers before restarting downstream Arr services."),
-            IntegrationStage(5, "Acquisition", integrations, new[] { "Sonarr", "Radarr", "Lidarr" }, true,
+            IntegrationStage(5, "Acquisition", integrations, new[] { "Sonarr", "Radarr", "Lidarr", "Readarr", "Whisparr", "Mylar3", "Bazarr" }, true,
                 "Arr applications own release selection and import state.",
                 "Inspect the owning Arr queue and health messages for the affected media type."),
             IntegrationStage(6, "Downloads", integrations, new[] { "SABnzbd", "qBittorrent" }, true,
@@ -395,7 +394,7 @@ public static class LinuxOpsAnalyzer
         severity switch
         {
             OpsSeverity.Critical => "CRITICAL",
-            OpsSeverity.Error => "ERROR",
+            OpsSeverity.Error => "WARNING",
             OpsSeverity.Warning => "ATTENTION",
             OpsSeverity.Info => "INFO",
             _ => "HEALTHY"

@@ -70,6 +70,45 @@ public sealed class StorageThresholdPolicy
     };
 }
 
+
+public enum StorageCapacityAlertMode
+{
+    Normal,
+    DashboardOnly,
+    Muted,
+    Disabled
+}
+
+public sealed class StorageCapacityAlertPolicy
+{
+    public bool MonitoringEnabled { get; set; } = true;
+    public StorageCapacityAlertMode Mode { get; set; } =
+        StorageCapacityAlertMode.Normal;
+    public DateTimeOffset? MutedUntil { get; set; }
+    public bool IgnoreMount { get; set; }
+
+    public StorageCapacityAlertPolicy Clone() => new()
+    {
+        MonitoringEnabled = MonitoringEnabled,
+        Mode = Mode,
+        MutedUntil = MutedUntil,
+        IgnoreMount = IgnoreMount
+    };
+
+    public static StorageCapacityAlertPolicy Defaults() => new();
+}
+
+public sealed record StorageCapacityEvaluation(
+    OpsSeverity Severity,
+    OpsSeverity ThresholdSeverity,
+    string StatusLabel,
+    string PolicyLabel,
+    StorageCapacityAlertMode Mode,
+    bool MonitoringEnabled,
+    bool IsMuted,
+    bool RaisesFinding,
+    bool IsIgnored);
+
 public sealed class LinuxFindingPolicyStore
 {
     private readonly string _filePath;
@@ -102,6 +141,7 @@ public sealed class LinuxFindingPolicyStore
         OpsAnalysis rawAnalysis)
     {
         var changed = RemoveExpiredRules();
+        changed |= RemoveExpiredStorageCapacityMutes();
         var findings = BuildPolicyAwareFindings(snapshot, rawAnalysis.Findings)
             .OrderByDescending(item => item.Severity)
             .ThenBy(item => item.Rank)
@@ -173,23 +213,36 @@ public sealed class LinuxFindingPolicyStore
         OpsPolicyEvaluation evaluation)
     {
         var activeStorage = evaluation.Active
-            .Where(item => item.Key.StartsWith(
-                "storage.capacity:",
-                StringComparison.OrdinalIgnoreCase))
+            .Where(item => IsStorageCapacityKey(item.Key))
+            .ToArray();
+        var mutedStorage = evaluation.Muted
+            .Where(item => IsStorageCapacityKey(item.Key))
             .ToArray();
 
-        var mutedStorage = evaluation.Muted.Count(item =>
-            item.Key.StartsWith(
-                "storage.capacity:",
-                StringComparison.OrdinalIgnoreCase));
-
-        var fullest = LinuxOpsAnalyzer.OperationalStorage(snapshot)
+        var storage = LinuxOpsAnalyzer.OperationalStorage(snapshot)
             .OrderByDescending(item =>
                 LinuxOpsAnalyzer.UsePercent(item.PercentUsed))
-            .FirstOrDefault();
+            .Select(volume =>
+            {
+                var capacity = EvaluateStorageCapacity(volume);
+                var ruleMuted = mutedStorage.Any(item =>
+                    item.Resource.Equals(
+                        volume.MountPoint,
+                        StringComparison.OrdinalIgnoreCase));
+                return new
+                {
+                    Volume = volume,
+                    Capacity = capacity,
+                    Severity = ruleMuted
+                        ? OpsSeverity.Info
+                        : capacity.Severity,
+                    Muted = ruleMuted || capacity.IsMuted
+                };
+            })
+            .ToArray();
 
         OpsLifecycleStage storageStage;
-        if (fullest is null)
+        if (storage.Length == 0)
         {
             storageStage = new OpsLifecycleStage(
                 2,
@@ -202,22 +255,50 @@ public sealed class LinuxFindingPolicyStore
         }
         else
         {
-            var severity = activeStorage.Length == 0
-                ? OpsSeverity.Healthy
-                : activeStorage.Max(item => item.Severity);
+            var severity = storage
+                .Select(item => item.Severity)
+                .Append(
+                    activeStorage.Length == 0
+                        ? OpsSeverity.Healthy
+                        : activeStorage.Max(item => item.Severity))
+                .Max();
+            var allIgnored = storage.All(item =>
+                item.Capacity.IsIgnored);
+            var allUnmonitored = storage.All(item =>
+                !item.Capacity.MonitoringEnabled);
+            var mutedCount = storage.Count(item => item.Muted);
+            var dashboardOnlyCount = storage.Count(item =>
+                item.Capacity.Mode ==
+                StorageCapacityAlertMode.DashboardOnly);
 
-            var state = severity >= OpsSeverity.Error
-                ? "BLOCKED"
-                : severity == OpsSeverity.Warning
-                    ? "ATTENTION"
-                    : "READY";
+            var state = allIgnored
+                ? "IGNORED"
+                : allUnmonitored
+                    ? "UNMONITORED"
+                    : mutedCount > 0 && severity < OpsSeverity.Warning
+                        ? "MUTED"
+                        : severity >= OpsSeverity.Error
+                            ? "BLOCKED"
+                            : severity == OpsSeverity.Warning
+                                ? "ATTENTION"
+                                : "READY";
 
+            var fullest = storage[0];
             var evidence =
-                $"{fullest.MountPoint} is the fullest mount at " +
-                $"{fullest.PercentUsed} ({fullest.Available} free).";
+                $"{fullest.Volume.MountPoint} is the fullest mount at " +
+                $"{fullest.Volume.PercentUsed} " +
+                $"({fullest.Volume.Available} free).";
 
-            if (mutedStorage > 0)
-                evidence += $" {mutedStorage} capacity finding(s) muted by operator policy.";
+            if (allUnmonitored)
+                evidence += " Capacity monitoring is disabled by operator policy.";
+            else if (mutedCount > 0)
+                evidence += $" {mutedCount} capacity alert(s) are muted.";
+
+            if (dashboardOnlyCount > 0)
+            {
+                evidence +=
+                    $" {dashboardOnlyCount} mount(s) report capacity on the Dashboard only.";
+            }
 
             storageStage = new OpsLifecycleStage(
                 2,
@@ -226,9 +307,13 @@ public sealed class LinuxFindingPolicyStore
                 severity,
                 evidence,
                 "Every downstream stage reads from or writes to storage.",
-                severity >= OpsSeverity.Warning
-                    ? "Review the active capacity finding before queue growth creates an outage."
-                    : "No active storage-capacity policy is triggered.");
+                allUnmonitored || allIgnored
+                    ? "Capacity remains visible, while mount, filesystem, permission and I/O failures remain protected."
+                    : severity >= OpsSeverity.Warning
+                        ? "Review the active capacity state before queue growth creates an outage."
+                        : mutedCount > 0
+                            ? "Capacity remains visible without contributing an active warning."
+                            : "No active storage-capacity policy is triggered.");
         }
 
         return rawLifecycle
@@ -313,6 +398,219 @@ public sealed class LinuxFindingPolicyStore
         return true;
     }
 
+    public StorageCapacityAlertPolicy
+        GetGlobalStorageCapacityAlertPolicy() =>
+        NormalizeStorageCapacityAlertPolicy(
+            _document.GlobalStorageCapacityPolicy);
+
+    public void SetGlobalStorageCapacityAlertPolicy(
+        StorageCapacityAlertPolicy policy)
+    {
+        ArgumentNullException.ThrowIfNull(policy);
+        _document.GlobalStorageCapacityPolicy =
+            NormalizeStorageCapacityAlertPolicy(policy);
+        Save();
+    }
+
+    public void SetStorageCapacityAlertPolicies(
+        StorageCapacityAlertPolicy globalPolicy,
+        string? mountPoint,
+        StorageCapacityAlertPolicy? mountPolicy,
+        bool useGlobalForMount)
+    {
+        ArgumentNullException.ThrowIfNull(globalPolicy);
+
+        var previousGlobal =
+            _document.GlobalStorageCapacityPolicy.Clone();
+        var previousOverrides =
+            _document.StorageCapacityOverrides.ToDictionary(
+                item => item.Key,
+                item => item.Value.Clone(),
+                StringComparer.OrdinalIgnoreCase);
+
+        try
+        {
+            _document.GlobalStorageCapacityPolicy =
+                NormalizeStorageCapacityAlertPolicy(globalPolicy);
+
+            if (!string.IsNullOrWhiteSpace(mountPoint))
+            {
+                if (useGlobalForMount)
+                {
+                    _document.StorageCapacityOverrides.Remove(mountPoint);
+                }
+                else
+                {
+                    ArgumentNullException.ThrowIfNull(mountPolicy);
+                    _document.StorageCapacityOverrides[mountPoint] =
+                        NormalizeStorageCapacityAlertPolicy(mountPolicy);
+                }
+            }
+
+            Save();
+        }
+        catch
+        {
+            _document.GlobalStorageCapacityPolicy = previousGlobal;
+            _document.StorageCapacityOverrides = previousOverrides;
+            throw;
+        }
+    }
+
+    public StorageCapacityAlertPolicy
+        GetStorageCapacityAlertPolicy(string mountPoint)
+    {
+        if (!string.IsNullOrWhiteSpace(mountPoint) &&
+            _document.StorageCapacityOverrides.TryGetValue(
+                mountPoint,
+                out var policy))
+        {
+            return NormalizeStorageCapacityAlertPolicy(policy);
+        }
+
+        return GetGlobalStorageCapacityAlertPolicy();
+    }
+
+    public bool HasStorageCapacityAlertOverride(string mountPoint) =>
+        !string.IsNullOrWhiteSpace(mountPoint) &&
+        _document.StorageCapacityOverrides.ContainsKey(mountPoint);
+
+    public int StorageCapacityAlertOverrideCount =>
+        _document.StorageCapacityOverrides.Count;
+
+    public void SetStorageCapacityAlertOverride(
+        string mountPoint,
+        StorageCapacityAlertPolicy policy)
+    {
+        if (string.IsNullOrWhiteSpace(mountPoint))
+        {
+            throw new ArgumentException(
+                "A mount point is required.",
+                nameof(mountPoint));
+        }
+
+        ArgumentNullException.ThrowIfNull(policy);
+        _document.StorageCapacityOverrides[mountPoint] =
+            NormalizeStorageCapacityAlertPolicy(policy);
+        Save();
+    }
+
+    public bool ResetStorageCapacityAlertOverride(string mountPoint)
+    {
+        if (string.IsNullOrWhiteSpace(mountPoint) ||
+            !_document.StorageCapacityOverrides.Remove(mountPoint))
+        {
+            return false;
+        }
+
+        Save();
+        return true;
+    }
+
+    public StorageCapacityEvaluation EvaluateStorageCapacity(
+        StorageVolumeSnapshot volume) =>
+        EvaluateStorageCapacity(
+            volume.MountPoint,
+            LinuxOpsAnalyzer.UsePercent(volume.PercentUsed),
+            ParseSizeToGiB(volume.Available));
+
+    public StorageCapacityEvaluation EvaluateStorageCapacity(
+        string mountPoint,
+        int percentUsed,
+        double availableGiB)
+    {
+        var threshold = GetStorageThreshold(mountPoint);
+        var thresholdSeverity = EvaluateStorageThresholdSeverity(
+            threshold,
+            percentUsed,
+            availableGiB);
+        var policy = GetStorageCapacityAlertPolicy(mountPoint);
+        var hasOverride = HasStorageCapacityAlertOverride(mountPoint);
+        var ignored = policy.IgnoreMount;
+        var monitoringEnabled =
+            policy.MonitoringEnabled &&
+            policy.Mode != StorageCapacityAlertMode.Disabled &&
+            !ignored;
+        var thresholdTriggered =
+            thresholdSeverity >= OpsSeverity.Warning;
+        var muteWindowActive =
+            policy.Mode == StorageCapacityAlertMode.Muted &&
+            (policy.MutedUntil is null ||
+             policy.MutedUntil > DateTimeOffset.Now);
+
+        // Temporary muting does not suppress a critical capacity event.
+        // Explicit Disabled/Ignore modes are the operator's deliberate opt-out.
+        var isMuted =
+            monitoringEnabled &&
+            thresholdTriggered &&
+            muteWindowActive &&
+            thresholdSeverity < OpsSeverity.Critical;
+
+        var raisesFinding =
+            monitoringEnabled &&
+            thresholdTriggered &&
+            policy.Mode != StorageCapacityAlertMode.DashboardOnly &&
+            !isMuted;
+
+        var severity =
+            !monitoringEnabled || isMuted
+                ? OpsSeverity.Info
+                : thresholdSeverity;
+
+        var status = ignored
+            ? "IGNORED"
+            : !monitoringEnabled
+                ? "UNMONITORED"
+                : isMuted
+                    ? "MUTED"
+                    : policy.Mode == StorageCapacityAlertMode.DashboardOnly
+                        ? thresholdTriggered
+                            ? $"{LinuxOpsAnalyzer.SeverityLabel(thresholdSeverity)} · DASHBOARD"
+                            : "DASHBOARD ONLY"
+                        : policy.Mode == StorageCapacityAlertMode.Muted &&
+                          !thresholdTriggered
+                            ? "MUTE ARMED"
+                            : LinuxOpsAnalyzer.SeverityLabel(thresholdSeverity);
+
+        var scope = hasOverride
+            ? "mount override"
+            : "global policy";
+        var mode = StorageCapacityAlertModeLabel(policy.Mode);
+        var thresholdScope = HasCustomStorageThreshold(mountPoint)
+            ? "custom thresholds"
+            : "default thresholds";
+        var policyLabel = $"{scope} · {mode} · {thresholdScope}";
+
+        if (policy.Mode == StorageCapacityAlertMode.Muted &&
+            policy.MutedUntil is not null &&
+            policy.MutedUntil > DateTimeOffset.Now)
+        {
+            policyLabel +=
+                $" · until {policy.MutedUntil.Value.ToLocalTime():g}";
+        }
+
+        return new StorageCapacityEvaluation(
+            severity,
+            thresholdSeverity,
+            status,
+            policyLabel,
+            policy.Mode,
+            monitoringEnabled,
+            isMuted,
+            raisesFinding,
+            ignored);
+    }
+
+    public static string StorageCapacityAlertModeLabel(
+        StorageCapacityAlertMode mode) =>
+        mode switch
+        {
+            StorageCapacityAlertMode.DashboardOnly => "Dashboard only",
+            StorageCapacityAlertMode.Muted => "Muted",
+            StorageCapacityAlertMode.Disabled => "Disabled",
+            _ => "Normal"
+        };
+
     public StorageThresholdPolicy GetStorageThreshold(string mountPoint)
     {
         return _document.StorageThresholds.TryGetValue(
@@ -343,32 +641,8 @@ public sealed class LinuxFindingPolicyStore
         return true;
     }
 
-    public OpsSeverity EvaluateStorageSeverity(StorageVolumeSnapshot volume)
-    {
-        var threshold = GetStorageThreshold(volume.MountPoint);
-        var percent = LinuxOpsAnalyzer.UsePercent(volume.PercentUsed);
-        var freeGiB = ParseSizeToGiB(volume.Available);
-
-        if (percent >= threshold.CriticalPercent ||
-            FreeThresholdTriggered(freeGiB, threshold.CriticalFreeGiB))
-        {
-            return OpsSeverity.Critical;
-        }
-
-        if (percent >= threshold.ErrorPercent ||
-            FreeThresholdTriggered(freeGiB, threshold.ErrorFreeGiB))
-        {
-            return OpsSeverity.Error;
-        }
-
-        if (percent >= threshold.WarningPercent ||
-            FreeThresholdTriggered(freeGiB, threshold.WarningFreeGiB))
-        {
-            return OpsSeverity.Warning;
-        }
-
-        return OpsSeverity.Healthy;
-    }
+    public OpsSeverity EvaluateStorageSeverity(StorageVolumeSnapshot volume) =>
+        EvaluateStorageCapacity(volume).Severity;
 
     public static bool IsStorageCapacityKey(string key) =>
         key.StartsWith(
@@ -384,22 +658,25 @@ public sealed class LinuxFindingPolicyStore
         HostSnapshot snapshot,
         IReadOnlyList<OpsFinding> rawFindings)
     {
+        // Only capacity observations are rebuilt here. Mount loss, read-only
+        // filesystems, permissions and I/O failures remain untouched and can
+        // never be hidden by a capacity-alert preference.
         var findings = rawFindings
             .Where(item => !IsStorageCapacityFinding(item))
             .ToList();
 
         foreach (var volume in LinuxOpsAnalyzer.OperationalStorage(snapshot))
         {
-            var severity = EvaluateStorageSeverity(volume);
-            if (severity < OpsSeverity.Warning)
+            var capacity = EvaluateStorageCapacity(volume);
+            if (!capacity.RaisesFinding)
                 continue;
 
+            var severity = capacity.ThresholdSeverity;
             var percent = LinuxOpsAnalyzer.UsePercent(volume.PercentUsed);
             var threshold = GetStorageThreshold(volume.MountPoint);
-            var custom = HasCustomStorageThreshold(volume.MountPoint);
-            var thresholdSummary = custom
-                ? $"Custom policy {threshold.WarningPercent}/{threshold.ErrorPercent}/{threshold.CriticalPercent}%"
-                : "Default policy 85/90/95%";
+            var thresholdSummary =
+                $"{capacity.PolicyLabel} · " +
+                $"{threshold.WarningPercent}/{threshold.ErrorPercent}/{threshold.CriticalPercent}%";
 
             findings.Add(new OpsFinding(
                 severity,
@@ -410,7 +687,7 @@ public sealed class LinuxFindingPolicyStore
                 "Low free space can block downloads, imports, databases, transcodes and backups.",
                 severity >= OpsSeverity.Critical
                     ? "Free space or move data before continuing write-heavy operations."
-                    : "Inspect growth and adjust the exact-resource threshold when this capacity is intentional.",
+                    : "Inspect growth or change the exact mount's capacity-alert policy when this usage is intentional.",
                 1));
         }
 
@@ -644,6 +921,97 @@ public sealed class LinuxFindingPolicyStore
         }
     }
 
+    private static OpsSeverity EvaluateStorageThresholdSeverity(
+        StorageThresholdPolicy threshold,
+        int percentUsed,
+        double availableGiB)
+    {
+        if (percentUsed >= threshold.CriticalPercent ||
+            FreeThresholdTriggered(
+                availableGiB,
+                threshold.CriticalFreeGiB))
+        {
+            return OpsSeverity.Critical;
+        }
+
+        if (percentUsed >= threshold.ErrorPercent ||
+            FreeThresholdTriggered(
+                availableGiB,
+                threshold.ErrorFreeGiB))
+        {
+            return OpsSeverity.Error;
+        }
+
+        if (percentUsed >= threshold.WarningPercent ||
+            FreeThresholdTriggered(
+                availableGiB,
+                threshold.WarningFreeGiB))
+        {
+            return OpsSeverity.Warning;
+        }
+
+        return OpsSeverity.Healthy;
+    }
+
+    private static StorageCapacityAlertPolicy
+        NormalizeStorageCapacityAlertPolicy(
+            StorageCapacityAlertPolicy? policy)
+    {
+        var normalized =
+            policy?.Clone() ??
+            StorageCapacityAlertPolicy.Defaults();
+
+        if (normalized.Mode != StorageCapacityAlertMode.Muted)
+            normalized.MutedUntil = null;
+
+        if (normalized.Mode == StorageCapacityAlertMode.Disabled)
+            normalized.MonitoringEnabled = false;
+
+        if (normalized.Mode == StorageCapacityAlertMode.Muted &&
+            normalized.MutedUntil is not null &&
+            normalized.MutedUntil <= DateTimeOffset.Now)
+        {
+            normalized.Mode = StorageCapacityAlertMode.Normal;
+            normalized.MutedUntil = null;
+        }
+
+        return normalized;
+    }
+
+    private bool RemoveExpiredStorageCapacityMutes()
+    {
+        var changed = false;
+
+        if (_document.GlobalStorageCapacityPolicy.Mode ==
+                StorageCapacityAlertMode.Muted &&
+            _document.GlobalStorageCapacityPolicy.MutedUntil is not null &&
+            _document.GlobalStorageCapacityPolicy.MutedUntil <=
+                DateTimeOffset.Now)
+        {
+            _document.GlobalStorageCapacityPolicy.Mode =
+                StorageCapacityAlertMode.Normal;
+            _document.GlobalStorageCapacityPolicy.MutedUntil = null;
+            changed = true;
+        }
+
+        foreach (var policy in
+                 _document.StorageCapacityOverrides.Values)
+        {
+            if (policy.Mode != StorageCapacityAlertMode.Muted ||
+                policy.MutedUntil is null ||
+                policy.MutedUntil > DateTimeOffset.Now)
+            {
+                continue;
+            }
+
+            policy.Mode = StorageCapacityAlertMode.Normal;
+            policy.MutedUntil = null;
+            changed = true;
+        }
+
+        return changed;
+    }
+
     private static bool FreeThresholdTriggered(
         double availableGiB,
         double thresholdGiB) =>
@@ -716,6 +1084,14 @@ public sealed class LinuxFindingPolicyStore
                 document.StorageThresholds ??
                 new Dictionary<string, StorageThresholdPolicy>(),
                 StringComparer.OrdinalIgnoreCase);
+            document.GlobalStorageCapacityPolicy =
+                NormalizeStorageCapacityAlertPolicy(
+                    document.GlobalStorageCapacityPolicy);
+            document.StorageCapacityOverrides =
+                new Dictionary<string, StorageCapacityAlertPolicy>(
+                    document.StorageCapacityOverrides ??
+                    new Dictionary<string, StorageCapacityAlertPolicy>(),
+                    StringComparer.OrdinalIgnoreCase);
             return document;
         }
         catch
@@ -739,6 +1115,10 @@ public sealed class LinuxFindingPolicyStore
     {
         public List<FindingPolicyRule> Rules { get; set; } = new();
         public Dictionary<string, StorageThresholdPolicy> StorageThresholds { get; set; } =
+            new(StringComparer.OrdinalIgnoreCase);
+        public StorageCapacityAlertPolicy GlobalStorageCapacityPolicy { get; set; } =
+            StorageCapacityAlertPolicy.Defaults();
+        public Dictionary<string, StorageCapacityAlertPolicy> StorageCapacityOverrides { get; set; } =
             new(StringComparer.OrdinalIgnoreCase);
     }
 

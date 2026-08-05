@@ -139,15 +139,25 @@ public partial class MainWindow
             BuildMediaCategoryGroups(
                 visibleRows);
 
+        var productGroups =
+            categoryGroups
+                .SelectMany(group =>
+                    group.Products)
+                .OrderBy(group =>
+                    MediaCategoryRank(group.Category))
+                .ThenBy(group =>
+                    group.ProductName)
+                .ToArray();
+
         Get<ItemsControl>(
                 "MediaCategoryGroupsList")
             .ItemsSource =
-            categoryGroups;
+            productGroups;
 
         Get<TextBlock>(
                 "MediaFleetGroupingSummaryText")
             .Text =
-            $"{categoryGroups.Sum(group => group.Products.Count)} " +
+            $"{productGroups.Length} " +
             $"application group(s) · " +
             $"{visibleRows.Length} visible instance(s) · " +
             $"{_identityResolution.Records.Count(item => !item.IsVerified)} " +
@@ -331,7 +341,20 @@ public partial class MainWindow
             url ??
             (string.IsNullOrWhiteSpace(
                 integration.Endpoint)
-                ? "No verified endpoint"
+                ? integration.IsVerified
+                    ? integration.Kind.Contains(
+                        "systemd",
+                        StringComparison.OrdinalIgnoreCase)
+                        ? "System service"
+                        : integration.Kind.Contains(
+                            "docker",
+                            StringComparison.OrdinalIgnoreCase) ||
+                          integration.Evidence.Contains(
+                              "compose",
+                              StringComparison.OrdinalIgnoreCase)
+                            ? "Docker managed"
+                            : "Locally managed"
+                    : "Endpoint not confirmed"
                 : integration.IsVerified
                     ? integration.Endpoint
                     : $"Suggested · {integration.Endpoint}");
@@ -503,7 +526,7 @@ public partial class MainWindow
                 ? $"{ordered.Length} candidate " +
                   $"{(ordered.Length == 1 ? "instance" : "instances")}"
                 : attention == 0
-                    ? $"{verified} verified · all healthy"
+                    ? "Healthy"
                     : $"{healthy} healthy · {attention} attention";
 
         var instances =
@@ -625,7 +648,7 @@ public partial class MainWindow
         return displayName.Equals(
                 product,
                 StringComparison.OrdinalIgnoreCase)
-            ? "Default"
+            ? "Local instance"
             : displayName;
     }
 
@@ -700,6 +723,9 @@ public partial class MainWindow
                 "Processing",
             "dumb" =>
                 "Orchestration",
+            "pi-hole" or
+            "pihole" =>
+                "Network",
             _ =>
                 "Supporting service"
         };
@@ -831,9 +857,6 @@ public partial class MainWindow
         button.IsEnabled =
             false;
 
-        button.Content =
-            "Refreshing...";
-
         try
         {
             await RefreshAsync();
@@ -842,9 +865,6 @@ public partial class MainWindow
         {
             button.IsEnabled =
                 true;
-
-            button.Content =
-                "Refresh telemetry";
         }
     }
 

@@ -20,7 +20,6 @@ public partial class MainWindow
         _controlPlaneTimer = new();
     private bool _targetSelectionBusy;
     private bool _serverProfileBindingBusy;
-    private bool _controlPlaneBackgroundRefresh;
     private bool _controlPlaneCaptureBusy;
     private DateTimeOffset _nextBackgroundRefreshAt;
     private string _lastNotificationKey =
@@ -43,7 +42,8 @@ public partial class MainWindow
                 "Notifications",
                 "Targets",
                 "Actions",
-                "Failures"
+                "Failures",
+                "Actionable"
             };
         Get<ComboBox>("ActivityFilterComboBox")
             .SelectedIndex = 0;
@@ -128,8 +128,11 @@ public partial class MainWindow
         object? sender,
         EventArgs e)
     {
-        if (_controlPlane.State
-                .ExpireMaintenanceIfNeeded())
+        var maintenanceChanged =
+            _controlPlane.State
+                .ExpireMaintenanceIfNeeded();
+
+        if (maintenanceChanged)
         {
             _controlPlane.State.RecordActivity(
                 "Maintenance",
@@ -137,9 +140,8 @@ public partial class MainWindow
                 "Maintenance Mode expired",
                 "Normal notifications and alert presentation resumed.",
                 "DashboardNav");
+            PopulateControlPlaneFoundation();
         }
-
-        PopulateControlPlaneFoundation();
 
         if (_controlPlaneCaptureBusy ||
             DateTimeOffset.Now <
@@ -156,20 +158,21 @@ public partial class MainWindow
             DateTimeOffset.Now +
             TimeSpan.FromSeconds(seconds);
 
-        _controlPlaneBackgroundRefresh = true;
-
         try
         {
-            await RefreshAsync();
+            await RefreshAsync(
+                background: true);
         }
-        finally
+        catch (OperationCanceledException)
         {
-            _controlPlaneBackgroundRefresh = false;
+            // A newer manual refresh superseded this background request.
         }
     }
 
     private async Task<HostSnapshot>
-        CaptureActiveTargetAsync()
+        CaptureActiveTargetAsync(
+            bool background,
+            CancellationToken cancellationToken)
     {
         if (_controlPlaneCaptureBusy)
         {
@@ -178,9 +181,8 @@ public partial class MainWindow
         }
 
         _controlPlaneCaptureBusy = true;
-        var profile = _controlPlane.ActiveProfile;
-        var background =
-            _controlPlaneBackgroundRefresh;
+        var profile =
+            _controlPlane.ActiveProfile;
 
         var jobId =
             _controlPlane.State.StartJob(
@@ -190,8 +192,6 @@ public partial class MainWindow
                 profile.DisplayName,
                 profile.ConnectionSummary,
                 background);
-
-        PopulateControlPlaneFoundation();
 
         try
         {
@@ -203,8 +203,11 @@ public partial class MainWindow
                     : "Opening the fingerprint-pinned SSH provider.");
 
             var snapshot =
-                await _controlPlane
-                    .CaptureActiveAsync();
+                await Task.Run(
+                    () =>
+                        _controlPlane.CaptureActiveAsync(
+                            cancellationToken),
+                    cancellationToken);
 
             _controlPlane.State.UpdateJob(
                 jobId,
@@ -214,21 +217,28 @@ public partial class MainWindow
             _controlPlane.State.CompleteJob(
                 jobId,
                 success: true,
-                $"{snapshot.Hostname} captured at {snapshot.CapturedAt.ToLocalTime():g}.");
+                $"{snapshot.Hostname} captured.");
 
             if (!background)
             {
-                RecordRoutineControlPlaneActivity(
+                _controlPlane.State.RecordActivity(
                     "Capture",
                     profile.DisplayName,
                     "Environment refreshed",
                     $"{snapshot.Hostname} · {snapshot.OperatingSystem}",
                     "DashboardNav",
-                    TimeSpan.FromMinutes(30),
                     unread: false);
             }
 
             return snapshot;
+        }
+        catch (OperationCanceledException)
+        {
+            _controlPlane.State.CompleteJob(
+                jobId,
+                success: false,
+                "Refresh superseded or cancelled.");
+            throw;
         }
         catch (Exception exception)
         {
@@ -243,31 +253,31 @@ public partial class MainWindow
                 "Environment capture failed",
                 exception.Message,
                 "ServersNav");
-
             throw;
         }
         finally
         {
             _controlPlaneCaptureBusy = false;
-            PopulateControlPlaneFoundation();
         }
     }
 
     private async Task<OpsBackupSnapshot>
-        CaptureTargetBackupAsync()
+        CaptureTargetBackupAsync(
+            HostSnapshot snapshot,
+            CancellationToken cancellationToken)
     {
         if (_controlPlane.ActiveProfile.IsLocal)
-            return await _backupProbe.CaptureAsync();
-
-        if (_snapshot is null)
         {
-            throw new InvalidOperationException(
-                "Remote backup projection requires a host snapshot.");
+            return await Task.Run(
+                () =>
+                    _backupProbe.CaptureAsync(
+                        cancellationToken),
+                cancellationToken);
         }
 
         return _controlPlane
             .CreateRemoteBackupSnapshot(
-                _snapshot);
+                snapshot);
     }
 
     private string ControlPlaneConnectionDetail() =>
@@ -1494,6 +1504,29 @@ public partial class MainWindow
                             row.Kind.Equals(
                                 "Failure",
                                 StringComparison.OrdinalIgnoreCase),
+                        "Actionable" =>
+                            row.Kind.Equals(
+                                "Failure",
+                                StringComparison.OrdinalIgnoreCase) ||
+                            row.Kind.Equals(
+                                "Notification",
+                                StringComparison.OrdinalIgnoreCase) ||
+                            (
+                                row.Kind.Equals(
+                                    "Action",
+                                    StringComparison.OrdinalIgnoreCase) &&
+                                (
+                                    row.Title.Contains(
+                                        "failed",
+                                        StringComparison.OrdinalIgnoreCase) ||
+                                    row.Detail.Contains(
+                                        "failed",
+                                        StringComparison.OrdinalIgnoreCase) ||
+                                    row.Detail.Contains(
+                                        "error",
+                                        StringComparison.OrdinalIgnoreCase)
+                                )
+                            ),
                         _ => true
                     })
                 .ToArray();
