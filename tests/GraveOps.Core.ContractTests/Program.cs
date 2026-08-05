@@ -11,6 +11,8 @@ var tests = new (string Name, Action Run)[]
     ("capabilities are case insensitive", CapabilitiesAreCaseInsensitive),
     ("provider registry resolves by target", ProviderRegistryResolvesByTarget),
     ("application requires owner target", ApplicationRequiresOwnerTarget),
+    ("application registry preserves other target inventories", ApplicationRegistryPreservesOtherTargets),
+    ("application registry resolves and enforces owner target", ApplicationRegistryResolvesAndEnforcesOwner),
     ("secret values redact and dispose", SecretValuesRedactAndDispose)
 };
 
@@ -116,6 +118,121 @@ static void ApplicationRequiresOwnerTarget()
     Assert(application.OwnerTargetId == "linux-server",
         "Application ownership was not retained.");
 }
+
+static void ApplicationRegistryPreservesOtherTargets()
+{
+    var registry =
+        new ApplicationRegistry();
+
+    registry.ReplaceTargetInventory(
+        "local-linux",
+        new[]
+        {
+            CreateApplication(
+                "plex-local",
+                "plex",
+                "Plex",
+                "local-linux"),
+            CreateApplication(
+                "sab-local",
+                "sabnzbd",
+                "SABnzbd",
+                "local-linux")
+        });
+
+    registry.ReplaceTargetInventory(
+        "pi-hole",
+        new[]
+        {
+            CreateApplication(
+                "pihole-remote",
+                "pi-hole",
+                "Pi-hole",
+                "pi-hole")
+        });
+
+    registry.ReplaceTargetInventory(
+        "local-linux",
+        new[]
+        {
+            CreateApplication(
+                "plex-local",
+                "plex",
+                "Plex",
+                "local-linux")
+        });
+
+    Assert(
+        registry.ForTarget(
+            "local-linux").Count == 1,
+        "Replacing one target did not remove its stale application.");
+    Assert(
+        registry.ForTarget(
+            "pi-hole").Count == 1,
+        "Replacing one target erased another target's inventory.");
+}
+
+static void ApplicationRegistryResolvesAndEnforcesOwner()
+{
+    var registry =
+        new ApplicationRegistry();
+
+    registry.ReplaceTargetInventory(
+        "pi-hole",
+        new[]
+        {
+            CreateApplication(
+                "pihole-remote",
+                "pi-hole",
+                "Pi-hole",
+                "pi-hole")
+        });
+
+    Assert(
+        registry.ResolveOwnerTargetId(
+            "pihole-remote") ==
+        "pi-hole",
+        "Application owner target was not resolved.");
+
+    try
+    {
+        registry.ReplaceTargetInventory(
+            "local-linux",
+            new[]
+            {
+                CreateApplication(
+                    "wrong-owner",
+                    "plex",
+                    "Plex",
+                    "pi-hole")
+            });
+
+        throw new InvalidOperationException(
+            "A mismatched application owner was accepted.");
+    }
+    catch (InvalidOperationException exception)
+        when (exception.Message.Contains(
+            "belongs to",
+            StringComparison.OrdinalIgnoreCase))
+    {
+        // Expected.
+    }
+}
+
+static ApplicationInstance CreateApplication(
+    string id,
+    string productId,
+    string displayName,
+    string ownerTargetId) =>
+    new(
+        id,
+        productId,
+        displayName,
+        ownerTargetId,
+        ApplicationRole.WebApplication,
+        ApplicationRuntimeKind.RemoteApi,
+        new Uri("http://example.invalid"),
+        TargetCapabilities.Empty);
 
 static void SecretValuesRedactAndDispose()
 {

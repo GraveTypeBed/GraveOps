@@ -2603,7 +2603,7 @@
                                       Grid.Column="2"
                                       Classes="compact mediaGroupAction"
                                       Content="{ReflectionBinding OpenLabel}"
-                                      Tag="{ReflectionBinding ProductName}"
+                                      Tag="{ReflectionBinding PrimarySourceKey}"
                                       Click="MediaCardOpenButton_OnClick" />
                                 </Grid>
                               </Grid>

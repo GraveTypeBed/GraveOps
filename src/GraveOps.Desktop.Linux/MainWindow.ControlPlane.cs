@@ -944,6 +944,8 @@ public partial class MainWindow
 
         await _controlPlane.DeleteProfileAsync(
             profile.Id);
+        ForgetApplicationInventory(
+            profile.Id);
 
         _controlPlane.State.RecordActivity(
             "Target",

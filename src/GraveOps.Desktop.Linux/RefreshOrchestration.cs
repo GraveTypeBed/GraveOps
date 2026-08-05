@@ -233,6 +233,11 @@ public partial class MainWindow
                 identity;
             _integrations =
                 identity.Integrations;
+            RememberApplicationInventory(
+                context.Profile,
+                envelope.Snapshot.CapturedAt,
+                envelope.Capabilities,
+                identity);
             _logs =
                 analysisBundle.Logs;
             _signalQualityExcludedGroups =

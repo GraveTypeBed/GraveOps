@@ -2262,8 +2262,10 @@ public partial class MainWindow : Window
 
     private void PopulateIntegrationWorkspace()
     {
+        var selectedRow =
+            SelectedMediaRow();
         var selected =
-            SelectedMediaIntegration();
+            selectedRow?.Integration;
 
         var name = Get<TextBlock>("IntegrationNameText");
         var runtime = Get<TextBlock>("IntegrationRuntimeText");
@@ -2283,7 +2285,8 @@ public partial class MainWindow : Window
         var actionStatus =
             Get<TextBlock>("IntegrationActionStatusText");
 
-        if (selected is null)
+        if (selected is null ||
+            selectedRow is null)
         {
             name.Text = "Select an application";
             runtime.Text = "--";
@@ -2305,51 +2308,100 @@ public partial class MainWindow : Window
             return;
         }
 
-        var related = _policyEvaluation?.Active
-            .Where(item =>
-                MatchesIntegration(item, selected.Name))
-            .ToArray() ??
-            Array.Empty<OpsPolicyFinding>();
+        var related =
+            selectedRow.IsActiveTarget
+                ? _policyEvaluation?.Active
+                    .Where(item =>
+                        MatchesIntegration(
+                            item,
+                            selected.Name))
+                    .ToArray() ??
+                  Array.Empty<OpsPolicyFinding>()
+                : Array.Empty<OpsPolicyFinding>();
 
-        var url = ResolveIntegrationUrl(selected);
+        var url =
+            ResolveIntegrationUrl(
+                selected);
+        var navigationName =
+            NavigationForIntegration(
+                selected.Name);
+        var ownerAvailable =
+            _controlPlane.Profiles.Find(
+                selectedRow.OwnerTargetId) is not null;
+
         name.Text =
             string.IsNullOrWhiteSpace(
                 selected.DisplayName)
                 ? selected.Name
                 : selected.DisplayName;
-        runtime.Text = selected.State;
+        runtime.Text =
+            selected.State;
         state.Text =
             LinuxOpsAnalyzer.SeverityLabel(
                 selected.Severity);
         state.Foreground =
-            OpsPalette.Foreground(selected.Severity);
+            OpsPalette.Foreground(
+                selected.Severity);
         stateBorder.Background =
-            OpsPalette.Background(selected.Severity);
-        kind.Text = selected.Kind;
-        endpoint.Text = url ??
-            (string.IsNullOrWhiteSpace(selected.Endpoint)
+            OpsPalette.Background(
+                selected.Severity);
+        kind.Text =
+            selected.Kind;
+        endpoint.Text =
+            url ??
+            (string.IsNullOrWhiteSpace(
+                selected.Endpoint)
                 ? "No verified web endpoint"
                 : selected.Endpoint);
-        role.Text = selected.Role;
+        role.Text =
+            $"{selected.Role} · {selectedRow.OwnerTargetName}";
         evidence.Text =
-            IntegrationEvidenceSummary(selected);
-        findingsSummary.Text = related.Length == 0
-            ? "No active findings"
-            : $"{related.Length} active";
-        findingsText.Text = related.Length == 0
-            ? "No active operational finding is associated with this application."
-            : string.Join(
-                Environment.NewLine + Environment.NewLine,
-                related.Select(item =>
-                    $"{item.Severity} · {item.Problem}" +
-                    (string.IsNullOrWhiteSpace(item.NextStep)
-                        ? string.Empty
-                        : Environment.NewLine + item.NextStep)));
-        open.IsEnabled = url is not null;
-        intelligence.IsEnabled = related.Length > 0;
-        actionStatus.Text = url is null
-            ? "No verified local web interface is available."
-            : "Ready to open the local interface.";
+            $"Target · {selectedRow.OwnerTargetName}" +
+            Environment.NewLine +
+            IntegrationEvidenceSummary(
+                selected);
+        findingsSummary.Text =
+            selectedRow.IsActiveTarget
+                ? related.Length == 0
+                    ? "No active findings"
+                    : $"{related.Length} active"
+                : "Activate target to evaluate current findings";
+        findingsText.Text =
+            selectedRow.IsActiveTarget
+                ? related.Length == 0
+                    ? "No active operational finding is associated with this application."
+                    : string.Join(
+                        Environment.NewLine +
+                        Environment.NewLine,
+                        related.Select(item =>
+                            $"{item.Severity} · {item.Problem}" +
+                            (string.IsNullOrWhiteSpace(
+                                item.NextStep)
+                                ? string.Empty
+                                : Environment.NewLine +
+                                  item.NextStep)))
+                : $"This inventory belongs to {selectedRow.OwnerTargetName}. " +
+                  "Open the application to activate its target and refresh current findings.";
+
+        open.IsEnabled =
+            ownerAvailable &&
+            (!string.IsNullOrWhiteSpace(
+                 navigationName) ||
+             url is not null);
+        intelligence.IsEnabled =
+            selectedRow.IsActiveTarget &&
+            related.Length > 0;
+
+        actionStatus.Text =
+            !ownerAvailable
+                ? "The owner target is no longer saved."
+                : selectedRow.IsActiveTarget
+                    ? url is null &&
+                      string.IsNullOrWhiteSpace(
+                          navigationName)
+                        ? "No verified application workspace or interface is available."
+                        : "Ready on the active target."
+                    : $"Open will activate {selectedRow.OwnerTargetName} first.";
     }
 
     private async void OpenIntegrationButton_OnClick(
@@ -2357,38 +2409,14 @@ public partial class MainWindow : Window
         RoutedEventArgs e)
     {
         var selected =
-            SelectedMediaIntegration();
+            SelectedMediaRow();
 
         if (selected is null)
             return;
 
-        var url = ResolveIntegrationUrl(selected);
-        if (url is null)
-            return;
-
-        try
-        {
-            using var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "xdg-open",
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-            process.StartInfo.ArgumentList.Add(url);
-            process.Start();
-
-            Get<TextBlock>("IntegrationActionStatusText").Text =
-                $"Opened {url}";
-            await Task.CompletedTask;
-        }
-        catch (Exception exception)
-        {
-            Get<TextBlock>("IntegrationActionStatusText").Text =
-                $"Could not open interface: {exception.Message}";
-        }
+        await ActivateOwnedApplicationAsync(
+            selected,
+            openIdentityEditor: false);
     }
 
     private void IntegrationFindingsButton_OnClick(
