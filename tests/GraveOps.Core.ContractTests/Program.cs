@@ -13,6 +13,9 @@ var tests = new (string Name, Action Run)[]
     ("application requires owner target", ApplicationRequiresOwnerTarget),
     ("application registry preserves other target inventories", ApplicationRegistryPreservesOtherTargets),
     ("application registry resolves and enforces owner target", ApplicationRegistryResolvesAndEnforcesOwner),
+    ("application cache omits endpoints and secrets", ApplicationCacheOmitsEndpointsAndSecrets),
+    ("application cache round trips safe ownership", ApplicationCacheRoundTripsSafeOwnership),
+    ("application cache ignores malformed documents", ApplicationCacheIgnoresMalformedDocuments),
     ("secret values redact and dispose", SecretValuesRedactAndDispose)
 };
 
@@ -233,6 +236,246 @@ static ApplicationInstance CreateApplication(
         ApplicationRuntimeKind.RemoteApi,
         new Uri("http://example.invalid"),
         TargetCapabilities.Empty);
+
+static void ApplicationCacheOmitsEndpointsAndSecrets()
+{
+    var directory =
+        TemporaryContractDirectory();
+    var path =
+        Path.Combine(
+            directory,
+            "application-inventory-cache.json");
+
+    try
+    {
+        var store =
+            new ApplicationInventoryCacheStore(path);
+
+        var application =
+            new ApplicationInstance(
+                "plex-local",
+                "Plex",
+                "Plex Media Server",
+                "local-linux",
+                ApplicationRole.Server,
+                ApplicationRuntimeKind.SystemdService,
+                new Uri(
+                    "http://user:password@192.168.0.2:32400/web?token=do-not-store"),
+                new TargetCapabilities(
+                    new[]
+                    {
+                        CapabilityIds.ApplicationDiscovery
+                    }),
+                new Dictionary<string, string>
+                {
+                    ["category"] =
+                        "Library",
+                    ["token"] =
+                        "do-not-store",
+                    ["evidence"] =
+                        "raw command output",
+                    ["protocol"] =
+                        "Native service"
+                });
+
+        store.Save(
+            new[]
+            {
+                ApplicationInventoryCacheStore.CreateTarget(
+                    "local-linux",
+                    "Local Linux",
+                    DateTimeOffset.UtcNow,
+                    application.Capabilities,
+                    new[]
+                    {
+                        application
+                    })
+            });
+
+        var json =
+            File.ReadAllText(path);
+
+        Assert(
+            !json.Contains(
+                "192.168.0.2",
+                StringComparison.OrdinalIgnoreCase),
+            "The cache retained an endpoint host.");
+        Assert(
+            !json.Contains(
+                "password",
+                StringComparison.OrdinalIgnoreCase),
+            "The cache retained endpoint credentials.");
+        Assert(
+            !json.Contains(
+                "do-not-store",
+                StringComparison.OrdinalIgnoreCase),
+            "The cache retained a secret value.");
+        Assert(
+            !json.Contains(
+                "raw command output",
+                StringComparison.OrdinalIgnoreCase),
+            "The cache retained arbitrary evidence.");
+        Assert(
+            json.Contains(
+                "Library",
+                StringComparison.Ordinal),
+            "The cache removed an allowlisted category.");
+    }
+    finally
+    {
+        Directory.Delete(
+            directory,
+            recursive: true);
+    }
+}
+
+static void ApplicationCacheRoundTripsSafeOwnership()
+{
+    var directory =
+        TemporaryContractDirectory();
+    var path =
+        Path.Combine(
+            directory,
+            "application-inventory-cache.json");
+
+    try
+    {
+        var store =
+            new ApplicationInventoryCacheStore(path);
+        var capabilities =
+            new TargetCapabilities(
+                new[]
+                {
+                    CapabilityIds.ApplicationDiscovery,
+                    CapabilityIds.StorageRead
+                });
+        var application =
+            new ApplicationInstance(
+                "pihole-remote",
+                "Pi-hole",
+                "Pi-hole",
+                "pi-hole",
+                ApplicationRole.WebApplication,
+                ApplicationRuntimeKind.RemoteApi,
+                new Uri(
+                    "http://192.168.0.210/admin"),
+                capabilities,
+                new Dictionary<string, string>
+                {
+                    ["category"] =
+                        "Network",
+                    ["verified"] =
+                        "True",
+                    ["visible"] =
+                        "True"
+                });
+
+        store.Save(
+            new[]
+            {
+                ApplicationInventoryCacheStore.CreateTarget(
+                    "pi-hole",
+                    "Pi-hole",
+                    DateTimeOffset.UtcNow,
+                    capabilities,
+                    new[]
+                    {
+                        application
+                    })
+            });
+
+        var loaded =
+            store.Load();
+
+        Assert(
+            loaded.Warnings.Count == 0,
+            "A valid cache produced warnings.");
+        Assert(
+            loaded.Document.Targets.Count == 1,
+            "The target inventory did not round trip.");
+
+        var target =
+            loaded.Document.Targets[0];
+        var cached =
+            target.Applications.Single();
+
+        Assert(
+            cached.OwnerTargetId == "pi-hole",
+            "Cached application ownership changed.");
+        Assert(
+            target.CapabilityIds.Contains(
+                CapabilityIds.StorageRead,
+                StringComparer.OrdinalIgnoreCase),
+            "Cached target capabilities changed.");
+
+        var restored =
+            ApplicationInventoryCacheStore
+                .ToApplicationInstance(
+                    cached,
+                    new TargetCapabilities(
+                        target.CapabilityIds));
+
+        Assert(
+            restored.OwnerTargetId == "pi-hole",
+            "Restored application ownership changed.");
+        Assert(
+            restored.ManagementEndpoint is null,
+            "A cached endpoint was restored as trusted state.");
+    }
+    finally
+    {
+        Directory.Delete(
+            directory,
+            recursive: true);
+    }
+}
+
+static void ApplicationCacheIgnoresMalformedDocuments()
+{
+    var directory =
+        TemporaryContractDirectory();
+    var path =
+        Path.Combine(
+            directory,
+            "application-inventory-cache.json");
+
+    try
+    {
+        File.WriteAllText(
+            path,
+            "{ definitely not valid json");
+
+        var store =
+            new ApplicationInventoryCacheStore(path);
+        var loaded =
+            store.Load();
+
+        Assert(
+            loaded.Document.Targets.Count == 0,
+            "A malformed cache produced target inventory.");
+        Assert(
+            loaded.Warnings.Count == 1,
+            "A malformed cache did not report one warning.");
+    }
+    finally
+    {
+        Directory.Delete(
+            directory,
+            recursive: true);
+    }
+}
+
+static string TemporaryContractDirectory()
+{
+    var directory =
+        Path.Combine(
+            Path.GetTempPath(),
+            "graveops-contract-" +
+            Guid.NewGuid().ToString("N"));
+
+    Directory.CreateDirectory(directory);
+    return directory;
+}
 
 static void SecretValuesRedactAndDispose()
 {

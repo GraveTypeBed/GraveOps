@@ -124,6 +124,7 @@ public partial class MainWindow : Window
         _operatorSettings = _operatorSettingsStore.Load();
         ApplyOperatorSettingsToUi();
         InitializeControlPlaneFoundation();
+        InitializePersistentApplicationInventory();
         InitializeDownloadClientWorkspace();
         InitializeMediaWorkspace();
         InitializePlexWorkspace();

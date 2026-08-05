@@ -31,6 +31,7 @@ public sealed class LinuxMediaApplicationRow
     public bool IsVerified { get; init; }
     public bool IsVisible { get; init; }
     public bool IsActiveTarget { get; init; }
+    public bool IsStale { get; init; }
 }
 
 public sealed class LinuxMediaInstanceRow
@@ -178,6 +179,8 @@ public partial class MainWindow
         var candidateCount =
             _mediaRows.Count(item =>
                 !item.IsVerified);
+        var staleTargetCount =
+            StaleApplicationInventoryTargetCount();
         var targetCount =
             _mediaRows
                 .Select(item =>
@@ -193,6 +196,7 @@ public partial class MainWindow
             $"application target group(s) · " +
             $"{visibleRows.Length} visible instance(s) · " +
             $"{targetCount} target(s) · " +
+            $"{staleTargetCount} stale target(s) · " +
             $"{candidateCount} candidate(s)";
 
         var cards =
@@ -241,6 +245,7 @@ public partial class MainWindow
         var healthRows =
             _mediaRows
                 .Where(item =>
+                    !item.IsStale &&
                     item.Integration.OwnsHealth &&
                     item.IsVerified)
                 .ToArray();
@@ -308,7 +313,8 @@ public partial class MainWindow
             .Text =
             newestCapture is null
                 ? "Waiting for capture"
-                : $"Newest capture " +
+                : $"{staleTargetCount} stale target(s) · " +
+                  $"newest capture " +
                   $"{newestCapture.Value.ToLocalTime():g}";
 
         Get<Button>("MediaHubShowHiddenButton")
@@ -333,6 +339,8 @@ public partial class MainWindow
             owned.Profile.Id.Equals(
                 _controlPlane.ActiveProfile.Id,
                 StringComparison.OrdinalIgnoreCase);
+        var stale =
+            owned.IsStale;
 
         var displayName =
             string.IsNullOrWhiteSpace(
@@ -367,6 +375,7 @@ public partial class MainWindow
         }
 
         var liveSeverity =
+            stale ||
             !integration.IsVerified ||
             !integration.OwnsHealth
                 ? OpsSeverity.Info
@@ -376,14 +385,19 @@ public partial class MainWindow
                         plexSnapshot.State);
 
         var runtimeText =
-            plexSnapshot is null
-                ? $"{integration.Kind} · {integration.Role} · " +
-                  $"{(string.IsNullOrWhiteSpace(integration.Protocol) ? "--" : integration.Protocol)}"
-                : $"{plexSnapshot.Service} · " +
-                  $"{plexSnapshot.ActiveSessions} active";
+            stale
+                ? $"Cached inventory · captured " +
+                  $"{owned.CapturedAt.ToLocalTime():g}"
+                : plexSnapshot is null
+                    ? $"{integration.Kind} · {integration.Role} · " +
+                      $"{(string.IsNullOrWhiteSpace(integration.Protocol) ? "--" : integration.Protocol)}"
+                    : $"{plexSnapshot.Service} · " +
+                      $"{plexSnapshot.ActiveSessions} active";
 
         var endpointText =
-            url ??
+            stale
+                ? "Refresh target to resolve endpoint"
+                : url ??
             (string.IsNullOrWhiteSpace(
                 integration.Endpoint)
                 ? integration.IsVerified
@@ -407,13 +421,17 @@ public partial class MainWindow
         var evidence =
             $"Target · {owned.Profile.DisplayName}" +
             Environment.NewLine +
-            (plexSnapshot is null
-                ? $"{(integration.IsVerified ? "Verified" : "Candidate")} · " +
-                  $"{integration.Evidence}"
-                : $"Live Plex · " +
-                  $"{plexSnapshot.ActiveSessions} sessions · " +
-                  $"{plexSnapshot.TotalBandwidth} · " +
-                  $"{plexSnapshot.LibraryCount} libraries");
+            (stale
+                ? $"STALE CACHE · captured " +
+                  $"{owned.CapturedAt.ToLocalTime():g} · " +
+                  "refresh required before use"
+                : plexSnapshot is null
+                    ? $"{(integration.IsVerified ? "Verified" : "Candidate")} · " +
+                      $"{integration.Evidence}"
+                    : $"Live Plex · " +
+                      $"{plexSnapshot.ActiveSessions} sessions · " +
+                      $"{plexSnapshot.TotalBandwidth} · " +
+                      $"{plexSnapshot.LibraryCount} libraries");
 
         return new LinuxMediaApplicationRow
         {
@@ -453,12 +471,14 @@ public partial class MainWindow
             Evidence =
                 evidence,
             OpenLabel =
-                activeTarget
-                    ? NavigationForIntegration(
-                        integration.Name) is null
-                        ? "Open interface"
-                        : "Open in GraveOps"
-                    : "Switch & open",
+                stale
+                    ? "Refresh & open"
+                    : activeTarget
+                        ? NavigationForIntegration(
+                            integration.Name) is null
+                            ? "Open interface"
+                            : "Open in GraveOps"
+                        : "Switch & open",
             VisibilityText =
                 $"{(integration.IsVisible ? "Visible" : "Hidden")} · " +
                 $"{owned.Profile.DisplayName}",
@@ -466,10 +486,12 @@ public partial class MainWindow
                 url ??
                 "No verified URL",
             StateLabel =
-                integration.IsVerified
-                    ? LinuxOpsAnalyzer.SeverityLabel(
-                        liveSeverity)
-                    : "UNVERIFIED",
+                stale
+                    ? "STALE"
+                    : integration.IsVerified
+                        ? LinuxOpsAnalyzer.SeverityLabel(
+                            liveSeverity)
+                        : "UNVERIFIED",
             StateForeground =
                 OpsPalette.Foreground(
                     liveSeverity),
@@ -483,7 +505,9 @@ public partial class MainWindow
             IsVisible =
                 integration.IsVisible,
             IsActiveTarget =
-                activeTarget
+                activeTarget,
+            IsStale =
+                stale
         };
     }
 
@@ -575,17 +599,25 @@ public partial class MainWindow
                     OpsSeverity.Info)
                 .Max();
 
+        var stale =
+            ordered.Any(item =>
+                item.IsStale);
+
         var stateLabel =
-            verified == 0
-                ? "UNVERIFIED"
+            stale
+                ? "STALE"
+                : verified == 0
+                    ? "UNVERIFIED"
                 : verified != ordered.Length
                     ? "MIXED"
                     : LinuxOpsAnalyzer.SeverityLabel(
                         groupSeverity);
 
         var healthSummary =
-            verified == 0
-                ? $"{ordered.Length} candidate " +
+            stale
+                ? "Cached inventory · refresh required"
+                : verified == 0
+                    ? $"{ordered.Length} candidate " +
                   $"{(ordered.Length == 1 ? "instance" : "instances")}"
                 : attention == 0
                     ? "Healthy"
@@ -601,10 +633,12 @@ public partial class MainWindow
                         DisplayName =
                             item.CompactDisplayName,
                         MetaText =
-                            item.VersionText == "--"
-                                ? item.RuntimeLabel
-                                : $"v{item.VersionText} · " +
-                                  item.RuntimeLabel,
+                            item.IsStale
+                                ? "Cached inventory"
+                                : item.VersionText == "--"
+                                    ? item.RuntimeLabel
+                                    : $"v{item.VersionText} · " +
+                                      item.RuntimeLabel,
                         EndpointText =
                             item.CompactEndpointText,
                         FullEndpointText =
@@ -643,12 +677,14 @@ public partial class MainWindow
             SummaryText =
                 $"{primary.OwnerTargetName} · {healthSummary}",
             OpenLabel =
-                primary.IsActiveTarget
-                    ? NavigationForIntegration(
-                        productName) is null
-                        ? "Open interface"
-                        : "Open workspace"
-                    : "Switch & open",
+                stale
+                    ? "Refresh & open"
+                    : primary.IsActiveTarget
+                        ? NavigationForIntegration(
+                            productName) is null
+                            ? "Open interface"
+                            : "Open workspace"
+                        : "Switch & open",
             PrimarySourceKey =
                 primary.SourceKey,
             StateLabel =

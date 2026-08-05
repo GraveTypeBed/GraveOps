@@ -21,14 +21,16 @@ public partial class MainWindow
         LinuxHostProfile Profile,
         DateTimeOffset CapturedAt,
         TargetCapabilities Capabilities,
-        ApplicationIdentityResolution Resolution);
+        ApplicationIdentityResolution Resolution,
+        bool IsStale);
 
     private sealed record OwnedApplicationProjection(
         LinuxHostProfile Profile,
         DateTimeOffset CapturedAt,
         TargetCapabilities Capabilities,
         ApplicationIdentityRecord? Identity,
-        OpsIntegration Integration);
+        OpsIntegration Integration,
+        bool IsStale);
 
     private void RememberApplicationInventory(
         LinuxHostProfile profile,
@@ -76,7 +78,10 @@ public partial class MainWindow
                 profileSnapshot,
                 capturedAt,
                 capabilities,
-                resolution);
+                resolution,
+                IsStale: false);
+
+        PersistApplicationInventories();
     }
 
     private void ForgetApplicationInventory(
@@ -92,6 +97,8 @@ public partial class MainWindow
             targetId);
         _applicationRegistry.RemoveTarget(
             targetId);
+
+        PersistApplicationInventories();
     }
 
     private IReadOnlyList<OwnedApplicationProjection>
@@ -124,6 +131,8 @@ public partial class MainWindow
                     activeTargetId,
                     StringComparison.OrdinalIgnoreCase))
             .ThenBy(inventory =>
+                inventory.IsStale)
+            .ThenBy(inventory =>
                 inventory.Profile.DisplayName,
                 StringComparer.OrdinalIgnoreCase)
             .SelectMany(inventory =>
@@ -138,7 +147,8 @@ public partial class MainWindow
                                     record.SourceKey.Equals(
                                         integration.InstanceKey,
                                         StringComparison.OrdinalIgnoreCase)),
-                            integration)))
+                            integration,
+                            inventory.IsStale)))
             .ToArray();
     }
 
@@ -200,17 +210,30 @@ public partial class MainWindow
 
             await SwitchActiveTargetAsync(
                 profile);
+        }
+        else if (row.IsStale)
+        {
+            Get<TextBlock>(
+                    "IntegrationActionStatusText")
+                .Text =
+                $"Refreshing {profile.DisplayName} before opening cached inventory...";
 
-            if (!_acceptedTargetId.Equals(
-                    profile.Id,
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                Get<TextBlock>(
-                        "IntegrationActionStatusText")
-                    .Text =
-                    $"Could not load owner target {profile.DisplayName}.";
-                return;
-            }
+            await RefreshAsync();
+        }
+
+        if (!_acceptedTargetId.Equals(
+                profile.Id,
+                StringComparison.OrdinalIgnoreCase) ||
+            !_targetApplicationInventories.TryGetValue(
+                profile.Id,
+                out var refreshedInventory) ||
+            refreshedInventory.IsStale)
+        {
+            Get<TextBlock>(
+                    "IntegrationActionStatusText")
+                .Text =
+                $"Could not refresh owner target {profile.DisplayName}.";
+            return;
         }
 
         PopulateMediaHub();
@@ -309,7 +332,11 @@ public partial class MainWindow
                 ["verified"] =
                     record.IsVerified.ToString(),
                 ["owns-health"] =
-                    record.OwnsHealth.ToString()
+                    record.OwnsHealth.ToString(),
+                ["visible"] =
+                    record.IsVisible.ToString(),
+                ["show-in-navigation"] =
+                    record.ShowInNavigation.ToString()
             };
 
         var application =
