@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using GraveOps.Core.Hosts;
 using GraveOps.Core.Providers;
+using GraveOps.Core.Security;
 using GraveOps.Core.Snapshots;
 using GraveOps.Core.Targets;
 using GraveOps.Platform.Windows;
@@ -41,7 +42,34 @@ var tests =
             ProviderRegistryResolvesWindowsAsync),
         (
             "provider capture preserves target lease",
-            ProviderCapturePreservesLeaseAsync)
+            ProviderCapturePreservesLeaseAsync),
+        (
+            "remote Windows advertises implemented capabilities",
+            RemoteWindowsCapabilitiesAsync),
+        (
+            "remote Windows provider handles only WinRM HTTPS",
+            RemoteProviderHandlesOnlyWinRmHttpsAsync),
+        (
+            "provider registry resolves remote Windows",
+            RemoteProviderRegistryResolvesWindowsAsync),
+        (
+            "remote provider reuses the Windows collector",
+            RemoteProviderReusesCollectorAsync),
+        (
+            "WinRM validates TLS before retrieving credentials",
+            WinRmValidatesTlsBeforeCredentialAsync),
+        (
+            "WinRM keeps credentials off arguments and clears stdin",
+            WinRmProtectsCredentialPayloadAsync),
+        (
+            "WinRM fails closed before remote execution",
+            WinRmFailsClosedAsync),
+        (
+            "remote Windows connection rejects unsafe profiles",
+            RemoteConnectionRejectsUnsafeProfilesAsync),
+        (
+            "remote Windows runner honors cancellation",
+            RemoteRunnerHonorsCancellationAsync)
     };
 
 if (args.Contains(
@@ -545,6 +573,460 @@ static async Task ProviderCapturePreservesLeaseAsync()
         "captured capabilities");
 }
 
+static Task RemoteWindowsCapabilitiesAsync()
+{
+    var capabilities =
+        WindowsTargetCapabilityCatalog.ForRemoteTarget();
+
+    foreach (var capability in new[]
+             {
+                 CapabilityIds.HostSummaryRead,
+                 CapabilityIds.StorageRead,
+                 CapabilityIds.ServicesRead,
+                 CapabilityIds.ProcessesRead,
+                 CapabilityIds.InstalledApplicationsRead,
+                 CapabilityIds.NetworkListenersRead,
+                 CapabilityIds.ContainersRead,
+                 CapabilityIds.EventLogRead,
+                 CapabilityIds.ApplicationDiscovery
+             })
+    {
+        True(
+            capabilities.Supports(
+                capability),
+            $"remote {capability}");
+    }
+
+    True(
+        !capabilities.Supports(
+            CapabilityIds.ApplicationApiTelemetry),
+        "remote host provider does not over-advertise application APIs");
+
+    return Task.CompletedTask;
+}
+
+static Task RemoteProviderHandlesOnlyWinRmHttpsAsync()
+{
+    var provider =
+        new RemoteWindowsHostProvider(
+            new FixtureRemoteWindowsExecutor(
+                FixtureWindowsRunner.Create().Result));
+
+    True(
+        provider.CanHandle(
+            RemoteWindowsTarget()),
+        "remote WinRM HTTPS target");
+
+    True(
+        !provider.CanHandle(
+            LocalWindowsTarget()),
+        "local Windows target rejected");
+
+    True(
+        !provider.CanHandle(
+            RemoteWindowsTarget(
+                transportId:
+                    TransportIds.Ssh)),
+        "remote Windows SSH target rejected");
+
+    return Task.CompletedTask;
+}
+
+static Task RemoteProviderRegistryResolvesWindowsAsync()
+{
+    var provider =
+        new RemoteWindowsHostProvider(
+            new FixtureRemoteWindowsExecutor(
+                FixtureWindowsRunner.Create().Result));
+
+    var registry =
+        new HostProviderRegistry(
+            new[]
+            {
+                provider
+            });
+
+    var resolved =
+        registry.Resolve(
+            RemoteWindowsTarget());
+
+    Equal(
+        HostProviderIds.RemoteWindows,
+        resolved.Descriptor.Id,
+        "remote resolved provider ID");
+
+    return Task.CompletedTask;
+}
+
+static async Task RemoteProviderReusesCollectorAsync()
+{
+    var executor =
+        new FixtureRemoteWindowsExecutor(
+            FixtureWindowsRunner.Create().Result);
+
+    var provider =
+        new RemoteWindowsHostProvider(
+            executor);
+
+    var target =
+        RemoteWindowsTarget();
+
+    var lease =
+        new TargetRefreshLease(
+            target.Id,
+            SelectionGeneration: 4,
+            RefreshGeneration: 9,
+            RefreshId:
+                Guid.NewGuid());
+
+    var probe =
+        await provider.ProbeAsync(
+            target);
+
+    True(
+        probe.Capabilities.Supports(
+            CapabilityIds.EventLogRead),
+        "remote probe capability");
+
+    var envelope =
+        await provider.CaptureAsync(
+            target,
+            lease);
+
+    Equal(
+        lease,
+        envelope.Lease,
+        "remote refresh lease");
+    Equal(
+        HostProviderIds.RemoteWindows,
+        envelope.ProviderId,
+        "remote provider ID");
+    Equal(
+        "fixture-windows",
+        envelope.Snapshot.Hostname,
+        "remote collector hostname");
+    Equal(
+        WindowsInventoryPowerShell.Script,
+        executor.LastRequest?.Script,
+        "shared inventory script");
+}
+
+static async Task WinRmValidatesTlsBeforeCredentialAsync()
+{
+    var order =
+        new List<string>();
+
+    var vault =
+        new FixtureCredentialVault(
+            "fixture-secret",
+            order);
+
+    var certificate =
+        new FixtureRemoteWindowsCertificateValidator(
+            success: true,
+            order);
+
+    var process =
+        new FixtureWinRmProcessInvoker(
+            new WindowsPowerShellResult(
+                0,
+                "fixture-output",
+                string.Empty),
+            order);
+
+    var executor =
+        new WinRmHttpsPowerShellExecutor(
+            vault,
+            process,
+            certificate);
+
+    var result =
+        await executor.ExecuteAsync(
+            RemoteWindowsTarget(),
+            new WindowsPowerShellRequest(
+                "Write-Output 'fixture'",
+                "fixture remote command"));
+
+    Equal(
+        0,
+        result.ExitCode,
+        "WinRM fixture exit");
+
+    Equal(
+        "tls,credential,process",
+        string.Join(
+            ",",
+            order),
+        "WinRM security order");
+}
+
+static async Task WinRmProtectsCredentialPayloadAsync()
+{
+    const string secret =
+        "fixture-secret-do-not-store";
+    const string host =
+        "windows.example.invalid";
+    const string username =
+        "fixture-user";
+
+    var vault =
+        new FixtureCredentialVault(
+            secret);
+
+    var process =
+        new FixtureWinRmProcessInvoker(
+            new WindowsPowerShellResult(
+                0,
+                "fixture-output",
+                string.Empty));
+
+    var executor =
+        new WinRmHttpsPowerShellExecutor(
+            vault,
+            process,
+            new FixtureRemoteWindowsCertificateValidator(
+                success: true));
+
+    var result =
+        await executor.ExecuteAsync(
+            RemoteWindowsTarget(),
+            new WindowsPowerShellRequest(
+                "Write-Output 'fixture'",
+                "fixture remote command"));
+
+    Equal(
+        0,
+        result.ExitCode,
+        "protected WinRM exit");
+
+    var wrapper =
+        Encoding.Unicode.GetString(
+            Convert.FromBase64String(
+                process.LastEncodedWrapper));
+
+    True(
+        !wrapper.Contains(
+            secret,
+            StringComparison.Ordinal),
+        "secret absent from encoded command");
+
+    var arguments =
+        WinRmPowerShellCommand.BuildArguments(
+            process.LastEncodedWrapper);
+
+    True(
+        !arguments.Any(argument =>
+            argument.Contains(
+                secret,
+                StringComparison.Ordinal) ||
+            argument.Contains(
+                host,
+                StringComparison.Ordinal) ||
+            argument.Contains(
+                username,
+                StringComparison.Ordinal)),
+        "credentials and endpoint absent from process arguments");
+
+    var payloadCopy =
+        Encoding.UTF8.GetString(
+            process.LastPayloadCopy);
+
+    True(
+        payloadCopy.Contains(
+            secret,
+            StringComparison.Ordinal),
+        "credential delivered through standard input");
+
+    True(
+        process.LastPayloadReference.Span
+            .ToArray()
+            .All(value =>
+                value == 0),
+        "credential standard-input buffer cleared");
+
+    True(
+        vault.LastRetrieved is not null,
+        "credential was retrieved");
+
+    Throws<ObjectDisposedException>(
+        () =>
+            vault.LastRetrieved!.Reveal(),
+        "credential disposed after WinRM execution");
+}
+
+static async Task WinRmFailsClosedAsync()
+{
+    var tlsVault =
+        new FixtureCredentialVault(
+            "fixture-secret");
+
+    var tlsProcess =
+        new FixtureWinRmProcessInvoker(
+            new WindowsPowerShellResult(
+                0,
+                "should-not-run",
+                string.Empty));
+
+    var tlsExecutor =
+        new WinRmHttpsPowerShellExecutor(
+            tlsVault,
+            tlsProcess,
+            new FixtureRemoteWindowsCertificateValidator(
+                success: false));
+
+    var tlsResult =
+        await tlsExecutor.ExecuteAsync(
+            RemoteWindowsTarget(),
+            new WindowsPowerShellRequest(
+                "Write-Output 'fixture'",
+                "fixture remote command"));
+
+    True(
+        !string.IsNullOrWhiteSpace(
+            tlsResult.FailureMessage),
+        "TLS failure reported");
+    Equal(
+        0,
+        tlsVault.RetrieveCalls,
+        "credential not retrieved after TLS failure");
+    Equal(
+        0,
+        tlsProcess.Calls,
+        "process not started after TLS failure");
+
+    var missingVault =
+        new FixtureCredentialVault(
+            secret: null);
+
+    var missingProcess =
+        new FixtureWinRmProcessInvoker(
+            new WindowsPowerShellResult(
+                0,
+                "should-not-run",
+                string.Empty));
+
+    var missingExecutor =
+        new WinRmHttpsPowerShellExecutor(
+            missingVault,
+            missingProcess,
+            new FixtureRemoteWindowsCertificateValidator(
+                success: true));
+
+    var missingResult =
+        await missingExecutor.ExecuteAsync(
+            RemoteWindowsTarget(),
+            new WindowsPowerShellRequest(
+                "Write-Output 'fixture'",
+                "fixture remote command"));
+
+    True(
+        missingResult.FailureMessage.Contains(
+            "not found",
+            StringComparison.OrdinalIgnoreCase),
+        "missing credential failure");
+    Equal(
+        0,
+        missingProcess.Calls,
+        "process not started without credential");
+}
+
+static Task RemoteConnectionRejectsUnsafeProfilesAsync()
+{
+    var valid =
+        RemoteWindowsConnectionParser.Parse(
+            RemoteWindowsTarget(
+                pinnedIdentity:
+                    "sha256:aa:bb:cc:dd:ee:ff:00:11:" +
+                    "22:33:44:55:66:77:88:99:" +
+                    "aa:bb:cc:dd:ee:ff:00:11:" +
+                    "22:33:44:55:66:77:88:99"));
+
+    Equal(
+        "SHA256:AABBCCDDEEFF00112233445566778899AABBCCDDEEFF00112233445566778899",
+        valid.PinnedServerCertificateSha256,
+        "normalized certificate pin");
+
+    Throws<InvalidOperationException>(
+        () =>
+            RemoteWindowsConnectionParser.Parse(
+                RemoteWindowsTarget(
+                    username:
+                        null)),
+        "missing remote username");
+
+    Throws<InvalidOperationException>(
+        () =>
+            RemoteWindowsConnectionParser.Parse(
+                RemoteWindowsTarget(
+                    credentialReference:
+                        null)),
+        "missing credential reference");
+
+    Throws<InvalidOperationException>(
+        () =>
+            RemoteWindowsConnectionParser.Parse(
+                RemoteWindowsTarget(
+                    transportId:
+                        TransportIds.Ssh)),
+        "non-WinRM transport");
+
+    Throws<InvalidOperationException>(
+        () =>
+            RemoteWindowsConnectionParser.Parse(
+                RemoteWindowsTarget(
+                    options:
+                        new Dictionary<string, string>
+                        {
+                            ["authentication"] =
+                                "CredSSP"
+                        })),
+        "unsupported authentication");
+
+    Throws<InvalidOperationException>(
+        () =>
+            RemoteWindowsConnectionParser.Parse(
+                RemoteWindowsTarget(
+                    pinnedIdentity:
+                        "not-a-sha256-pin")),
+        "invalid certificate pin");
+
+    Throws<InvalidOperationException>(
+        () =>
+            RemoteWindowsConnectionParser.Parse(
+                RemoteWindowsTarget(
+                    options:
+                        new Dictionary<string, string>
+                        {
+                            ["operation-timeout-seconds"] =
+                                "5"
+                        })),
+        "unsafe operation timeout");
+
+    return Task.CompletedTask;
+}
+
+static async Task RemoteRunnerHonorsCancellationAsync()
+{
+    using var cancellation =
+        new CancellationTokenSource();
+
+    cancellation.Cancel();
+
+    var runner =
+        new RemoteWindowsPowerShellRunner(
+            RemoteWindowsTarget(),
+            new FixtureRemoteWindowsExecutor(
+                FixtureWindowsRunner.Create().Result));
+
+    await ThrowsAsync<OperationCanceledException>(
+        () =>
+            runner.ExecuteAsync(
+                new WindowsPowerShellRequest(
+                    "Write-Output 'fixture'",
+                    "fixture remote command"),
+                cancellation.Token));
+}
+
 static async Task NativeWindowsProbeAsync()
 {
     if (!OperatingSystem.IsWindows())
@@ -595,7 +1077,12 @@ static TargetProfile LocalLinuxTarget() =>
         TargetLocation.Local,
         TargetConnectionProfile.Local);
 
-static TargetProfile RemoteWindowsTarget() =>
+static TargetProfile RemoteWindowsTarget(
+    string transportId = TransportIds.WinRmHttps,
+    string? username = "fixture-user",
+    string? credentialReference = "fixture/windows",
+    string? pinnedIdentity = null,
+    IReadOnlyDictionary<string, string>? options = null) =>
     new(
         "remote-windows",
         "Remote Windows",
@@ -603,9 +1090,24 @@ static TargetProfile RemoteWindowsTarget() =>
         TargetPlatform.Windows,
         TargetLocation.Remote,
         new TargetConnectionProfile(
-            TransportIds.WinRmHttps,
+            transportId,
             Host: "windows.example.invalid",
-            Port: 5986));
+            Port: 5986,
+            Username:
+                username,
+            CredentialReference:
+                credentialReference,
+            PinnedIdentity:
+                pinnedIdentity,
+            Options:
+                options ??
+                new Dictionary<string, string>
+                {
+                    ["authentication"] =
+                        "Basic",
+                    ["operation-timeout-seconds"] =
+                        "60"
+                }));
 
 static void True(
     bool condition,
@@ -633,6 +1135,24 @@ static void Equal<T>(
     }
 }
 
+static void Throws<TException>(
+    Action action,
+    string name)
+    where TException : Exception
+{
+    try
+    {
+        action();
+    }
+    catch (TException)
+    {
+        return;
+    }
+
+    throw new InvalidOperationException(
+        $"Expected {typeof(TException).Name}: {name}.");
+}
+
 static async Task ThrowsAsync<TException>(
     Func<Task> action)
     where TException : Exception
@@ -648,6 +1168,193 @@ static async Task ThrowsAsync<TException>(
 
     throw new InvalidOperationException(
         $"Expected {typeof(TException).Name}.");
+}
+
+internal sealed class FixtureRemoteWindowsExecutor :
+    IRemoteWindowsPowerShellExecutor
+{
+    private readonly WindowsPowerShellResult _result;
+
+    public FixtureRemoteWindowsExecutor(
+        WindowsPowerShellResult result)
+    {
+        _result =
+            result;
+    }
+
+    public WindowsPowerShellRequest? LastRequest { get; private set; }
+
+    public Task<WindowsPowerShellResult> ExecuteAsync(
+        TargetProfile target,
+        WindowsPowerShellRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        _ =
+            RemoteWindowsConnectionParser.Parse(
+                target);
+
+        LastRequest =
+            request;
+
+        return Task.FromResult(
+            _result);
+    }
+}
+
+internal sealed class FixtureCredentialVault :
+    ICredentialVault
+{
+    private readonly string? _secret;
+    private readonly List<string>? _order;
+
+    public FixtureCredentialVault(
+        string? secret,
+        List<string>? order = null)
+    {
+        _secret =
+            secret;
+        _order =
+            order;
+    }
+
+    public string VaultId =>
+        "fixture-vault";
+
+    public bool IsAvailable { get; set; } =
+        true;
+
+    public int RetrieveCalls { get; private set; }
+
+    public SecretValue? LastRetrieved { get; private set; }
+
+    public Task StoreAsync(
+        CredentialReference reference,
+        SecretValue secret,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.CompletedTask;
+    }
+
+    public Task<SecretValue?> RetrieveAsync(
+        CredentialReference reference,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        RetrieveCalls++;
+        _order?.Add(
+            "credential");
+
+        LastRetrieved =
+            _secret is null
+                ? null
+                : new SecretValue(
+                    _secret);
+
+        return Task.FromResult(
+            LastRetrieved);
+    }
+
+    public Task DeleteAsync(
+        CredentialReference reference,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.CompletedTask;
+    }
+}
+
+internal sealed class FixtureRemoteWindowsCertificateValidator :
+    IRemoteWindowsCertificateValidator
+{
+    private readonly bool _success;
+    private readonly List<string>? _order;
+
+    public FixtureRemoteWindowsCertificateValidator(
+        bool success,
+        List<string>? order = null)
+    {
+        _success =
+            success;
+        _order =
+            order;
+    }
+
+    public Task<WindowsTlsValidationResult> ValidateAsync(
+        RemoteWindowsConnectionOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        _order?.Add(
+            "tls");
+
+        return Task.FromResult(
+            _success
+                ? new WindowsTlsValidationResult(
+                    true,
+                    "fixture TLS accepted")
+                : new WindowsTlsValidationResult(
+                    false,
+                    "fixture TLS rejected",
+                    "certificate mismatch"));
+    }
+}
+
+internal sealed class FixtureWinRmProcessInvoker :
+    IWinRmPowerShellProcessInvoker
+{
+    private readonly WindowsPowerShellResult _result;
+    private readonly List<string>? _order;
+
+    public FixtureWinRmProcessInvoker(
+        WindowsPowerShellResult result,
+        List<string>? order = null)
+    {
+        _result =
+            result;
+        _order =
+            order;
+    }
+
+    public string ExecutableName =>
+        "fixture-pwsh";
+
+    public int Calls { get; private set; }
+
+    public string LastEncodedWrapper { get; private set; } =
+        string.Empty;
+
+    public byte[] LastPayloadCopy { get; private set; } =
+        Array.Empty<byte>();
+
+    public ReadOnlyMemory<byte> LastPayloadReference { get; private set; }
+
+    public Task<WindowsPowerShellResult> ExecuteAsync(
+        string encodedWrapper,
+        ReadOnlyMemory<byte> standardInput,
+        TimeSpan timeout,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        Calls++;
+        _order?.Add(
+            "process");
+
+        LastEncodedWrapper =
+            encodedWrapper;
+        LastPayloadCopy =
+            standardInput.ToArray();
+        LastPayloadReference =
+            standardInput;
+
+        return Task.FromResult(
+            _result);
+    }
 }
 
 internal sealed class FixtureWindowsRunner :

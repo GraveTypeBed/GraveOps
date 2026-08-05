@@ -20,4 +20,8 @@ public static class WindowsTargetCapabilityCatalog
     public static TargetCapabilities ForLocalTarget() =>
         new(
             HostReadCapabilities);
+
+    public static TargetCapabilities ForRemoteTarget() =>
+        new(
+            HostReadCapabilities);
 }
