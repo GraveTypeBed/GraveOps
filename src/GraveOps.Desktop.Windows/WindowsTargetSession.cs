@@ -152,6 +152,9 @@ public sealed class WindowsTargetSession
     private readonly IActiveTargetStore
         _activeTargetStore;
 
+    private readonly ICredentialVault
+        _credentialVault;
+
     private readonly TargetRefreshCoordinator
         _refreshCoordinator =
             new();
@@ -166,7 +169,8 @@ public sealed class WindowsTargetSession
         : this(
             targets,
             providers,
-            new VolatileActiveTargetStore())
+            new VolatileActiveTargetStore(),
+            new UnavailableCredentialVault())
     {
     }
 
@@ -174,6 +178,19 @@ public sealed class WindowsTargetSession
         ITargetRegistry targets,
         IHostProviderRegistry providers,
         IActiveTargetStore activeTargetStore)
+        : this(
+            targets,
+            providers,
+            activeTargetStore,
+            new UnavailableCredentialVault())
+    {
+    }
+
+    public WindowsTargetSession(
+        ITargetRegistry targets,
+        IHostProviderRegistry providers,
+        IActiveTargetStore activeTargetStore,
+        ICredentialVault credentialVault)
     {
         _targets =
             targets ??
@@ -189,6 +206,11 @@ public sealed class WindowsTargetSession
             activeTargetStore ??
             throw new ArgumentNullException(
                 nameof(activeTargetStore));
+
+        _credentialVault =
+            credentialVault ??
+            throw new ArgumentNullException(
+                nameof(credentialVault));
     }
 
     public static WindowsTargetSession CreateDefault(
@@ -206,7 +228,8 @@ public sealed class WindowsTargetSession
                 credentialVault),
             new JsonActiveTargetStore(
                 activeTargetPath ??
-                WindowsTargetPaths.DefaultActiveTargetPath));
+                WindowsTargetPaths.DefaultActiveTargetPath),
+            credentialVault);
     }
 
     public TargetProfile? SelectedTarget
@@ -229,6 +252,50 @@ public sealed class WindowsTargetSession
 
     public IHostProviderRegistry Providers =>
         _providers;
+
+    public bool CredentialVaultAvailable =>
+        _credentialVault.IsAvailable;
+
+    public Task<TargetProfile?> FindAsync(
+        string targetId,
+        CancellationToken cancellationToken = default) =>
+        _targets.FindAsync(
+            targetId,
+            cancellationToken);
+
+    public async Task StoreCredentialAsync(
+        string targetId,
+        string secret,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(
+                secret))
+        {
+            throw new ArgumentException(
+                "The remote Windows password is required.",
+                nameof(secret));
+        }
+
+        using var secretValue =
+            new SecretValue(
+                secret);
+
+        await _credentialVault.StoreAsync(
+            new CredentialReference(
+                WindowsTargetCatalog.CredentialReferenceFor(
+                    targetId)),
+            secretValue,
+            cancellationToken);
+    }
+
+    public Task DeleteCredentialAsync(
+        string targetId,
+        CancellationToken cancellationToken = default) =>
+        _credentialVault.DeleteAsync(
+            new CredentialReference(
+                WindowsTargetCatalog.CredentialReferenceFor(
+                    targetId)),
+            cancellationToken);
 
     public async Task<IReadOnlyList<TargetProfile>>
         InitializeAsync(
@@ -321,15 +388,34 @@ public sealed class WindowsTargetSession
         return target;
     }
 
+    public async Task CreateAsync(
+        TargetProfile target,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateMutationTarget(
+            target);
+
+        var existing =
+            await _targets.FindAsync(
+                target.Id,
+                cancellationToken);
+
+        if (existing is not null)
+        {
+            throw new InvalidOperationException(
+                $"Target '{target.Id}' already exists.");
+        }
+
+        await _targets.UpsertAsync(
+            target,
+            cancellationToken);
+    }
+
     public async Task UpsertAsync(
         TargetProfile target,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(
-            target);
-        target.Validate();
-
-        _providers.Resolve(
+        ValidateMutationTarget(
             target);
 
         await _targets.UpsertAsync(
@@ -453,6 +539,34 @@ public sealed class WindowsTargetSession
         return result;
     }
 
+    private void ValidateMutationTarget(
+        TargetProfile target)
+    {
+        ArgumentNullException.ThrowIfNull(
+            target);
+        target.Validate();
+
+        if (target.Id.Equals(
+                WindowsTargetCatalog.LocalTargetId,
+                StringComparison.Ordinal) &&
+            (
+                !target.IsLocal ||
+                !target.ProviderId.Equals(
+                    HostProviderIds.LocalWindows,
+                    StringComparison.Ordinal) ||
+                !target.Connection.TransportId.Equals(
+                    TransportIds.Local,
+                    StringComparison.Ordinal)
+            ))
+        {
+            throw new InvalidOperationException(
+                "The required local Windows target cannot be replaced.");
+        }
+
+        _providers.Resolve(
+            target);
+    }
+
     private void SetSelectedUnsafe(
         TargetProfile target)
     {
@@ -465,6 +579,35 @@ public sealed class WindowsTargetSession
         _refreshCoordinator.Select(
             target.Id);
     }
+}
+
+internal sealed class UnavailableCredentialVault :
+    ICredentialVault
+{
+    public string VaultId =>
+        "unavailable";
+
+    public bool IsAvailable =>
+        false;
+
+    public Task StoreAsync(
+        CredentialReference reference,
+        SecretValue secret,
+        CancellationToken cancellationToken = default) =>
+        throw new PlatformNotSupportedException(
+            "No credential vault was configured for this target session.");
+
+    public Task<SecretValue?> RetrieveAsync(
+        CredentialReference reference,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<SecretValue?>(
+            null);
+
+    public Task DeleteAsync(
+        CredentialReference reference,
+        CancellationToken cancellationToken = default) =>
+        throw new PlatformNotSupportedException(
+            "No credential vault was configured for this target session.");
 }
 
 public static class WindowsTargetNavigationPolicy

@@ -22,7 +22,7 @@ public partial class MainWindow : Window
                 "Track active media across acquisition, download, import and library stages"),
             ["HistoryNav"] = new("ParityPage", "History & Incidents",
                 "Health transitions, GraveOps activity and incident replay"),
-            ["ServersNav"] = new("ParityPage", "Servers",
+            ["ServersNav"] = new("ServersPage", "Servers",
                 "Local and remote host profiles, capabilities and secure connections"),
                         ["MediaHubNav"] = new("IntegrationsPage", "Media Hub",
                 "Fleet health, discovery and all media applications"),
@@ -59,6 +59,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         InitializeLinuxShellParity();
+        InitializeServersEditor();
 
         Opened += async (_, _) =>
         {

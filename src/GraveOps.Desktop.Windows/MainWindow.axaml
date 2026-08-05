@@ -1214,6 +1214,240 @@
               </ScrollViewer>
             </Grid>
 
+            <Grid x:Name="ServersPage" IsVisible="False">
+              <Grid ColumnDefinitions="1.05*,1.45*" ColumnSpacing="12">
+                <Border Classes="card">
+                  <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="12">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel>
+                        <TextBlock Text="Windows targets" Classes="sectionTitle" />
+                        <TextBlock
+                            Text="Local and WinRM HTTPS hosts managed by the target-aware provider registry."
+                            Classes="pageSubtitle"
+                            Margin="0,3,0,0"
+                            TextWrapping="Wrap" />
+                      </StackPanel>
+
+                      <Button
+                          Grid.Column="1"
+                          x:Name="ServersAddButton"
+                          Classes="primary compact"
+                          Content="Add remote"
+                          Click="ServersAddButton_OnClick" />
+                    </Grid>
+
+                    <Border Grid.Row="1" Classes="inset">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock Text="REGISTRY" Classes="eyebrow" />
+                          <TextBlock
+                              x:Name="ServersSummaryText"
+                              Text="Loading targets..."
+                              Margin="0,4,0,0" />
+                        </StackPanel>
+                        <TextBlock
+                            Grid.Column="1"
+                            x:Name="ServersVaultStatusText"
+                            Text="Checking Credential Manager"
+                            Classes="dim"
+                            VerticalAlignment="Center" />
+                      </Grid>
+                    </Border>
+
+                    <ListBox
+                        Grid.Row="2"
+                        x:Name="ServersTargetList"
+                        Classes="dataList"
+                        SelectionChanged="ServersTargetList_OnSelectionChanged">
+                      <ListBox.ItemTemplate>
+                        <DataTemplate x:CompileBindings="False">
+                          <Border Classes="selectionRow" Margin="0,0,0,5">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                              <StackPanel Spacing="3">
+                                <TextBlock
+                                    Text="{ReflectionBinding DisplayName}"
+                                    FontWeight="SemiBold" />
+                                <TextBlock
+                                    Text="{ReflectionBinding ConnectionSummary}"
+                                    Classes="dim"
+                                    FontSize="10"
+                                    TextWrapping="Wrap" />
+                              </StackPanel>
+
+                              <Border
+                                  Grid.Column="1"
+                                  Classes="badge"
+                                  VerticalAlignment="Center">
+                                <TextBlock
+                                    Text="{ReflectionBinding IsLocal}"
+                                    FontSize="9"
+                                    Classes="dim" />
+                              </Border>
+                            </Grid>
+                          </Border>
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <Grid Grid.Row="3" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
+                      <Button
+                          x:Name="ServersEditButton"
+                          Classes="compact"
+                          Content="Edit"
+                          Click="ServersEditButton_OnClick" />
+
+                      <Button
+                          Grid.Column="1"
+                          x:Name="ServersRemoveButton"
+                          Classes="danger compact"
+                          Content="Remove"
+                          Click="ServersRemoveButton_OnClick" />
+
+                      <TextBlock
+                          Grid.Column="2"
+                          x:Name="ServersStatusText"
+                          Text="Select a remote target to edit or remove it."
+                          Classes="dim"
+                          VerticalAlignment="Center"
+                          TextWrapping="Wrap" />
+                    </Grid>
+                  </Grid>
+                </Border>
+
+                <Border Grid.Column="1" Classes="card">
+                  <Grid>
+                    <Border
+                        x:Name="ServersEditorPanel"
+                        IsVisible="False">
+                      <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="12">
+                          <StackPanel>
+                            <TextBlock Text="Remote Windows target" Classes="sectionTitle" />
+                            <TextBlock
+                                Text="WinRM must use HTTPS. Credentials are never written to targets.json."
+                                Classes="pageSubtitle"
+                                Margin="0,3,0,0"
+                                TextWrapping="Wrap" />
+                          </StackPanel>
+
+                          <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <StackPanel>
+                              <TextBlock Text="TARGET ID" Classes="eyebrow" Margin="0,0,0,5" />
+                              <TextBox x:Name="ServersTargetIdTextBox" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1">
+                              <TextBlock Text="DISPLAY NAME" Classes="eyebrow" Margin="0,0,0,5" />
+                              <TextBox x:Name="ServersDisplayNameTextBox" />
+                            </StackPanel>
+                          </Grid>
+
+                          <Grid ColumnDefinitions="2*,1*" ColumnSpacing="10">
+                            <StackPanel>
+                              <TextBlock Text="HOST OR DNS NAME" Classes="eyebrow" Margin="0,0,0,5" />
+                              <TextBox x:Name="ServersHostTextBox" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1">
+                              <TextBlock Text="HTTPS PORT" Classes="eyebrow" Margin="0,0,0,5" />
+                              <TextBox x:Name="ServersPortTextBox" Text="5986" />
+                            </StackPanel>
+                          </Grid>
+
+                          <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <StackPanel>
+                              <TextBlock Text="USERNAME" Classes="eyebrow" Margin="0,0,0,5" />
+                              <TextBox x:Name="ServersUsernameTextBox" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1">
+                              <TextBlock Text="PASSWORD" Classes="eyebrow" Margin="0,0,0,5" />
+                              <TextBox
+                                  x:Name="ServersPasswordTextBox"
+                                  PasswordChar="*" />
+                            </StackPanel>
+                          </Grid>
+
+                          <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <StackPanel>
+                              <TextBlock Text="AUTHENTICATION" Classes="eyebrow" Margin="0,0,0,5" />
+                              <ComboBox x:Name="ServersAuthenticationComboBox" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1">
+                              <TextBlock Text="TIMEOUT SECONDS" Classes="eyebrow" Margin="0,0,0,5" />
+                              <TextBox x:Name="ServersTimeoutTextBox" Text="60" />
+                            </StackPanel>
+                          </Grid>
+
+                          <StackPanel>
+                            <TextBlock
+                                Text="OPTIONAL CERTIFICATE SHA-256 PIN"
+                                Classes="eyebrow"
+                                Margin="0,0,0,5" />
+                            <TextBox
+                                x:Name="ServersCertificatePinTextBox"
+                                PlaceholderText="SHA256:0123..." />
+                            <TextBlock
+                                Text="System certificate trust and hostname validation remain mandatory even when a pin is supplied."
+                                Classes="dim"
+                                FontSize="10"
+                                Margin="0,5,0,0"
+                                TextWrapping="Wrap" />
+                          </StackPanel>
+
+                          <Border Classes="inset">
+                            <TextBlock
+                                x:Name="ServersEditorStatusText"
+                                Text="Passwords are stored only in Windows Credential Manager."
+                                Classes="muted"
+                                TextWrapping="Wrap" />
+                          </Border>
+
+                          <StackPanel
+                              Orientation="Horizontal"
+                              HorizontalAlignment="Right"
+                              Spacing="8">
+                            <Button
+                                x:Name="ServersCancelButton"
+                                Classes="ghost compact"
+                                Content="Cancel"
+                                Click="ServersCancelButton_OnClick" />
+
+                            <Button
+                                x:Name="ServersSaveButton"
+                                Classes="primary compact"
+                                Content="Save target"
+                                Click="ServersSaveButton_OnClick" />
+                          </StackPanel>
+                        </StackPanel>
+                      </ScrollViewer>
+                    </Border>
+
+                    <Border
+                        x:Name="ServersEditorEmptyPanel"
+                        Classes="emptyState"
+                        VerticalAlignment="Center">
+                      <StackPanel Spacing="8">
+                        <TextBlock
+                            Text="Add or edit a remote Windows target"
+                            FontSize="17"
+                            FontWeight="SemiBold" />
+                        <TextBlock
+                            Text="The local Windows target is protected. Remote targets use WinRM HTTPS, optional certificate pinning, and Credential Manager-backed passwords."
+                            Classes="muted"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            Text="No remote connection is attempted until the target is selected from Active Server."
+                            Foreground="{DynamicResource SuccessBrush}"
+                            TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+                  </Grid>
+                </Border>
+              </Grid>
+            </Grid>
+
                         <Grid x:Name="WarningsPage" IsVisible="False">
               <Border Classes="card">
                 <Grid RowDefinitions="Auto,*" RowSpacing="12">

@@ -26,6 +26,22 @@ var tests =
             TargetProjectionAsync),
 
         (
+            "remote target editor validates and normalizes drafts",
+            TargetEditorPolicyAsync),
+
+        (
+            "target removal requires a matching second confirmation",
+            TargetRemovalConfirmationAsync),
+
+        (
+            "target creation rejects duplicate and reserved identities",
+            TargetCreationIdentityAsync),
+
+        (
+            "target session stores credentials through its configured vault",
+            TargetSessionCredentialAsync),
+
+        (
             "Windows composition resolves local and remote providers",
             ProviderCompositionAsync),
 
@@ -327,6 +343,269 @@ static Task TargetProjectionAsync()
         "username omitted from selector");
 
     return Task.CompletedTask;
+}
+
+static Task TargetEditorPolicyAsync()
+{
+    var draft =
+        new WindowsRemoteTargetDraft(
+            "  editor-target  ",
+            "  Editor Target  ",
+            "  server.example.test  ",
+            "5986",
+            "  domain\\graveops  ",
+            "Negotiate",
+            "120",
+            "sha256:" +
+            new string(
+                'b',
+                64));
+
+    var target =
+        WindowsTargetEditorPolicy.CreateTarget(
+            draft);
+
+    Equal(
+        "editor-target",
+        target.Id,
+        "editor target ID");
+
+    Equal(
+        "Editor Target",
+        target.DisplayName,
+        "editor display name");
+
+    var parsed =
+        RemoteWindowsConnectionParser.Parse(
+            target);
+
+    Equal(
+        "server.example.test",
+        parsed.Host,
+        "editor host");
+
+    Equal(
+        5986,
+        parsed.Port,
+        "editor port");
+
+    Equal(
+        "domain\\graveops",
+        parsed.Username,
+        "editor username");
+
+    Equal(
+        TimeSpan.FromSeconds(
+            120),
+        parsed.OperationTimeout,
+        "editor timeout");
+
+    True(
+        parsed.PinnedServerCertificateSha256 is not null,
+        "editor certificate pin");
+
+    True(
+        WindowsTargetEditorPolicy.RequiresPassword(
+            isNewTarget: true,
+            password: string.Empty),
+        "new target password required");
+
+    True(
+        !WindowsTargetEditorPolicy.RequiresPassword(
+            isNewTarget: false,
+            password: string.Empty),
+        "existing target may retain credential");
+
+    return Task.CompletedTask;
+}
+
+static Task TargetRemovalConfirmationAsync()
+{
+    True(
+        !WindowsTargetEditorPolicy.IsRemovalConfirmed(
+            pendingTargetId: null,
+            targetId: "remote-one"),
+        "first removal click is not confirmed");
+
+    True(
+        !WindowsTargetEditorPolicy.IsRemovalConfirmed(
+            pendingTargetId: "remote-two",
+            targetId: "remote-one"),
+        "different pending target is not confirmed");
+
+    True(
+        WindowsTargetEditorPolicy.IsRemovalConfirmed(
+            pendingTargetId: "remote-one",
+            targetId: "remote-one"),
+        "matching second click is confirmed");
+
+    return Task.CompletedTask;
+}
+
+static async Task TargetCreationIdentityAsync()
+{
+    await ThrowsAsync<
+        InvalidOperationException>(
+        () =>
+        {
+            _ =
+                WindowsTargetEditorPolicy.CreateTarget(
+                    new WindowsRemoteTargetDraft(
+                        WindowsTargetCatalog.LocalTargetId,
+                        "Unsafe local replacement",
+                        "server.example.test",
+                        "5986",
+                        "graveops",
+                        "Negotiate",
+                        "60",
+                        null));
+
+            return Task.CompletedTask;
+        },
+        "editor reserves local target ID");
+
+    await WithStoresAsync(
+        async (
+            registry,
+            activeStore) =>
+        {
+            var provider =
+                new DelayedHostProvider();
+
+            var session =
+                new WindowsTargetSession(
+                    registry,
+                    new HostProviderRegistry(
+                        new IHostProvider[]
+                        {
+                            provider
+                        }),
+                    activeStore);
+
+            await session.InitializeAsync();
+
+            var remote =
+                TestTarget(
+                    "duplicate-target");
+
+            await session.CreateAsync(
+                remote);
+
+            await ThrowsAsync<
+                InvalidOperationException>(
+                async () =>
+                    await session.CreateAsync(
+                        remote with
+                        {
+                            DisplayName =
+                                "Duplicate replacement"
+                        }),
+                "duplicate target creation");
+
+            var preserved =
+                await session.FindAsync(
+                    remote.Id);
+
+            Equal(
+                remote.DisplayName,
+                preserved?.DisplayName,
+                "duplicate create preserves original profile");
+
+            var unsafeLocal =
+                remote with
+                {
+                    Id =
+                        WindowsTargetCatalog.LocalTargetId,
+
+                    DisplayName =
+                        "Unsafe local replacement"
+                };
+
+            await ThrowsAsync<
+                InvalidOperationException>(
+                async () =>
+                    await session.UpsertAsync(
+                        unsafeLocal),
+                "session protects local target identity");
+
+            var local =
+                await session.FindAsync(
+                    WindowsTargetCatalog.LocalTargetId);
+
+            Equal(
+                HostProviderIds.LocalWindows,
+                local?.ProviderId,
+                "local target provider preserved");
+
+            Equal(
+                TransportIds.Local,
+                local?.Connection.TransportId,
+                "local target transport preserved");
+        });
+}
+
+static async Task TargetSessionCredentialAsync()
+{
+    await WithStoresAsync(
+        async (
+            registry,
+            activeStore) =>
+        {
+            var vault =
+                new MemoryCredentialVault();
+
+            var session =
+                new WindowsTargetSession(
+                    registry,
+                    new HostProviderRegistry(
+                        new IHostProvider[]
+                        {
+                            new LocalWindowsHostProvider()
+                        }),
+                    activeStore,
+                    vault);
+
+            await session.InitializeAsync();
+
+            const string TargetId =
+                "credential-session";
+
+            const string Password =
+                "credential-session-password";
+
+            await session.StoreCredentialAsync(
+                TargetId,
+                Password);
+
+            using var retrieved =
+                await vault.RetrieveAsync(
+                    new CredentialReference(
+                        WindowsTargetCatalog.CredentialReferenceFor(
+                            TargetId)));
+
+            True(
+                retrieved is not null,
+                "session credential retrieved");
+
+            Equal(
+                Password,
+                new string(
+                    retrieved!.Reveal().Span),
+                "session credential value");
+
+            await session.DeleteCredentialAsync(
+                TargetId);
+
+            using var deleted =
+                await vault.RetrieveAsync(
+                    new CredentialReference(
+                        WindowsTargetCatalog.CredentialReferenceFor(
+                            TargetId)));
+
+            True(
+                deleted is null,
+                "session credential deleted");
+        });
 }
 
 static Task ProviderCompositionAsync()

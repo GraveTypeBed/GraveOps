@@ -157,6 +157,8 @@ public partial class MainWindow
             _suppressTargetSelection =
                 false;
         }
+
+        RefreshServersPage();
     }
 
     private TargetProfile ActiveTargetOrThrow() =>
