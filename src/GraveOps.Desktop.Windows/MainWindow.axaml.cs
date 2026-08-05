@@ -70,6 +70,7 @@ public partial class MainWindow : Window
         InitializeServersEditor();
         InitializePlexWorkspace();
         InitializeArrWorkspace();
+        InitializeQBittorrentWorkspace();
 
         Opened += async (_, _) =>
         {
@@ -222,6 +223,17 @@ public partial class MainWindow : Window
         else
         {
             UpdateArrTimerCadence();
+        }
+
+        if (navigationName.Equals(
+                "QBittorrentNav",
+                StringComparison.Ordinal))
+        {
+            ActivateWindowsQBittorrentWorkspace();
+        }
+        else
+        {
+            UpdateQBittorrentTimerCadence();
         }
 
         RecordActivity(
@@ -566,21 +578,14 @@ public partial class MainWindow : Window
             "Prowlarr",
             prowlarr);
 
-        var qbittorrentVisible =
-            qbittorrent is not null;
+        UpdateQBittorrentDiscovery(
+            qbittorrent);
 
         Get<TextBlock>("AcquisitionGroupLabel").IsVisible =
             true;
 
         Get<Button>("QBittorrentNav").IsVisible =
-            qbittorrentVisible;
-
-        PopulateMediaWorkspace(
-            qbittorrent,
-            "QBittorrentWorkspaceStateText",
-            "QBittorrentWorkspaceKindText",
-            "QBittorrentWorkspaceEvidenceText",
-            "QBittorrentWorkspacePresenceText");
+            true;
     }
 
     private void PopulateMediaWorkspace(

@@ -15,8 +15,15 @@ public sealed class DownloadQueueTelemetry
     public string Eta { get; set; } = "--";
     public string Ratio { get; set; } = "--";
     public string Peers { get; set; } = "--";
+    public string Tracker { get; set; } = "--";
     public string Added { get; set; } = "--";
     public string Detail { get; set; } = string.Empty;
+}
+
+public sealed class DownloadCategoryTelemetry
+{
+    public string Name { get; set; } = string.Empty;
+    public int TorrentCount { get; set; }
 }
 
 public sealed class DownloadHistoryTelemetry
@@ -63,6 +70,8 @@ public sealed class DownloadClientTelemetrySnapshot :
     public int CompletedRecentCount { get; set; }
     public int FailedRecentCount { get; set; }
     public int DhtNodes { get; set; }
+    public int CategoryCount { get; set; }
+    public int TrackerCount { get; set; }
 
     public DateTimeOffset SampledAt { get; set; } =
         DateTimeOffset.Now;
@@ -71,6 +80,9 @@ public sealed class DownloadClientTelemetrySnapshot :
         new();
 
     public List<DownloadHistoryTelemetry> History { get; set; } =
+        new();
+
+    public List<DownloadCategoryTelemetry> Categories { get; set; } =
         new();
 
     DateTimeOffset IApplicationTelemetrySnapshot.CapturedAt =>

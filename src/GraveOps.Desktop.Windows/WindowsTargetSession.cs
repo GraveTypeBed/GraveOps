@@ -446,6 +446,39 @@ public sealed class WindowsTargetSession
             cancellationToken);
     }
 
+    public async Task StoreApplicationSecretVerbatimAsync(
+        string targetId,
+        string applicationId,
+        string secretName,
+        string value,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(
+                value) ||
+            value.Length >
+                512 ||
+            value.Contains('\r') ||
+            value.Contains('\n'))
+        {
+            throw new ArgumentException(
+                "Application secrets must contain 1 to 512 characters on one line.",
+                nameof(value));
+        }
+
+        using var secret =
+            new SecretValue(
+                value);
+
+        await _credentialVault.StoreAsync(
+            new CredentialReference(
+                WindowsTargetCatalog.ApplicationCredentialReferenceFor(
+                    targetId,
+                    applicationId,
+                    secretName)),
+            secret,
+            cancellationToken);
+    }
+
     public Task<SecretValue?> RetrieveApplicationSecretAsync(
         string targetId,
         string applicationId,

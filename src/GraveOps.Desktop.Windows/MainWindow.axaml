@@ -1719,100 +1719,446 @@
             <Grid x:Name="QBittorrentPage" IsVisible="False">
               <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="10">
-                  <Grid ColumnDefinitions="2*,1*" ColumnSpacing="10">
-                    <Border Classes="card">
-                      <StackPanel Spacing="12">
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                          <Border
-                              Width="42"
-                              Height="42"
-                              CornerRadius="10"
+                  <Border Classes="card">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                      <Border Width="44" Height="44" CornerRadius="10"
                               Background="{DynamicResource AccentTintBrush}">
-                            <Path
-                                Width="22"
-                                Height="22"
-                                Stretch="Uniform"
-                                Data="M2,3 L14,3 L14,13 L2,13 Z M4,6 L7,8 L4,10 M8,10 L11,10"
-                                Stroke="{DynamicResource AccentBrush}"
-                                StrokeThickness="1.5"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center" />
-                          </Border>
+                        <Path Width="22" Height="22" Stretch="Uniform"
+                              Data="M2,3 L14,3 L14,13 L2,13 Z M4,6 L7,8 L4,10 M8,10 L11,10"
+                              Stroke="{DynamicResource AccentBrush}"
+                              StrokeThickness="1.5"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center" />
+                      </Border>
 
-                          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
-                            <TextBlock Text="qBittorrent" FontSize="18" FontWeight="SemiBold" />
-                            <TextBlock
-                                Text="Windows discovery workspace"
-                                Classes="pageSubtitle" />
-                          </StackPanel>
-                        </Grid>
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                        <TextBlock Text="qBittorrent"
+                                   FontSize="18"
+                                   FontWeight="SemiBold" />
+                        <TextBlock
+                            Text="Authenticated WebUI transfer analytics, torrent queue, categories and recent history."
+                            Classes="pageSubtitle"
+                            TextWrapping="Wrap" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                          <TextBlock x:Name="QBittorrentTargetText"
+                                     Text="Local Windows"
+                                     Classes="dim"
+                                     FontSize="10" />
+                          <TextBlock x:Name="QBittorrentFreshnessText"
+                                     Text="CHECKING..."
+                                     Classes="dim"
+                                     FontSize="10" />
+                        </StackPanel>
+                      </StackPanel>
 
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                          <Border Classes="inset">
-                            <StackPanel>
-                              <TextBlock Text="STATE" Classes="eyebrow" />
-                              <TextBlock
-                                  x:Name="QBittorrentWorkspaceStateText"
-                                  Text="Not detected"
-                                  FontSize="17"
-                                  FontWeight="SemiBold" />
-                            </StackPanel>
-                          </Border>
-                          <Border Grid.Column="1" Classes="inset">
-                            <StackPanel>
-                              <TextBlock Text="DISCOVERY" Classes="eyebrow" />
-                              <TextBlock
-                                  x:Name="QBittorrentWorkspaceKindText"
-                                  Text="--"
-                                  FontSize="13"
-                                  FontWeight="SemiBold"
-                                  TextWrapping="Wrap" />
-                            </StackPanel>
-                          </Border>
-                        </Grid>
+                      <StackPanel Grid.Column="2"
+                                  Orientation="Horizontal"
+                                  Spacing="8"
+                                  VerticalAlignment="Center">
+                        <Button Classes="compact"
+                                Content="Open qBittorrent"
+                                Click="QBittorrentOpenButton_OnClick" />
+                        <Button Classes="primary compact"
+                                Content="Refresh"
+                                Click="QBittorrentRefreshButton_OnClick" />
+                      </StackPanel>
+                    </Grid>
+                  </Border>
 
-                        <Border Classes="inset">
-                          <StackPanel Spacing="5">
-                            <TextBlock Text="PROVIDER EVIDENCE" Classes="eyebrow" />
-                            <TextBlock
-                                x:Name="QBittorrentWorkspaceEvidenceText"
-                                Text="No qBittorrent evidence was reported."
-                                Classes="mono"
-                                TextWrapping="Wrap" />
-                          </StackPanel>
-                        </Border>
+                  <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+                    <Border Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="STATE" Classes="eyebrow" />
+                        <TextBlock x:Name="QBittorrentStateText"
+                                   Text="CHECKING"
+                                   FontSize="17"
+                                   FontWeight="SemiBold" />
+                        <TextBlock x:Name="QBittorrentConnectionText"
+                                   Text="--"
+                                   Classes="dim"
+                                   TextWrapping="Wrap" />
                       </StackPanel>
                     </Border>
 
                     <Border Grid.Column="1" Classes="card">
-                      <StackPanel Spacing="10">
-                        <TextBlock Text="Parity status" Classes="sectionTitle" />
-                        <Border Classes="inset">
-                          <StackPanel Spacing="5">
-                            <TextBlock Text="PRESENCE" Classes="eyebrow" />
-                            <TextBlock
-                                x:Name="QBittorrentWorkspacePresenceText"
-                                Text="Unavailable"
-                                FontWeight="SemiBold" />
-                          </StackPanel>
-                        </Border>
-                        <TextBlock
-                            Text="This phase establishes the Linux-style qBittorrent workspace and provider evidence. Queue, transfer and history telemetry remain read-only follow-up work."
-                            Classes="muted"
-                            TextWrapping="Wrap" />
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="VERSION" Classes="eyebrow" />
+                        <TextBlock x:Name="QBittorrentVersionText"
+                                   Text="--"
+                                   FontSize="17"
+                                   FontWeight="SemiBold" />
+                        <TextBlock Text="Authenticated WebUI API" Classes="dim" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="TORRENTS" Classes="eyebrow" />
+                        <TextBlock x:Name="QBittorrentTotalText"
+                                   Text="--"
+                                   FontSize="20"
+                                   FontWeight="SemiBold" />
+                        <TextBlock Text="Current torrent inventory" Classes="dim" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="3" Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="ACTIVE" Classes="eyebrow" />
+                        <TextBlock x:Name="QBittorrentActiveText"
+                                   Text="--"
+                                   FontSize="20"
+                                   FontWeight="SemiBold" />
+                        <TextBlock Text="Transferring or processing" Classes="dim" />
                       </StackPanel>
                     </Border>
                   </Grid>
 
-                  <Border Classes="card">
-                    <StackPanel Spacing="8">
-                      <TextBlock Text="Next qBittorrent parity layer" Classes="sectionTitle" />
-                      <TextBlock
-                          Text="Web UI identity, transfer rates, queue state, categories and recent history will be connected through the shared GraveOps integration contract."
-                          Classes="muted"
-                          TextWrapping="Wrap" />
+                  <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+                    <Border Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="DOWNLOAD" Classes="eyebrow" />
+                        <TextBlock x:Name="QBittorrentDownloadSpeedText"
+                                   Text="--"
+                                   FontSize="17"
+                                   FontWeight="SemiBold" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="UPLOAD" Classes="eyebrow" />
+                        <TextBlock x:Name="QBittorrentUploadSpeedText"
+                                   Text="--"
+                                   FontSize="17"
+                                   FontWeight="SemiBold" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="REMAINING" Classes="eyebrow" />
+                        <TextBlock x:Name="QBittorrentRemainingText"
+                                   Text="--"
+                                   FontSize="17"
+                                   FontWeight="SemiBold" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="3" Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="NEXT ETA" Classes="eyebrow" />
+                        <TextBlock x:Name="QBittorrentEtaText"
+                                   Text="--"
+                                   FontSize="17"
+                                   FontWeight="SemiBold" />
+                      </StackPanel>
+                    </Border>
+                  </Grid>
+
+                  <Grid ColumnDefinitions="2*,1*" ColumnSpacing="10">
+                    <StackPanel Spacing="10">
+                      <Border Classes="card">
+                        <Grid RowDefinitions="Auto,*" RowSpacing="10">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel>
+                              <TextBlock Text="Current torrents" Classes="sectionTitle" />
+                              <TextBlock
+                                  Text="Progress, transfer rates, remaining work, ETA, ratio, peers and redacted tracker host."
+                                  Classes="pageSubtitle"
+                                  Margin="0,3,0,0"
+                                  TextWrapping="Wrap" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="1"
+                                       x:Name="QBittorrentQueueCountText"
+                                       Text="--"
+                                       Classes="dim"
+                                       VerticalAlignment="Center" />
+                          </Grid>
+
+                          <Grid Grid.Row="1">
+                            <ListBox x:Name="QBittorrentQueueList"
+                                     Classes="dataList"
+                                     IsVisible="False"
+                                     MaxHeight="520">
+                              <ListBox.ItemTemplate>
+                                <DataTemplate x:CompileBindings="False">
+                                  <Border Classes="selectionRow" Margin="0,0,0,7" Padding="12">
+                                    <Grid ColumnDefinitions="2*,1*,1*,Auto" ColumnSpacing="12">
+                                      <StackPanel Spacing="3">
+                                        <TextBlock Text="{ReflectionBinding Name}"
+                                                   FontWeight="SemiBold"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Text="{ReflectionBinding Category}"
+                                                   Classes="dim" />
+                                        <TextBlock Text="{ReflectionBinding Tracker}"
+                                                   Classes="mono"
+                                                   FontSize="9.5"
+                                                   TextWrapping="Wrap" />
+                                      </StackPanel>
+
+                                      <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="STATE / PROGRESS" Classes="eyebrow" />
+                                        <TextBlock Text="{ReflectionBinding State}" />
+                                        <TextBlock Text="{ReflectionBinding Progress}"
+                                                   FontWeight="SemiBold" />
+                                        <TextBlock Text="{ReflectionBinding Remaining}"
+                                                   Classes="dim" />
+                                      </StackPanel>
+
+                                      <StackPanel Grid.Column="2" Spacing="3">
+                                        <TextBlock Text="TRANSFER" Classes="eyebrow" />
+                                        <TextBlock Text="{ReflectionBinding DownloadSpeed}" />
+                                        <TextBlock Text="{ReflectionBinding UploadSpeed}" />
+                                        <TextBlock Text="{ReflectionBinding Eta}"
+                                                   Classes="dim" />
+                                      </StackPanel>
+
+                                      <StackPanel Grid.Column="3"
+                                                  Spacing="3"
+                                                  HorizontalAlignment="Right">
+                                        <TextBlock Text="RATIO" Classes="eyebrow" />
+                                        <TextBlock Text="{ReflectionBinding Ratio}"
+                                                   HorizontalAlignment="Right" />
+                                        <TextBlock Text="{ReflectionBinding Peers}"
+                                                   Classes="dim"
+                                                   HorizontalAlignment="Right" />
+                                        <TextBlock Text="{ReflectionBinding Added}"
+                                                   Classes="mono"
+                                                   FontSize="9"
+                                                   HorizontalAlignment="Right" />
+                                      </StackPanel>
+                                    </Grid>
+                                  </Border>
+                                </DataTemplate>
+                              </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <Border x:Name="QBittorrentQueueEmptyState"
+                                    Classes="emptyState"
+                                    IsVisible="True">
+                              <TextBlock x:Name="QBittorrentQueueEmptyText"
+                                         Text="Live torrent detail is loading."
+                                         Classes="muted"
+                                         TextWrapping="Wrap" />
+                            </Border>
+                          </Grid>
+                        </Grid>
+                      </Border>
+
+                      <Border Classes="card">
+                        <Grid RowDefinitions="Auto,*" RowSpacing="10">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel>
+                              <TextBlock Text="Recently completed" Classes="sectionTitle" />
+                              <TextBlock
+                                  Text="Most recently completed torrents still present in qBittorrent."
+                                  Classes="pageSubtitle"
+                                  Margin="0,3,0,0" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="1"
+                                       x:Name="QBittorrentHistoryCountText"
+                                       Text="--"
+                                       Classes="dim"
+                                       VerticalAlignment="Center" />
+                          </Grid>
+
+                          <Grid Grid.Row="1">
+                            <ListBox x:Name="QBittorrentHistoryList"
+                                     Classes="dataList"
+                                     IsVisible="False"
+                                     MaxHeight="340">
+                              <ListBox.ItemTemplate>
+                                <DataTemplate x:CompileBindings="False">
+                                  <Border Classes="selectionRow" Margin="0,0,0,7" Padding="12">
+                                    <Grid ColumnDefinitions="2*,1*,Auto" ColumnSpacing="12">
+                                      <StackPanel Spacing="3">
+                                        <TextBlock Text="{ReflectionBinding Name}"
+                                                   FontWeight="SemiBold"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Text="{ReflectionBinding Category}"
+                                                   Classes="dim" />
+                                      </StackPanel>
+
+                                      <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="STATE / SIZE" Classes="eyebrow" />
+                                        <TextBlock Text="{ReflectionBinding State}" />
+                                        <TextBlock Text="{ReflectionBinding Size}"
+                                                   Classes="dim" />
+                                      </StackPanel>
+
+                                      <StackPanel Grid.Column="2"
+                                                  Spacing="3"
+                                                  HorizontalAlignment="Right">
+                                        <TextBlock Text="COMPLETED" Classes="eyebrow" />
+                                        <TextBlock Text="{ReflectionBinding Completed}"
+                                                   Classes="mono"
+                                                   HorizontalAlignment="Right" />
+                                        <TextBlock Text="{ReflectionBinding Duration}"
+                                                   Classes="dim"
+                                                   HorizontalAlignment="Right" />
+                                        <TextBlock Text="{ReflectionBinding Detail}"
+                                                   Classes="dim"
+                                                   FontSize="9.5"
+                                                   TextWrapping="Wrap"
+                                                   MaxWidth="230"
+                                                   HorizontalAlignment="Right" />
+                                      </StackPanel>
+                                    </Grid>
+                                  </Border>
+                                </DataTemplate>
+                              </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <Border x:Name="QBittorrentHistoryEmptyState"
+                                    Classes="emptyState"
+                                    IsVisible="True">
+                              <TextBlock x:Name="QBittorrentHistoryEmptyText"
+                                         Text="Recent transfer history is loading."
+                                         Classes="muted"
+                                         TextWrapping="Wrap" />
+                            </Border>
+                          </Grid>
+                        </Grid>
+                      </Border>
                     </StackPanel>
-                  </Border>
+
+                    <StackPanel Grid.Column="1" Spacing="10">
+                      <Border Classes="card">
+                        <StackPanel Spacing="9">
+                          <TextBlock Text="WebUI connection" Classes="sectionTitle" />
+                          <TextBlock
+                              Text="Endpoint and username are stored without secrets. The password is stored only in Windows Credential Manager."
+                              Classes="muted"
+                              TextWrapping="Wrap" />
+
+                          <TextBlock Text="ENDPOINT" Classes="eyebrow" />
+                          <TextBox x:Name="QBittorrentEndpointTextBox"
+                                   Text="http://127.0.0.1:8080/"
+                                   PlaceholderText="http://server:8080/" />
+
+                          <TextBlock Text="USERNAME" Classes="eyebrow" />
+                          <TextBox x:Name="QBittorrentUsernameTextBox"
+                                   PlaceholderText="qBittorrent WebUI username" />
+
+                          <TextBlock Text="PASSWORD" Classes="eyebrow" />
+                          <TextBox x:Name="QBittorrentPasswordTextBox"
+                                   PasswordChar="*"
+                                   PlaceholderText="Leave blank to preserve the saved password" />
+
+                          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <Button Classes="primary"
+                                    Content="Save + test"
+                                    Click="QBittorrentSaveTestButton_OnClick" />
+                            <Button Grid.Column="1"
+                                    Classes="danger"
+                                    Content="Clear saved password"
+                                    Click="QBittorrentClearSavedPasswordButton_OnClick" />
+                          </Grid>
+                        </StackPanel>
+                      </Border>
+
+                      <Border Classes="card">
+                        <Grid RowDefinitions="Auto,*" RowSpacing="10">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel>
+                              <TextBlock Text="Categories" Classes="sectionTitle" />
+                              <TextBlock
+                                  Text="Category names and torrent counts only; save paths are not exposed."
+                                  Classes="pageSubtitle"
+                                  Margin="0,3,0,0"
+                                  TextWrapping="Wrap" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="1"
+                                       x:Name="QBittorrentCategoryCountText"
+                                       Text="--"
+                                       Classes="dim"
+                                       VerticalAlignment="Center" />
+                          </Grid>
+
+                          <Grid Grid.Row="1">
+                            <ListBox x:Name="QBittorrentCategoryList"
+                                     Classes="dataList"
+                                     IsVisible="False"
+                                     MaxHeight="220">
+                              <ListBox.ItemTemplate>
+                                <DataTemplate x:CompileBindings="False">
+                                  <Border Classes="selectionRow" Margin="0,0,0,6" Padding="10">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                      <TextBlock Text="{ReflectionBinding Name}"
+                                                 FontWeight="SemiBold" />
+                                      <TextBlock Grid.Column="1"
+                                                 Text="{ReflectionBinding TorrentCount}"
+                                                 Classes="mono" />
+                                    </Grid>
+                                  </Border>
+                                </DataTemplate>
+                              </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <Border x:Name="QBittorrentCategoryEmptyState"
+                                    Classes="emptyState"
+                                    IsVisible="True">
+                              <TextBlock x:Name="QBittorrentCategoryEmptyText"
+                                         Text="Category inventory is loading."
+                                         Classes="muted"
+                                         TextWrapping="Wrap" />
+                            </Border>
+                          </Grid>
+                        </Grid>
+                      </Border>
+
+                      <Border Classes="card">
+                        <StackPanel Spacing="7">
+                          <TextBlock Text="Transfer analytics" Classes="sectionTitle" />
+                          <TextBlock x:Name="QBittorrentTransferAnalyticsText"
+                                     Text="Waiting for the first authenticated qBittorrent sample."
+                                     Classes="mono"
+                                     TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+
+                      <Border Classes="card">
+                        <StackPanel Spacing="7">
+                          <TextBlock Text="Workload analytics" Classes="sectionTitle" />
+                          <TextBlock x:Name="QBittorrentWorkloadAnalyticsText"
+                                     Text="Waiting for the first authenticated qBittorrent sample."
+                                     Classes="mono"
+                                     TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+
+                      <Border Classes="card">
+                        <StackPanel Spacing="7">
+                          <TextBlock Text="Security and evidence" Classes="sectionTitle" />
+                          <TextBlock Text="PROVIDER EVIDENCE" Classes="eyebrow" />
+                          <TextBlock x:Name="QBittorrentDiscoveryEvidenceText"
+                                     Text="No Windows provider evidence was reported."
+                                     Classes="mono"
+                                     FontSize="10"
+                                     TextWrapping="Wrap" />
+
+                          <TextBlock Text="CREDENTIAL HANDLING"
+                                     Classes="eyebrow"
+                                     Margin="0,5,0,0" />
+                          <TextBlock x:Name="QBittorrentSecurityText"
+                                     Text="WebUI password stays in Windows Credential Manager; SID cookies are memory-only."
+                                     Classes="muted"
+                                     TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+
+                      <Border Classes="card">
+                        <StackPanel Spacing="5">
+                          <TextBlock Text="Telemetry status" Classes="sectionTitle" />
+                          <TextBlock x:Name="QBittorrentStatusText"
+                                     Text="Waiting for qBittorrent Web API telemetry."
+                                     Classes="muted"
+                                     TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+                    </StackPanel>
+                  </Grid>
                 </StackPanel>
               </ScrollViewer>
             </Grid>

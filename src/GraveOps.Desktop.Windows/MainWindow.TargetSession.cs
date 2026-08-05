@@ -100,6 +100,7 @@ public partial class MainWindow
             await RefreshAsync();
             OnPlexTargetChanged();
             OnArrTargetChanged();
+            OnQBittorrentTargetChanged();
         }
         catch (Exception exception)
         {
