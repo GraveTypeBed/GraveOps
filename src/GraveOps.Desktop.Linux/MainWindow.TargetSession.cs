@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using GraveOps.Core.Hosts;
 using GraveOps.Core.Snapshots;
 using GraveOps.Core.Targets;
-using GraveOps.Platform.Linux;
 
 namespace GraveOps.Desktop.Linux;
 
@@ -22,11 +21,9 @@ public partial class MainWindow
     private string _lastBackupTargetId =
         string.Empty;
 
-    private sealed record LinuxTargetRefreshContext(
+    private sealed record TargetRefreshContext(
         LinuxHostProfile Profile,
-        TargetRefreshLease Lease,
-        string ProviderId,
-        TargetCapabilities Capabilities);
+        TargetRefreshLease Lease);
 
     private void InitializeTargetSessionState()
     {
@@ -37,8 +34,8 @@ public partial class MainWindow
         _targetRefreshCoordinator.Select(
             profile.Id);
         _activeTargetCapabilities =
-            LinuxTargetCapabilityCatalog.ForTarget(
-                profile.IsLocal);
+            _controlPlane.CapabilitiesFor(
+                profile);
         _acceptedTargetId =
             string.Empty;
 
@@ -48,7 +45,7 @@ public partial class MainWindow
             snapshot: null);
     }
 
-    private LinuxTargetRefreshContext
+    private TargetRefreshContext
         BeginTargetRefreshContext()
     {
         var profile =
@@ -66,32 +63,13 @@ public partial class MainWindow
                 profile.Id);
         }
 
-        var capabilities =
-            LinuxTargetCapabilityCatalog.ForTarget(
-                profile.IsLocal);
-
-        return new LinuxTargetRefreshContext(
+        return new TargetRefreshContext(
             profile,
-            _targetRefreshCoordinator.BeginRefresh(),
-            profile.IsLocal
-                ? "linux.local"
-                : "linux.ssh",
-            capabilities);
+            _targetRefreshCoordinator.BeginRefresh());
     }
 
-    private TargetSnapshotEnvelope<HostSnapshot>
-        CreateTargetSnapshotEnvelope(
-            LinuxTargetRefreshContext context,
-            HostSnapshot snapshot) =>
-        new(
-            context.Lease,
-            context.ProviderId,
-            snapshot.CapturedAt,
-            context.Capabilities,
-            snapshot);
-
     private bool IsTargetRefreshCurrent(
-        LinuxTargetRefreshContext context) =>
+        TargetRefreshContext context) =>
         _targetRefreshCoordinator.IsCurrent(
             context.Lease) &&
         _controlPlane.ActiveProfile.Id.Equals(
@@ -99,7 +77,7 @@ public partial class MainWindow
             StringComparison.OrdinalIgnoreCase);
 
     private void EnsureTargetRefreshCurrent(
-        LinuxTargetRefreshContext context)
+        TargetRefreshContext context)
     {
         if (!IsTargetRefreshCurrent(
                 context))
@@ -129,8 +107,8 @@ public partial class MainWindow
         _targetRefreshCoordinator.Select(
             profile.Id);
         _activeTargetCapabilities =
-            LinuxTargetCapabilityCatalog.ForTarget(
-                profile.IsLocal);
+            _controlPlane.CapabilitiesFor(
+                profile);
 
         ResetTargetScopedState(
             profile);
@@ -172,11 +150,16 @@ public partial class MainWindow
     private void ResetTargetScopedState(
         LinuxHostProfile profile)
     {
-        _snapshot = null;
-        _backup = null;
-        _rawAnalysis = null;
-        _analysis = null;
-        _policyEvaluation = null;
+        _snapshot =
+            null;
+        _backup =
+            null;
+        _rawAnalysis =
+            null;
+        _analysis =
+            null;
+        _policyEvaluation =
+            null;
         _rawLifecycle =
             Array.Empty<OpsLifecycleStage>();
         _lifecycle =
@@ -191,7 +174,8 @@ public partial class MainWindow
             Array.Empty<ArrWorkspaceView>();
         _mediaRows =
             Array.Empty<LinuxMediaApplicationRow>();
-        _arrTelemetrySnapshot = null;
+        _arrTelemetrySnapshot =
+            null;
         _arrTelemetryProduct =
             string.Empty;
         _downloadClientCache.Clear();
@@ -216,6 +200,7 @@ public partial class MainWindow
         var dashboardStatus =
             this.FindControl<TextBlock>(
                 "UnifiedDashboardStatusText");
+
         if (dashboardStatus is not null)
         {
             dashboardStatus.Text =
@@ -235,6 +220,7 @@ public partial class MainWindow
         var footer =
             this.FindControl<TextBlock>(
                 "FooterTargetText");
+
         if (footer is not null)
         {
             footer.Text =
@@ -246,6 +232,7 @@ public partial class MainWindow
         var hostname =
             this.FindControl<TextBlock>(
                 "SidebarHostname");
+
         if (hostname is not null)
         {
             hostname.Text =
@@ -256,6 +243,7 @@ public partial class MainWindow
         var operatingSystem =
             this.FindControl<TextBlock>(
                 "SidebarOperatingSystem");
+
         if (operatingSystem is not null)
         {
             operatingSystem.Text =
@@ -290,24 +278,32 @@ public partial class MainWindow
 
     private void ApplyActiveTargetCapabilities()
     {
-        var backupSupported =
-            SupportsTargetCapability(
-                CapabilityIds.BackupInventoryRead);
-
-        var backupsNav =
-            this.FindControl<Button>(
-                "BackupsNav");
-        if (backupsNav is not null)
+        foreach (var navigationName in new[]
+                 {
+                     "ServicesNav",
+                     "DockerNav",
+                     "StorageNav",
+                     "LogsNav",
+                     "BackupsNav"
+                 })
         {
-            backupsNav.IsVisible =
-                backupSupported;
+            var button =
+                this.FindControl<Button>(
+                    navigationName);
+
+            if (button is not null)
+            {
+                button.IsVisible =
+                    TargetNavigationPolicy.IsSupported(
+                        navigationName,
+                        _activeTargetCapabilities);
+            }
         }
 
-        if (!backupSupported &&
-            _unifiedInterfaceInitialized &&
-            _unifiedCurrentNavigation.Equals(
-                "BackupsNav",
-                StringComparison.Ordinal))
+        if (_unifiedInterfaceInitialized &&
+            !TargetNavigationPolicy.IsSupported(
+                _unifiedCurrentNavigation,
+                _activeTargetCapabilities))
         {
             Navigate(
                 "DashboardNav");
@@ -352,19 +348,30 @@ public partial class MainWindow
             LinuxHostProfile source) =>
         new()
         {
-            Id = source.Id,
-            Name = source.Name,
-            Kind = source.Kind,
-            Host = source.Host,
-            Port = source.Port,
-            Username = source.Username,
-            Role = source.Role,
+            Id =
+                source.Id,
+            Name =
+                source.Name,
+            Kind =
+                source.Kind,
+            Host =
+                source.Host,
+            Port =
+                source.Port,
+            Username =
+                source.Username,
+            Role =
+                source.Role,
             Authentication =
                 source.Authentication,
             PrivateKeyPath =
                 source.PrivateKeyPath,
             HostKeyFingerprint =
                 source.HostKeyFingerprint,
+            OperationTimeoutSeconds =
+                source.OperationTimeoutSeconds,
+            CredentialReference =
+                source.CredentialReference,
             LastDetectedAt =
                 source.LastDetectedAt
         };

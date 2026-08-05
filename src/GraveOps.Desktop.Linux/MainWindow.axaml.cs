@@ -255,6 +255,21 @@ public partial class MainWindow : Window
 
     private void Navigate(string navigationName)
     {
+        if (!TargetNavigationPolicy.IsSupported(
+                navigationName,
+                _activeTargetCapabilities))
+        {
+            SetControlPlaneState(
+                OpsSeverity.Warning,
+                "UNSUPPORTED",
+                TargetNavigationPolicy.UnsupportedReason(
+                    navigationName,
+                    _activeTargetCapabilities));
+
+            navigationName =
+                "DashboardNav";
+        }
+
         if (navigationName.Equals(
                 "LogsNav",
                 StringComparison.Ordinal) &&

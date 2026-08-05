@@ -9,5 +9,6 @@
     <Project Path="tests/GraveOps.Core.ContractTests/GraveOps.Core.ContractTests.csproj" />
     <Project Path="tests/GraveOps.Platform.Linux.ContractTests/GraveOps.Platform.Linux.ContractTests.csproj" />
     <Project Path="tests/GraveOps.Platform.Windows.ContractTests/GraveOps.Platform.Windows.ContractTests.csproj" />
+    <Project Path="tests/GraveOps.Desktop.Linux.TargetTests/GraveOps.Desktop.Linux.TargetTests.csproj" />
   </Folder>
 </Solution>

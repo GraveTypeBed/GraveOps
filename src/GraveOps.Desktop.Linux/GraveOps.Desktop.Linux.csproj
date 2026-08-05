@@ -25,5 +25,6 @@
   <ItemGroup>
     <ProjectReference Include="..\GraveOps.Core\GraveOps.Core.csproj" />
     <ProjectReference Include="..\GraveOps.Platform.Linux\GraveOps.Platform.Linux.csproj" />
+    <ProjectReference Include="..\GraveOps.Platform.Windows\GraveOps.Platform.Windows.csproj" />
   </ItemGroup>
 </Project>

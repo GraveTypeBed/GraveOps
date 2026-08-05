@@ -1989,7 +1989,7 @@
                   <StackPanel>
                     <TextBlock Text="Saved hosts" Classes="sectionTitle" />
                     <TextBlock
-                        Text="Local and remote Linux profiles. Secret values remain in the desktop keyring."
+                        Text="Local Linux, remote Linux and remote Windows targets. Secret values remain in the desktop keyring."
                         Classes="pageSubtitle"
                         TextWrapping="Wrap" />
                     <TextBlock
@@ -2054,7 +2054,7 @@
                         <TextBlock Text="Host profile" Classes="sectionTitle" />
                         <TextBlock
                             x:Name="ServerProfileModeText"
-                            Text="Select a saved profile or add a remote Linux host."
+                            Text="Select a saved target or add remote Linux or Windows."
                             Classes="pageSubtitle"
                             TextWrapping="Wrap" />
                       </StackPanel>
@@ -2093,7 +2093,7 @@
                       <StackPanel>
                         <TextBlock Text="Native local provider" FontWeight="SemiBold" />
                         <TextBlock
-                            Text="This host is captured directly. SSH host, credential and fingerprint fields are intentionally hidden."
+                            Text="This Linux host is captured directly. Remote Linux and Windows targets use their registered secure providers."
                             Classes="muted"
                             Margin="0,4,0,0"
                             TextWrapping="Wrap" />
@@ -2104,14 +2104,14 @@
                         x:Name="ServerRemoteConnectionPanel"
                         Classes="inset">
                       <StackPanel Spacing="8">
-                        <TextBlock Text="Remote SSH connection" Classes="sectionTitle" />
+                        <TextBlock Text="Remote connection" Classes="sectionTitle" />
                         <Grid ColumnDefinitions="*,90" ColumnSpacing="7">
                           <StackPanel>
                             <TextBlock Text="Host / IP" Classes="eyebrow" Margin="0,0,0,3" />
                             <TextBox x:Name="ServerHostTextBox" />
                           </StackPanel>
                           <StackPanel Grid.Column="1">
-                            <TextBlock Text="SSH port" Classes="eyebrow" Margin="0,0,0,3" />
+                            <TextBlock Text="Port" Classes="eyebrow" Margin="0,0,0,3" />
                             <TextBox x:Name="ServerPortTextBox" />
                           </StackPanel>
                         </Grid>
@@ -2154,8 +2154,19 @@
                         Classes="inset">
                       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
                         <StackPanel>
-                          <TextBlock Text="Pinned host-key SHA-256 fingerprint" Classes="eyebrow" Margin="0,0,0,3" />
+                          <TextBlock
+                              x:Name="ServerFingerprintLabelText"
+                              Text="Pinned SSH host-key SHA-256 fingerprint"
+                              Classes="eyebrow"
+                              Margin="0,0,0,3" />
                           <TextBox x:Name="ServerFingerprintTextBox" />
+                          <TextBlock
+                              x:Name="ServerFingerprintHelpText"
+                              Text="Scan and save the host key before authentication is attempted."
+                              Classes="dim"
+                              FontSize="9"
+                              Margin="0,4,0,0"
+                              TextWrapping="Wrap" />
                         </StackPanel>
                         <Button
                             Grid.Column="1"
@@ -2173,7 +2184,11 @@
                         IsVisible="False">
                       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
                         <StackPanel>
-                          <TextBlock Text="Password / passphrase" Classes="eyebrow" Margin="0,0,0,3" />
+                          <TextBlock
+    x:Name="ServerSecretLabelText"
+    Text="SSH password"
+    Classes="eyebrow"
+    Margin="0,0,0,3" />
                           <TextBox x:Name="ServerSecretTextBox" PasswordChar="●" />
                         </StackPanel>
                         <CheckBox
@@ -2182,6 +2197,29 @@
                             Content="Save securely"
                             VerticalAlignment="Bottom"
                             Margin="0,0,0,6" />
+                      </Grid>
+                    </Border>
+
+                    <Border
+                        x:Name="ServerWindowsOptionsPanel"
+                        Classes="inset"
+                        IsVisible="False">
+                      <Grid ColumnDefinitions="180,*" ColumnSpacing="12">
+                        <StackPanel>
+                          <TextBlock
+                              Text="Operation timeout (seconds)"
+                              Classes="eyebrow"
+                              Margin="0,0,0,3" />
+                          <TextBox
+                              x:Name="ServerOperationTimeoutTextBox"
+                              Text="60" />
+                        </StackPanel>
+                        <TextBlock
+                            Grid.Column="1"
+                            Text="WinRM uses HTTPS only. Certificate-chain, revocation and hostname validation are mandatory; an optional SHA-256 pin adds another check."
+                            Classes="muted"
+                            TextWrapping="Wrap"
+                            VerticalAlignment="Center" />
                       </Grid>
                     </Border>
 

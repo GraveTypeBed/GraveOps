@@ -87,7 +87,7 @@ public partial class MainWindow
             previous?.Cancel();
         }
 
-        LinuxTargetRefreshContext context;
+        TargetRefreshContext context;
 
         try
         {
@@ -134,15 +134,12 @@ public partial class MainWindow
 
             var phase =
                 Stopwatch.StartNew();
-            var snapshot =
+            var envelope =
                 await CaptureActiveTargetAsync(
                     context.Profile,
+                    context.Lease,
                     background,
                     request.Token);
-            var envelope =
-                CreateTargetSnapshotEnvelope(
-                    context,
-                    snapshot);
 
             var backupCapture =
                 await CaptureBackupIfDueAsync(

@@ -5,65 +5,574 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using GraveOps.Core.Hosts;
+using GraveOps.Core.Providers;
+using GraveOps.Core.Security;
+using GraveOps.Core.Snapshots;
+using GraveOps.Core.Targets;
 using GraveOps.Platform.Linux;
+using GraveOps.Platform.Windows;
 
 namespace GraveOps.Desktop.Linux;
 
 public enum LinuxHostKind
 {
-    Local,
-    RemoteLinux
+    Local = 0,
+    RemoteLinux = 1,
+    RemoteWindows = 2,
+    LocalWindows = 3
 }
 
 public enum LinuxHostAuthentication
 {
-    Agent,
-    PrivateKey,
-    Password
+    Agent = 0,
+    PrivateKey = 1,
+    Password = 2,
+    WinRmNegotiate = 3,
+    WinRmBasic = 4
 }
 
 public sealed class LinuxHostProfile
 {
-    public string Id { get; set; } = Guid.NewGuid().ToString("N");
-    public string Name { get; set; } = "Linux host";
-    public LinuxHostKind Kind { get; set; } = LinuxHostKind.RemoteLinux;
-    public string Host { get; set; } = string.Empty;
-    public int Port { get; set; } = 22;
-    public string Username { get; set; } = string.Empty;
-    public string Role { get; set; } = "Server";
+    public string Id { get; set; } =
+        Guid.NewGuid().ToString("N");
+
+    public string Name { get; set; } =
+        "Managed target";
+
+    public LinuxHostKind Kind { get; set; } =
+        LinuxHostKind.RemoteLinux;
+
+    public string Host { get; set; } =
+        string.Empty;
+
+    public int Port { get; set; } =
+        22;
+
+    public string Username { get; set; } =
+        string.Empty;
+
+    public string Role { get; set; } =
+        "Server";
+
     public LinuxHostAuthentication Authentication { get; set; } =
         LinuxHostAuthentication.Agent;
-    public string PrivateKeyPath { get; set; } = string.Empty;
-    public string HostKeyFingerprint { get; set; } = string.Empty;
+
+    public string PrivateKeyPath { get; set; } =
+        string.Empty;
+
+    public string HostKeyFingerprint { get; set; } =
+        string.Empty;
+
+    public int OperationTimeoutSeconds { get; set; } =
+        60;
+
+    public string CredentialReference { get; set; } =
+        string.Empty;
+
     public DateTimeOffset? LastDetectedAt { get; set; }
 
-    public bool IsLocal => Kind == LinuxHostKind.Local;
+    public bool IsLocal =>
+        Kind is
+            LinuxHostKind.Local or
+            LinuxHostKind.LocalWindows;
+
+    public bool IsLocalLinux =>
+        Kind ==
+        LinuxHostKind.Local;
+
+    public bool IsRemoteLinux =>
+        Kind ==
+        LinuxHostKind.RemoteLinux;
+
+    public bool IsWindows =>
+        Kind is
+            LinuxHostKind.RemoteWindows or
+            LinuxHostKind.LocalWindows;
+
+    public bool IsRemoteWindows =>
+        Kind ==
+        LinuxHostKind.RemoteWindows;
+
+    public bool RequiresCredential =>
+        !IsLocal &&
+        Authentication !=
+            LinuxHostAuthentication.Agent;
+
+    public string CredentialKind =>
+        Authentication ==
+            LinuxHostAuthentication.PrivateKey
+            ? "passphrase"
+            : "password";
+
+    public string EffectiveCredentialReference =>
+        string.IsNullOrWhiteSpace(
+            CredentialReference)
+            ? CredentialReferenceFor(
+                Id,
+                CredentialKind).Value
+            : CredentialReference.Trim();
 
     public string DisplayName =>
-        string.IsNullOrWhiteSpace(Name)
+        string.IsNullOrWhiteSpace(
+            Name)
             ? IsLocal
                 ? Environment.MachineName
                 : Host
             : Name;
 
     public string KindLabel =>
-        IsLocal
-            ? "Local Linux"
-            : "Remote Linux · SSH";
+        Kind switch
+        {
+            LinuxHostKind.Local =>
+                "Local Linux",
+            LinuxHostKind.RemoteLinux =>
+                "Remote Linux · SSH",
+            LinuxHostKind.RemoteWindows =>
+                "Remote Windows · WinRM HTTPS",
+            LinuxHostKind.LocalWindows =>
+                "Local Windows",
+            _ =>
+                Kind.ToString()
+        };
 
     public string AuthenticationLabel =>
         Authentication switch
         {
-            LinuxHostAuthentication.Agent => "SSH agent",
-            LinuxHostAuthentication.PrivateKey => "Private key",
-            LinuxHostAuthentication.Password => "Password",
-            _ => Authentication.ToString()
+            LinuxHostAuthentication.Agent =>
+                "SSH agent",
+            LinuxHostAuthentication.PrivateKey =>
+                "Private key",
+            LinuxHostAuthentication.Password =>
+                "Password",
+            LinuxHostAuthentication.WinRmNegotiate =>
+                "WinRM Negotiate",
+            LinuxHostAuthentication.WinRmBasic =>
+                "WinRM Basic over HTTPS",
+            _ =>
+                Authentication.ToString()
         };
 
     public string ConnectionSummary =>
-        IsLocal
-            ? $"{KindLabel} · {Role}"
-            : $"{Username}@{Host}:{Port} · {Role}";
+        Kind switch
+        {
+            LinuxHostKind.Local =>
+                $"{KindLabel} · {Role}",
+            LinuxHostKind.LocalWindows =>
+                $"{KindLabel} · {Role}",
+            LinuxHostKind.RemoteWindows =>
+                $"WinRM HTTPS · {Username}@{Host}:{Port} · {Role}",
+            _ =>
+                $"{Username}@{Host}:{Port} · {Role}"
+        };
+
+    public TargetProfile ToTargetProfile()
+    {
+        ValidateForLinuxClient(
+            this);
+
+        var providerId =
+            Kind switch
+            {
+                LinuxHostKind.Local =>
+                    HostProviderIds.LocalLinux,
+                LinuxHostKind.RemoteLinux =>
+                    HostProviderIds.RemoteLinuxSsh,
+                LinuxHostKind.LocalWindows =>
+                    HostProviderIds.LocalWindows,
+                LinuxHostKind.RemoteWindows =>
+                    HostProviderIds.RemoteWindows,
+                _ =>
+                    throw new InvalidOperationException(
+                        "Unsupported target kind.")
+            };
+
+        var platform =
+            IsWindows
+                ? TargetPlatform.Windows
+                : TargetPlatform.Linux;
+
+        var location =
+            IsLocal
+                ? TargetLocation.Local
+                : TargetLocation.Remote;
+
+        var metadata =
+            new Dictionary<string, string>(
+                StringComparer.OrdinalIgnoreCase)
+            {
+                ["role"] =
+                    string.IsNullOrWhiteSpace(
+                        Role)
+                        ? "Server"
+                        : Role.Trim()
+            };
+
+        if (LastDetectedAt is { } detected)
+        {
+            metadata["last-detected-at"] =
+                detected.ToString("O");
+        }
+
+        if (IsLocal)
+        {
+            return new TargetProfile(
+                Id.Trim(),
+                DisplayName,
+                providerId,
+                platform,
+                location,
+                TargetConnectionProfile.Local,
+                metadata);
+        }
+
+        var options =
+            new Dictionary<string, string>(
+                StringComparer.OrdinalIgnoreCase);
+
+        if (IsRemoteLinux)
+        {
+            options["authentication"] =
+                Authentication.ToString();
+
+            if (!string.IsNullOrWhiteSpace(
+                    PrivateKeyPath))
+            {
+                options["private-key-path"] =
+                    PrivateKeyPath.Trim();
+            }
+        }
+        else
+        {
+            options["authentication"] =
+                Authentication ==
+                    LinuxHostAuthentication.WinRmBasic
+                    ? "Basic"
+                    : "Negotiate";
+            options["operation-timeout-seconds"] =
+                OperationTimeoutSeconds.ToString(
+                    CultureInfo.InvariantCulture);
+        }
+
+        return new TargetProfile(
+            Id.Trim(),
+            DisplayName,
+            providerId,
+            platform,
+            location,
+            new TargetConnectionProfile(
+                IsRemoteWindows
+                    ? TransportIds.WinRmHttps
+                    : TransportIds.Ssh,
+                Host.Trim(),
+                Port,
+                Username.Trim(),
+                RequiresCredential
+                    ? EffectiveCredentialReference
+                    : null,
+                string.IsNullOrWhiteSpace(
+                    HostKeyFingerprint)
+                    ? null
+                    : HostKeyFingerprint.Trim(),
+                options),
+            metadata);
+    }
+
+    public static LinuxHostProfile FromTargetProfile(
+        TargetProfile target)
+    {
+        ArgumentNullException.ThrowIfNull(
+            target);
+        target.Validate();
+
+        var kind =
+            target.Platform switch
+            {
+                TargetPlatform.Windows
+                    when target.Location ==
+                         TargetLocation.Local =>
+                    LinuxHostKind.LocalWindows,
+                TargetPlatform.Windows =>
+                    LinuxHostKind.RemoteWindows,
+                TargetPlatform.Linux
+                    when target.Location ==
+                         TargetLocation.Local =>
+                    LinuxHostKind.Local,
+                _ =>
+                    LinuxHostKind.RemoteLinux
+            };
+
+        var authentication =
+            ParseAuthentication(
+                kind,
+                Option(
+                    target.Connection.Options,
+                    "authentication"));
+
+        var role =
+            Metadata(
+                target.Metadata,
+                "role");
+
+        var detectedText =
+            Metadata(
+                target.Metadata,
+                "last-detected-at");
+
+        DateTimeOffset? detected =
+            DateTimeOffset.TryParse(
+                detectedText,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.RoundtripKind,
+                out var parsedDetected)
+                ? parsedDetected
+                : null;
+
+        var profile =
+            new LinuxHostProfile
+            {
+                Id =
+                    target.Id,
+                Name =
+                    target.DisplayName,
+                Kind =
+                    kind,
+                Host =
+                    target.Connection.Host ??
+                    (kind ==
+                        LinuxHostKind.Local
+                        ? "127.0.0.1"
+                        : string.Empty),
+                Port =
+                    target.Connection.Port ??
+                    (kind ==
+                        LinuxHostKind.RemoteWindows
+                        ? RemoteWindowsConnectionParser
+                            .DefaultWinRmHttpsPort
+                        : 22),
+                Username =
+                    target.Connection.Username ??
+                    string.Empty,
+                Role =
+                    string.IsNullOrWhiteSpace(
+                        role)
+                        ? "Server"
+                        : role,
+                Authentication =
+                    authentication,
+                PrivateKeyPath =
+                    Option(
+                        target.Connection.Options,
+                        "private-key-path") ??
+                    string.Empty,
+                HostKeyFingerprint =
+                    target.Connection.PinnedIdentity ??
+                    string.Empty,
+                OperationTimeoutSeconds =
+                    ParseTimeout(
+                        Option(
+                            target.Connection.Options,
+                            "operation-timeout-seconds")),
+                CredentialReference =
+                    target.Connection.CredentialReference ??
+                    string.Empty,
+                LastDetectedAt =
+                    detected
+            };
+
+        ValidateForLinuxClient(
+            profile,
+            allowLocalWindows: true);
+
+        return profile;
+    }
+
+    public static CredentialReference CredentialReferenceFor(
+        string targetId,
+        string kind)
+    {
+        if (string.IsNullOrWhiteSpace(
+                targetId) ||
+            string.IsNullOrWhiteSpace(
+                kind))
+        {
+            throw new InvalidOperationException(
+                "Credential references require a target ID and kind.");
+        }
+
+        return new CredentialReference(
+            $"graveops/target/" +
+            $"{targetId.Trim()}/" +
+            $"{kind.Trim().ToLowerInvariant()}");
+    }
+
+    public static void ValidateForLinuxClient(
+        LinuxHostProfile profile,
+        bool allowLocalWindows = false)
+    {
+        ArgumentNullException.ThrowIfNull(
+            profile);
+
+        if (string.IsNullOrWhiteSpace(
+                profile.Id))
+        {
+            throw new InvalidOperationException(
+                "Target profile ID is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                profile.Name))
+        {
+            throw new InvalidOperationException(
+                "Display name is required.");
+        }
+
+        if (profile.Kind ==
+                LinuxHostKind.LocalWindows &&
+            !allowLocalWindows)
+        {
+            throw new InvalidOperationException(
+                "A local Windows target cannot be created from the Linux client.");
+        }
+
+        if (profile.IsLocal)
+            return;
+
+        if (string.IsNullOrWhiteSpace(
+                profile.Host))
+        {
+            throw new InvalidOperationException(
+                "Remote host or IP address is required.");
+        }
+
+        if (profile.Port is < 1 or > 65535)
+        {
+            throw new InvalidOperationException(
+                "Remote target port must be between 1 and 65535.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                profile.Username))
+        {
+            throw new InvalidOperationException(
+                "Remote username is required.");
+        }
+
+        if (profile.IsRemoteLinux)
+        {
+            if (profile.Authentication is
+                not LinuxHostAuthentication.Agent and
+                not LinuxHostAuthentication.PrivateKey and
+                not LinuxHostAuthentication.Password)
+            {
+                throw new InvalidOperationException(
+                    "Remote Linux authentication must use SSH agent, private key or password.");
+            }
+
+            if (profile.Authentication ==
+                    LinuxHostAuthentication.PrivateKey &&
+                string.IsNullOrWhiteSpace(
+                    profile.PrivateKeyPath))
+            {
+                throw new InvalidOperationException(
+                    "Private-key authentication requires a key path.");
+            }
+
+            return;
+        }
+
+        if (profile.Authentication is
+            not LinuxHostAuthentication.WinRmNegotiate and
+            not LinuxHostAuthentication.WinRmBasic)
+        {
+            throw new InvalidOperationException(
+                "Remote Windows authentication must use WinRM Negotiate or Basic over HTTPS.");
+        }
+
+        if (profile.OperationTimeoutSeconds is < 10 or > 300)
+        {
+            throw new InvalidOperationException(
+                "The remote Windows operation timeout must be between 10 and 300 seconds.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(
+                profile.HostKeyFingerprint))
+        {
+            profile.HostKeyFingerprint =
+                RemoteWindowsConnectionParser
+                    .NormalizeSha256Pin(
+                        profile.HostKeyFingerprint) ??
+                string.Empty;
+        }
+    }
+
+    private static LinuxHostAuthentication ParseAuthentication(
+        LinuxHostKind kind,
+        string? value)
+    {
+        if (kind ==
+            LinuxHostKind.RemoteWindows)
+        {
+            return value?.Equals(
+                       "Basic",
+                       StringComparison.OrdinalIgnoreCase) ==
+                   true
+                ? LinuxHostAuthentication.WinRmBasic
+                : LinuxHostAuthentication.WinRmNegotiate;
+        }
+
+        return Enum.TryParse<
+                   LinuxHostAuthentication>(
+                   value,
+                   ignoreCase: true,
+                   out var parsed) &&
+               parsed is
+                   LinuxHostAuthentication.Agent or
+                   LinuxHostAuthentication.PrivateKey or
+                   LinuxHostAuthentication.Password
+            ? parsed
+            : LinuxHostAuthentication.Agent;
+    }
+
+    private static int ParseTimeout(
+        string? value) =>
+        int.TryParse(
+            value,
+            NumberStyles.Integer,
+            CultureInfo.InvariantCulture,
+            out var seconds)
+            ? Math.Clamp(
+                seconds,
+                10,
+                300)
+            : 60;
+
+    private static string? Option(
+        IReadOnlyDictionary<string, string>? options,
+        string key)
+    {
+        if (options is null)
+            return null;
+
+        foreach (var pair in options)
+        {
+            if (pair.Key.Equals(
+                    key,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return pair.Value;
+            }
+        }
+
+        return null;
+    }
+
+    private static string Metadata(
+        IReadOnlyDictionary<string, string>? metadata,
+        string key) =>
+        Option(
+            metadata,
+            key) ??
+        string.Empty;
 }
 
 public sealed record LinuxLanCandidate(
@@ -145,197 +654,512 @@ public sealed class ControlPlaneJobRow
         StartedAt.ToLocalTime().ToString("g");
 }
 
-public sealed class LinuxHostProfileStore
+public sealed class LinuxHostProfileStore :
+    ITargetRegistry
 {
-    private readonly JsonSerializerOptions _json = new()
-    {
-        WriteIndented = true
-    };
+    private readonly object _gate =
+        new();
 
-    private List<LinuxHostProfile> _profiles;
+    private readonly JsonSerializerOptions _json =
+        new()
+        {
+            WriteIndented =
+                true,
+            PropertyNameCaseInsensitive =
+                true
+        };
 
-    public LinuxHostProfileStore(string configDirectory)
+    private List<TargetProfile> _targets;
+
+    public LinuxHostProfileStore(
+        string configDirectory)
     {
-        Directory.CreateDirectory(configDirectory);
-        FilePath = Path.Combine(
-            configDirectory,
-            "hosts.json");
-        _profiles = Load();
+        Directory.CreateDirectory(
+            configDirectory);
+
+        FilePath =
+            Path.Combine(
+                configDirectory,
+                "targets.json");
+
+        LegacyFilePath =
+            Path.Combine(
+                configDirectory,
+                "hosts.json");
+
+        _targets =
+            Load();
+
         EnsureLocalProfile();
+        Save();
     }
 
     public string FilePath { get; }
 
-    public IReadOnlyList<LinuxHostProfile> Profiles =>
-        _profiles
-            .OrderBy(profile => profile.IsLocal ? 0 : 1)
-            .ThenBy(profile => profile.DisplayName)
-            .ToArray();
+    public string LegacyFilePath { get; }
 
-    public LinuxHostProfile? Find(string id) =>
-        _profiles.FirstOrDefault(profile =>
-            profile.Id.Equals(
-                id,
-                StringComparison.OrdinalIgnoreCase));
-
-    public LinuxHostProfile Upsert(LinuxHostProfile profile)
+    public IReadOnlyList<LinuxHostProfile> Profiles
     {
-        Validate(profile);
-
-        var existing = Find(profile.Id);
-
-        if (existing is null)
+        get
         {
-            _profiles.Add(profile);
+            lock (_gate)
+            {
+                return _targets
+                    .Select(
+                        LinuxHostProfile
+                            .FromTargetProfile)
+                    .Where(profile =>
+                        profile.Kind !=
+                            LinuxHostKind.LocalWindows)
+                    .OrderBy(profile =>
+                        profile.IsLocal
+                            ? 0
+                            : 1)
+                    .ThenBy(profile =>
+                        profile.IsWindows
+                            ? 1
+                            : 0)
+                    .ThenBy(profile =>
+                        profile.DisplayName,
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+            }
         }
-        else
-        {
-            var index = _profiles.IndexOf(existing);
-            _profiles[index] = profile;
-        }
-
-        Save();
-        return profile;
     }
 
-    public bool Delete(string id)
+    public LinuxHostProfile? Find(
+        string id)
     {
-        var profile = Find(id);
+        lock (_gate)
+        {
+            var target =
+                _targets.FirstOrDefault(item =>
+                    item.Id.Equals(
+                        id,
+                        StringComparison.OrdinalIgnoreCase));
 
-        if (profile is null || profile.IsLocal)
-            return false;
+            if (target is null)
+                return null;
 
-        var removed = _profiles.Remove(profile);
+            var profile =
+                LinuxHostProfile.FromTargetProfile(
+                    target);
 
-        if (removed)
+            return profile.Kind ==
+                    LinuxHostKind.LocalWindows
+                ? null
+                : profile;
+        }
+    }
+
+    public LinuxHostProfile Upsert(
+        LinuxHostProfile profile)
+    {
+        Validate(
+            profile);
+
+        var target =
+            profile.ToTargetProfile();
+
+        lock (_gate)
+        {
+            UpsertCore(
+                target);
             Save();
+        }
 
-        return removed;
+        return LinuxHostProfile
+            .FromTargetProfile(
+                target);
+    }
+
+    public bool Delete(
+        string id)
+    {
+        lock (_gate)
+        {
+            var target =
+                _targets.FirstOrDefault(item =>
+                    item.Id.Equals(
+                        id,
+                        StringComparison.OrdinalIgnoreCase));
+
+            if (target is null ||
+                target.Location ==
+                    TargetLocation.Local)
+            {
+                return false;
+            }
+
+            var removed =
+                _targets.Remove(
+                    target);
+
+            if (removed)
+                Save();
+
+            return removed;
+        }
     }
 
     public void TouchDetection(
         string id,
         DateTimeOffset capturedAt)
     {
-        var profile = Find(id);
+        lock (_gate)
+        {
+            var target =
+                _targets.FirstOrDefault(item =>
+                    item.Id.Equals(
+                        id,
+                        StringComparison.OrdinalIgnoreCase));
 
-        if (profile is null)
-            return;
+            if (target is null)
+                return;
 
-        profile.LastDetectedAt = capturedAt;
-        Save();
+            var metadata =
+                new Dictionary<string, string>(
+                    target.Metadata ??
+                    new Dictionary<string, string>(),
+                    StringComparer.OrdinalIgnoreCase)
+                {
+                    ["last-detected-at"] =
+                        capturedAt.ToString("O")
+                };
+
+            UpsertCore(
+                target with
+                {
+                    Metadata =
+                        metadata
+                });
+
+            Save();
+        }
     }
 
     public static void Validate(
-        LinuxHostProfile profile)
+        LinuxHostProfile profile) =>
+        LinuxHostProfile.ValidateForLinuxClient(
+            profile);
+
+    public Task<IReadOnlyList<TargetProfile>> ListAsync(
+        CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(profile.Id))
-            throw new InvalidOperationException(
-                "Host profile ID is required.");
+        cancellationToken.ThrowIfCancellationRequested();
 
-        if (string.IsNullOrWhiteSpace(profile.Name))
-            throw new InvalidOperationException(
-                "Display name is required.");
-
-        if (profile.IsLocal)
-            return;
-
-        if (string.IsNullOrWhiteSpace(profile.Host))
-            throw new InvalidOperationException(
-                "Remote host or IP address is required.");
-
-        if (profile.Port is < 1 or > 65535)
-            throw new InvalidOperationException(
-                "SSH port must be between 1 and 65535.");
-
-        if (string.IsNullOrWhiteSpace(profile.Username))
-            throw new InvalidOperationException(
-                "SSH username is required.");
-
-        if (profile.Authentication ==
-                LinuxHostAuthentication.PrivateKey &&
-            string.IsNullOrWhiteSpace(
-                profile.PrivateKeyPath))
+        lock (_gate)
         {
-            throw new InvalidOperationException(
-                "Private-key authentication requires a key path.");
+            return Task.FromResult<
+                IReadOnlyList<TargetProfile>>(
+                _targets.ToArray());
         }
     }
 
-    private List<LinuxHostProfile> Load()
+    public Task<TargetProfile?> FindAsync(
+        string targetId,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        lock (_gate)
+        {
+            return Task.FromResult(
+                _targets.FirstOrDefault(item =>
+                    item.Id.Equals(
+                        targetId,
+                        StringComparison.OrdinalIgnoreCase)));
+        }
+    }
+
+    public Task UpsertAsync(
+        TargetProfile target,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        target.Validate();
+
+        var profile =
+            LinuxHostProfile.FromTargetProfile(
+                target);
+
+        Validate(
+            profile);
+
+        lock (_gate)
+        {
+            UpsertCore(
+                profile.ToTargetProfile());
+            Save();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task<bool> RemoveAsync(
+        string targetId,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return Task.FromResult(
+            Delete(
+                targetId));
+    }
+
+    private List<TargetProfile> Load()
+    {
+        if (File.Exists(
+                FilePath))
+        {
+            try
+            {
+                return JsonSerializer.Deserialize<
+                           List<TargetProfile>>(
+                           File.ReadAllText(
+                               FilePath),
+                           _json) ??
+                       new List<TargetProfile>();
+            }
+            catch
+            {
+                PreserveCorruptFile(
+                    FilePath);
+
+                return MigrateLegacyProfiles();
+            }
+        }
+
+        return MigrateLegacyProfiles();
+    }
+
+    private List<TargetProfile> MigrateLegacyProfiles()
+    {
+        if (!File.Exists(
+                LegacyFilePath))
+        {
+            return new List<TargetProfile>();
+        }
+
         try
         {
-            if (!File.Exists(FilePath))
-                return new List<LinuxHostProfile>();
+            var legacy =
+                JsonSerializer.Deserialize<
+                    List<LinuxHostProfile>>(
+                    File.ReadAllText(
+                        LegacyFilePath),
+                    _json) ??
+                new List<LinuxHostProfile>();
 
-            return JsonSerializer.Deserialize<
-                       List<LinuxHostProfile>>(
-                       File.ReadAllText(FilePath),
-                       _json) ??
-                   new List<LinuxHostProfile>();
+            var migrated =
+                new List<TargetProfile>();
+
+            foreach (var profile in legacy)
+            {
+                try
+                {
+                    profile.Kind =
+                        profile.Kind ==
+                            LinuxHostKind.Local
+                            ? LinuxHostKind.Local
+                            : LinuxHostKind.RemoteLinux;
+
+                    if (profile.RequiresCredential)
+                    {
+                        profile.CredentialReference =
+                            LinuxHostProfile
+                                .CredentialReferenceFor(
+                                    profile.Id,
+                                    profile.CredentialKind)
+                                .Value;
+                    }
+
+                    migrated.Add(
+                        profile.ToTargetProfile());
+                }
+                catch
+                {
+                    // One malformed legacy target must not discard valid profiles.
+                }
+            }
+
+            return migrated;
         }
         catch
         {
-            return new List<LinuxHostProfile>();
+            return new List<TargetProfile>();
         }
     }
 
     private void EnsureLocalProfile()
     {
-        var local = _profiles.FirstOrDefault(profile =>
-            profile.IsLocal);
+        var local =
+            _targets.FirstOrDefault(target =>
+                target.Platform ==
+                    TargetPlatform.Linux &&
+                target.Location ==
+                    TargetLocation.Local);
 
         if (local is null)
         {
-            _profiles.Insert(
+            _targets.Insert(
                 0,
                 new LinuxHostProfile
                 {
-                    Id = "local",
-                    Name = Environment.MachineName,
-                    Kind = LinuxHostKind.Local,
-                    Host = "127.0.0.1",
-                    Port = 22,
-                    Username = Environment.UserName,
-                    Role = "Local control plane",
+                    Id =
+                        "local",
+                    Name =
+                        Environment.MachineName,
+                    Kind =
+                        LinuxHostKind.Local,
+                    Host =
+                        "127.0.0.1",
+                    Port =
+                        22,
+                    Username =
+                        Environment.UserName,
+                    Role =
+                        "Local control plane",
                     Authentication =
                         LinuxHostAuthentication.Agent
-                });
-            Save();
+                }.ToTargetProfile());
+
             return;
         }
 
-        local.Id = "local";
+        var profile =
+            LinuxHostProfile.FromTargetProfile(
+                local);
 
-        if (string.IsNullOrWhiteSpace(local.Name))
-            local.Name = Environment.MachineName;
+        profile.Id =
+            "local";
+        profile.Kind =
+            LinuxHostKind.Local;
+        profile.Name =
+            string.IsNullOrWhiteSpace(
+                profile.Name)
+                ? Environment.MachineName
+                : profile.Name;
+        profile.Host =
+            "127.0.0.1";
+        profile.Port =
+            22;
+        profile.Username =
+            string.IsNullOrWhiteSpace(
+                profile.Username)
+                ? Environment.UserName
+                : profile.Username;
+        profile.Authentication =
+            LinuxHostAuthentication.Agent;
+        profile.CredentialReference =
+            string.Empty;
+        profile.PrivateKeyPath =
+            string.Empty;
+        profile.HostKeyFingerprint =
+            string.Empty;
 
-        if (string.IsNullOrWhiteSpace(local.Username))
-            local.Username = Environment.UserName;
+        _targets.Remove(
+            local);
+        _targets.Insert(
+            0,
+            profile.ToTargetProfile());
+    }
 
-        Save();
+    private void UpsertCore(
+        TargetProfile target)
+    {
+        var existing =
+            _targets.FirstOrDefault(item =>
+                item.Id.Equals(
+                    target.Id,
+                    StringComparison.OrdinalIgnoreCase));
+
+        if (existing is null)
+        {
+            _targets.Add(
+                target);
+            return;
+        }
+
+        var index =
+            _targets.IndexOf(
+                existing);
+
+        _targets[index] =
+            target;
     }
 
     private void Save()
     {
-        var temporary = FilePath + ".tmp";
+        var temporary =
+            FilePath +
+            ".tmp";
 
         File.WriteAllText(
             temporary,
             JsonSerializer.Serialize(
-                _profiles,
+                _targets,
                 _json));
 
         File.Move(
             temporary,
             FilePath,
             overwrite: true);
+
+        TryHarden(
+            FilePath);
+    }
+
+    private static void PreserveCorruptFile(
+        string path)
+    {
+        try
+        {
+            var destination =
+                path +
+                ".corrupt-" +
+                DateTimeOffset.UtcNow
+                    .ToString(
+                        "yyyyMMddHHmmss",
+                        CultureInfo.InvariantCulture);
+
+            File.Move(
+                path,
+                destination,
+                overwrite: false);
+        }
+        catch
+        {
+            // The unreadable file remains in place when recovery cannot move it.
+        }
+    }
+
+    private static void TryHarden(
+        string path)
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        try
+        {
+            File.SetUnixFileMode(
+                path,
+                UnixFileMode.UserRead |
+                UnixFileMode.UserWrite);
+        }
+        catch
+        {
+            // Unsupported filesystems keep their existing ACLs.
+        }
     }
 }
 
-public sealed class LinuxCredentialStore
+public sealed class LinuxCredentialStore :
+    ICredentialVault
 {
+    public string VaultId =>
+        "linux.secret-service";
+
     public bool IsAvailable =>
         CommandExists("secret-tool");
 
@@ -343,6 +1167,99 @@ public sealed class LinuxCredentialStore
         IsAvailable
             ? "Secret Service keyring available"
             : "secret-tool unavailable · secrets cannot be saved";
+
+    public async Task StoreAsync(
+        CredentialReference reference,
+        SecretValue secret,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            secret);
+
+        var parsed =
+            ParseCredentialReference(
+                reference);
+
+        // LinuxCredentialStore's established compatibility API accepts a
+        // string. The secret is still persisted only through Secret Service.
+        var value =
+            new string(
+                secret.Reveal().Span);
+
+        await SaveAsync(
+            parsed.TargetId,
+            parsed.Kind,
+            value,
+            cancellationToken);
+    }
+
+    public async Task<SecretValue?> RetrieveAsync(
+        CredentialReference reference,
+        CancellationToken cancellationToken = default)
+    {
+        var parsed =
+            ParseCredentialReference(
+                reference);
+
+        var value =
+            await LookupAsync(
+                parsed.TargetId,
+                parsed.Kind,
+                cancellationToken);
+
+        return value is null
+            ? null
+            : new SecretValue(
+                value);
+    }
+
+    public async Task DeleteAsync(
+        CredentialReference reference,
+        CancellationToken cancellationToken = default)
+    {
+        var parsed =
+            ParseCredentialReference(
+                reference);
+
+        await ClearAsync(
+            parsed.TargetId,
+            parsed.Kind,
+            cancellationToken);
+    }
+
+    public static (
+        string TargetId,
+        string Kind)
+        ParseCredentialReference(
+            CredentialReference reference)
+    {
+        var parts =
+            reference.Value
+                .Split(
+                    '/',
+                    StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length != 4 ||
+            !parts[0].Equals(
+                "graveops",
+                StringComparison.OrdinalIgnoreCase) ||
+            !parts[1].Equals(
+                "target",
+                StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrWhiteSpace(
+                parts[2]) ||
+            parts[3] is not (
+                "password" or
+                "passphrase"))
+        {
+            throw new InvalidOperationException(
+                "The credential reference is not a GraveOps target password or passphrase reference.");
+        }
+
+        return (
+            parts[2],
+            parts[3]);
+    }
 
     public async Task<string?> LookupAsync(
         string hostId,
@@ -832,60 +1749,192 @@ public sealed class LinuxControlPlaneCoordinator
     private readonly LocalLinuxHostProbe _localProbe =
         new();
 
-    public LinuxControlPlaneCoordinator()
+    public LinuxControlPlaneCoordinator(
+        string? configDirectory = null)
     {
-        var home = Environment.GetFolderPath(
-            Environment.SpecialFolder.UserProfile);
-        var configRoot =
-            Environment.GetEnvironmentVariable(
-                "XDG_CONFIG_HOME");
+        if (string.IsNullOrWhiteSpace(
+                configDirectory))
+        {
+            var home =
+                Environment.GetFolderPath(
+                    Environment.SpecialFolder.UserProfile);
+            var configRoot =
+                Environment.GetEnvironmentVariable(
+                    "XDG_CONFIG_HOME");
 
-        if (string.IsNullOrWhiteSpace(configRoot))
-            configRoot = Path.Combine(home, ".config");
+            if (string.IsNullOrWhiteSpace(
+                    configRoot))
+            {
+                configRoot =
+                    Path.Combine(
+                        home,
+                        ".config");
+            }
 
-        ConfigDirectory = Path.Combine(
-            configRoot,
-            "GraveOps");
-        KnownHostsDirectory = Path.Combine(
-            ConfigDirectory,
-            "known-hosts");
+            configDirectory =
+                Path.Combine(
+                    configRoot,
+                    "GraveOps");
+        }
+
+        ConfigDirectory =
+            Path.GetFullPath(
+                configDirectory);
+
+        KnownHostsDirectory =
+            Path.Combine(
+                ConfigDirectory,
+                "known-hosts");
 
         Directory.CreateDirectory(
             ConfigDirectory);
         Directory.CreateDirectory(
             KnownHostsDirectory);
 
-        Profiles = new LinuxHostProfileStore(
-            ConfigDirectory);
-        State = new LinuxControlPlaneStateStore(
-            ConfigDirectory);
-        Credentials = new LinuxCredentialStore();
+        Profiles =
+            new LinuxHostProfileStore(
+                ConfigDirectory);
+        State =
+            new LinuxControlPlaneStateStore(
+                ConfigDirectory);
+        Credentials =
+            new LinuxCredentialStore();
 
-        if (Profiles.Find(State.ActiveHostId) is null)
-            State.SetActiveHost("local");
+        HostProviders =
+            DesktopHostProviderComposition.Create(
+                _localProbe,
+                Credentials,
+                KnownHostsDirectory);
+
+        if (Profiles.Find(
+                State.ActiveHostId) is null)
+        {
+            State.SetActiveHost(
+                "local");
+        }
     }
 
     public string ConfigDirectory { get; }
+
     public string KnownHostsDirectory { get; }
+
     public LinuxHostProfileStore Profiles { get; }
+
     public LinuxControlPlaneStateStore State { get; }
+
     public LinuxCredentialStore Credentials { get; }
 
-    public LinuxHostProfile ActiveProfile =>
-        Profiles.Find(State.ActiveHostId) ??
-        Profiles.Find("local") ??
-        throw new InvalidOperationException(
-            "The local GraveOps host profile is missing.");
+    public IHostProviderRegistry HostProviders { get; }
 
-    public void SetActive(string hostId)
+    public LinuxHostProfile ActiveProfile =>
+        Profiles.Find(
+            State.ActiveHostId) ??
+        Profiles.Find(
+            "local") ??
+        throw new InvalidOperationException(
+            "The local GraveOps target profile is missing.");
+
+    public void SetActive(
+        string hostId)
     {
-        if (Profiles.Find(hostId) is null)
+        if (Profiles.Find(
+                hostId) is null)
         {
             throw new InvalidOperationException(
-                "The selected host profile no longer exists.");
+                "The selected target profile no longer exists.");
         }
 
-        State.SetActiveHost(hostId);
+        State.SetActiveHost(
+            hostId);
+    }
+
+    public TargetCapabilities CapabilitiesFor(
+        LinuxHostProfile profile)
+    {
+        ArgumentNullException.ThrowIfNull(
+            profile);
+
+        return profile.Kind switch
+        {
+            LinuxHostKind.Local =>
+                LinuxTargetCapabilityCatalog.ForTarget(
+                    isLocal: true),
+            LinuxHostKind.RemoteLinux =>
+                LinuxTargetCapabilityCatalog.ForTarget(
+                    isLocal: false),
+            LinuxHostKind.LocalWindows =>
+                WindowsTargetCapabilityCatalog.ForLocalTarget(),
+            LinuxHostKind.RemoteWindows =>
+                WindowsTargetCapabilityCatalog.ForRemoteTarget(),
+            _ =>
+                TargetCapabilities.Empty
+        };
+    }
+
+    public async Task<HostProviderProbeResult> ProbeAsync(
+        LinuxHostProfile profile,
+        CancellationToken cancellationToken = default)
+    {
+        var target =
+            profile.ToTargetProfile();
+        var provider =
+            HostProviders.Resolve(
+                target);
+
+        return await provider.ProbeAsync(
+            target,
+            cancellationToken);
+    }
+
+    public async Task<TargetSnapshotEnvelope<HostSnapshot>>
+        CaptureAsync(
+            LinuxHostProfile profile,
+            TargetRefreshLease lease,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            profile);
+
+        var target =
+            profile.ToTargetProfile();
+        var provider =
+            HostProviders.Resolve(
+                target);
+
+        var envelope =
+            await provider.CaptureAsync(
+                target,
+                lease,
+                cancellationToken);
+
+        EnsureUsableCapture(
+            profile,
+            envelope.Snapshot);
+
+        return envelope;
+    }
+
+    public async Task<HostSnapshot> CaptureAsync(
+        LinuxHostProfile profile,
+        CancellationToken cancellationToken = default)
+    {
+        var lease =
+            new TargetRefreshLease(
+                profile.Id,
+                SelectionGeneration:
+                    1,
+                RefreshGeneration:
+                    1,
+                RefreshId:
+                    Guid.NewGuid());
+
+        var envelope =
+            await CaptureAsync(
+                profile,
+                lease,
+                cancellationToken);
+
+        return envelope.Snapshot;
     }
 
     public Task<HostSnapshot> CaptureActiveAsync(
@@ -894,35 +1943,22 @@ public sealed class LinuxControlPlaneCoordinator
             ActiveProfile,
             cancellationToken);
 
-    public async Task<HostSnapshot> CaptureAsync(
-        LinuxHostProfile profile,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(
-            profile);
-
-        if (profile.IsLocal)
-        {
-            return await _localProbe.CaptureAsync(
-                cancellationToken);
-        }
-
-        var probe = new RemoteLinuxHostProbe(
-            profile,
-            Credentials,
-            KnownHostsDirectory);
-
-        return await probe.CaptureAsync(
-            cancellationToken);
-    }
-
     public async Task<LinuxHostKeyScanResult>
         ScanFingerprintAsync(
             LinuxHostProfile profile,
-            CancellationToken cancellationToken = default) =>
-        await LinuxSshTransport.ScanFingerprintAsync(
-            profile,
-            cancellationToken);
+            CancellationToken cancellationToken = default)
+    {
+        if (!profile.IsRemoteLinux)
+        {
+            throw new InvalidOperationException(
+                "Automatic fingerprint scanning is available only for remote Linux SSH targets.");
+        }
+
+        return await LinuxSshTransport
+            .ScanFingerprintAsync(
+                profile,
+                cancellationToken);
+    }
 
     public async Task<LinuxConnectionTestResult>
         TestAsync(
@@ -930,12 +1966,14 @@ public sealed class LinuxControlPlaneCoordinator
             string? suppliedSecret = null,
             CancellationToken cancellationToken = default)
     {
-        LinuxHostProfileStore.Validate(profile);
+        LinuxHostProfileStore.Validate(
+            profile);
 
-        if (profile.IsLocal)
+        if (profile.IsLocalLinux)
         {
             var snapshot =
-                await _localProbe.CaptureAsync(
+                await CaptureAsync(
+                    profile,
                     cancellationToken);
 
             return new LinuxConnectionTestResult(
@@ -945,9 +1983,27 @@ public sealed class LinuxControlPlaneCoordinator
                 "local");
         }
 
-        var scan = await ScanFingerprintAsync(
-            profile,
-            cancellationToken);
+        if (profile.IsRemoteWindows)
+        {
+            return await TestRemoteWindowsAsync(
+                profile,
+                suppliedSecret,
+                cancellationToken);
+        }
+
+        if (!profile.IsRemoteLinux)
+        {
+            return new LinuxConnectionTestResult(
+                false,
+                "Local Windows cannot be tested from this Linux client.",
+                "Native local Windows capture requires a Windows client runtime.",
+                string.Empty);
+        }
+
+        var scan =
+            await ScanFingerprintAsync(
+                profile,
+                cancellationToken);
 
         if (!scan.Success)
         {
@@ -975,7 +2031,8 @@ public sealed class LinuxControlPlaneCoordinator
             return new LinuxConnectionTestResult(
                 false,
                 "SSH host-key fingerprint mismatch.",
-                $"Expected {profile.HostKeyFingerprint}; received {scan.Fingerprint}. Connection was blocked.",
+                $"Expected {profile.HostKeyFingerprint}; " +
+                $"received {scan.Fingerprint}. Connection was blocked.",
                 scan.Fingerprint);
         }
 
@@ -986,20 +2043,19 @@ public sealed class LinuxControlPlaneCoordinator
                     profile,
                     Credentials,
                     KnownHostsDirectory,
-                    """
-                    set -e
-                    printf '__GRAVEOPS_OK__\n'
-                    hostname
-                    . /etc/os-release 2>/dev/null || true
-                    printf '%s\n' "${PRETTY_NAME:-Linux}"
-                    """,
+                    "set -e\n" +
+                    "printf '__GRAVEOPS_OK__\\n'\n" +
+                    "hostname\n" +
+                    ". /etc/os-release 2>/dev/null || true\n" +
+                    "printf '%s\\n' \"${PRETTY_NAME:-Linux}\"\n",
                     suppliedSecret,
                     cancellationToken);
 
-            var lines = result.StandardOutput
-                .Split(
-                    '\n',
-                    StringSplitOptions.RemoveEmptyEntries);
+            var lines =
+                result.StandardOutput
+                    .Split(
+                        '\n',
+                        StringSplitOptions.RemoveEmptyEntries);
 
             if (lines.Length < 3 ||
                 !lines[0].Equals(
@@ -1035,13 +2091,17 @@ public sealed class LinuxControlPlaneCoordinator
         bool saveSecret,
         CancellationToken cancellationToken = default)
     {
-        LinuxHostProfileStore.Validate(profile);
+        LinuxHostProfileStore.Validate(
+            profile);
 
-        if (profile.IsLocal)
+        if (profile.IsLocalLinux)
         {
-            profile.Id = "local";
-            profile.Host = "127.0.0.1";
-            profile.Port = 22;
+            profile.Id =
+                "local";
+            profile.Host =
+                "127.0.0.1";
+            profile.Port =
+                22;
             profile.Username =
                 string.IsNullOrWhiteSpace(
                     profile.Username)
@@ -1053,24 +2113,56 @@ public sealed class LinuxControlPlaneCoordinator
                 string.Empty;
             profile.HostKeyFingerprint =
                 string.Empty;
+            profile.CredentialReference =
+                string.Empty;
+        }
+        else if (profile.RequiresCredential)
+        {
+            profile.CredentialReference =
+                profile.EffectiveCredentialReference;
         }
 
-        Profiles.Upsert(profile);
+        Profiles.Upsert(
+            profile);
 
         if (!profile.IsLocal &&
             saveSecret &&
-            !string.IsNullOrEmpty(secret))
+            !string.IsNullOrEmpty(
+                secret))
         {
-            var kind =
-                profile.Authentication ==
-                LinuxHostAuthentication.Password
-                    ? "password"
-                    : "passphrase";
-
             await Credentials.SaveAsync(
                 profile.Id,
-                kind,
+                profile.CredentialKind,
                 secret,
+                cancellationToken);
+        }
+
+        if (profile.IsLocal ||
+            profile.Authentication ==
+                LinuxHostAuthentication.Agent)
+        {
+            await Credentials.ClearAsync(
+                profile.Id,
+                "password",
+                cancellationToken);
+            await Credentials.ClearAsync(
+                profile.Id,
+                "passphrase",
+                cancellationToken);
+        }
+        else if (profile.CredentialKind ==
+                 "password")
+        {
+            await Credentials.ClearAsync(
+                profile.Id,
+                "passphrase",
+                cancellationToken);
+        }
+        else
+        {
+            await Credentials.ClearAsync(
+                profile.Id,
+                "password",
                 cancellationToken);
         }
     }
@@ -1079,10 +2171,15 @@ public sealed class LinuxControlPlaneCoordinator
         string id,
         CancellationToken cancellationToken = default)
     {
-        var profile = Profiles.Find(id);
+        var profile =
+            Profiles.Find(
+                id);
 
-        if (profile is null || profile.IsLocal)
+        if (profile is null ||
+            profile.IsLocal)
+        {
             return;
+        }
 
         await Credentials.ClearAsync(
             id,
@@ -1093,15 +2190,21 @@ public sealed class LinuxControlPlaneCoordinator
             "passphrase",
             cancellationToken);
 
-        Profiles.Delete(id);
+        Profiles.Delete(
+            id);
 
-        var knownHostsPath = Path.Combine(
-            KnownHostsDirectory,
-            $"{Regex.Replace(id, @"[^A-Za-z0-9_.-]", "_")}.known_hosts");
+        var knownHostsPath =
+            Path.Combine(
+                KnownHostsDirectory,
+                $"{Regex.Replace(
+                    id,
+                    @"[^A-Za-z0-9_.-]",
+                    "_")}.known_hosts");
 
         try
         {
-            File.Delete(knownHostsPath);
+            File.Delete(
+                knownHostsPath);
         }
         catch
         {
@@ -1112,7 +2215,8 @@ public sealed class LinuxControlPlaneCoordinator
                 id,
                 StringComparison.OrdinalIgnoreCase))
         {
-            State.SetActiveHost("local");
+            State.SetActiveHost(
+                "local");
         }
     }
 
@@ -1122,14 +2226,14 @@ public sealed class LinuxControlPlaneCoordinator
     {
         return new OpsBackupSnapshot(
             OpsSeverity.Info,
-            "REMOTE",
-            "Remote Linux provider",
-            "Remote backup inventory is not captured by the V4.2 host foundation.",
+            "TARGET",
+            "Target provider boundary",
+            "Backup inventory is unavailable for the selected target provider.",
             new[]
             {
                 $"Target · {ActiveProfile.ConnectionSummary}",
                 $"Host capture · {snapshot.CapturedAt.ToLocalTime():g}",
-                "Backup mutations remain disabled for remote targets."
+                "Backup mutations remain disabled outside the local Linux provider."
             },
             Array.Empty<OpsBackupUnit>(),
             Array.Empty<OpsBackupArtifact>());
@@ -1141,17 +2245,24 @@ public sealed class LinuxControlPlaneCoordinator
     {
         try
         {
-            using var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
+            using var process =
+                new Process
                 {
-                    FileName = "ip",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
+                    StartInfo =
+                        new ProcessStartInfo
+                        {
+                            FileName =
+                                "ip",
+                            RedirectStandardOutput =
+                                true,
+                            RedirectStandardError =
+                                true,
+                            UseShellExecute =
+                                false,
+                            CreateNoWindow =
+                                true
+                        }
+                };
 
             process.StartInfo.ArgumentList.Add(
                 "neigh");
@@ -1168,18 +2279,23 @@ public sealed class LinuxControlPlaneCoordinator
                 cancellationToken);
 
             if (process.ExitCode != 0)
-                return Array.Empty<LinuxLanCandidate>();
+            {
+                return Array.Empty<
+                    LinuxLanCandidate>();
+            }
 
-            var rows = new List<LinuxLanCandidate>();
+            var rows =
+                new List<LinuxLanCandidate>();
 
             foreach (var line in
                      (await stdout).Split(
                          '\n',
                          StringSplitOptions.RemoveEmptyEntries))
             {
-                var match = Regex.Match(
-                    line,
-                    @"^(?<ip>\S+)\s+dev\s+(?<dev>\S+)(?:\s+lladdr\s+(?<mac>\S+))?\s+(?<state>\S+)$");
+                var match =
+                    Regex.Match(
+                        line,
+                        @"^(?<ip>\S+)\s+dev\s+(?<dev>\S+)(?:\s+lladdr\s+(?<mac>\S+))?\s+(?<state>\S+)$");
 
                 if (!match.Success)
                     continue;
@@ -1207,16 +2323,107 @@ public sealed class LinuxControlPlaneCoordinator
 
             return rows
                 .GroupBy(
-                    row => row.Address,
+                    row =>
+                        row.Address,
                     StringComparer.OrdinalIgnoreCase)
-                .Select(group => group.First())
-                .OrderBy(row => row.Address)
+                .Select(group =>
+                    group.First())
+                .OrderBy(row =>
+                    row.Address)
                 .ToArray();
         }
         catch
         {
-            return Array.Empty<LinuxLanCandidate>();
+            return Array.Empty<
+                LinuxLanCandidate>();
         }
+    }
+
+    private async Task<LinuxConnectionTestResult>
+        TestRemoteWindowsAsync(
+            LinuxHostProfile profile,
+            string? suppliedSecret,
+            CancellationToken cancellationToken)
+    {
+        try
+        {
+            var target =
+                profile.ToTargetProfile();
+
+            IHostProvider provider;
+
+            if (!string.IsNullOrEmpty(
+                    suppliedSecret))
+            {
+                provider =
+                    RemoteWindowsHostProviderFactory.Create(
+                        new TransientCredentialVault(
+                            Credentials,
+                            new CredentialReference(
+                                profile.EffectiveCredentialReference),
+                            suppliedSecret));
+            }
+            else
+            {
+                provider =
+                    HostProviders.Resolve(
+                        target);
+            }
+
+            var envelope =
+                await provider.CaptureAsync(
+                    target,
+                    new TargetRefreshLease(
+                        profile.Id,
+                        SelectionGeneration:
+                            1,
+                        RefreshGeneration:
+                            1,
+                        RefreshId:
+                            Guid.NewGuid()),
+                    cancellationToken);
+
+            EnsureUsableCapture(
+                profile,
+                envelope.Snapshot);
+
+            return new LinuxConnectionTestResult(
+                true,
+                "WinRM HTTPS connection and remote Windows provider capture succeeded.",
+                $"{envelope.Snapshot.Hostname} · " +
+                $"{envelope.Snapshot.OperatingSystem}",
+                string.Empty);
+        }
+        catch (Exception exception)
+        {
+            return new LinuxConnectionTestResult(
+                false,
+                "WinRM HTTPS connection failed.",
+                exception.Message,
+                string.Empty);
+        }
+    }
+
+    private static void EnsureUsableCapture(
+        LinuxHostProfile profile,
+        HostSnapshot snapshot)
+    {
+        if (!snapshot.SystemState.Equals(
+                "Unavailable",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var detail =
+            snapshot.Warnings
+                .FirstOrDefault(value =>
+                    !string.IsNullOrWhiteSpace(
+                        value)) ??
+            $"The {profile.KindLabel} provider did not return a usable snapshot.";
+
+        throw new InvalidOperationException(
+            detail);
     }
 }
 
