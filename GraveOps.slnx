@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/GraveOps.Core/GraveOps.Core.csproj" />
+    <Project Path="src/GraveOps.Desktop.Linux/GraveOps.Desktop.Linux.csproj" />
+    <Project Path="src/GraveOps.Platform.Linux/GraveOps.Platform.Linux.csproj" />
+    <Project Path="src/GraveOps.Platform.Windows/GraveOps.Platform.Windows.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/GraveOps.Core.ContractTests/GraveOps.Core.ContractTests.csproj" />
+    <Project Path="tests/GraveOps.Platform.Linux.ContractTests/GraveOps.Platform.Linux.ContractTests.csproj" />
+    <Project Path="tests/GraveOps.Platform.Windows.ContractTests/GraveOps.Platform.Windows.ContractTests.csproj" />
+  </Folder>
+</Solution>
