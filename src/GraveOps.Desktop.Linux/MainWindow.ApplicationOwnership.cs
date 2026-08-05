@@ -315,6 +315,34 @@ public partial class MainWindow
                 record,
                 integration);
 
+        var classification =
+            ApplicationIdentityClassifier.Classify(
+                new ApplicationIdentityEvidence(
+                    record.Product,
+                    record.Role,
+                    string.Join(
+                        " ",
+                        new[]
+                        {
+                            record.Kind,
+                            integration?.Kind
+                        }.Where(value =>
+                            !string.IsNullOrWhiteSpace(
+                                value))),
+                    record.Protocol,
+                    record.DisplayName,
+                    string.Join(
+                        " ",
+                        new[]
+                        {
+                            record.Evidence,
+                            integration?.Evidence
+                        }.Where(value =>
+                            !string.IsNullOrWhiteSpace(
+                                value))),
+                    endpoint is not null,
+                    record.IsVerified));
+
         var metadata =
             new Dictionary<string, string>(
                 StringComparer.OrdinalIgnoreCase)
@@ -342,113 +370,17 @@ public partial class MainWindow
         var application =
             new ApplicationInstance(
                 record.SourceKey,
-                record.Product,
+                classification.ProductId,
                 record.DisplayName,
                 profile.Id,
-                ResolveApplicationRole(
-                    record),
-                ResolveApplicationRuntime(
-                    record,
-                    integration),
+                classification.Role,
+                classification.Runtime,
                 endpoint,
                 capabilities,
                 metadata);
 
         application.Validate();
         return application;
-    }
-
-    private static ApplicationRole
-        ResolveApplicationRole(
-            ApplicationIdentityRecord record)
-    {
-        if (record.Role.Equals(
-                ApplicationIdentityRoles.SupportingService,
-                StringComparison.OrdinalIgnoreCase))
-        {
-            return ApplicationRole.Service;
-        }
-
-        if (record.Role.Equals(
-                ApplicationIdentityRoles.CompatibilityInterface,
-                StringComparison.OrdinalIgnoreCase))
-        {
-            return ApplicationRole.DesktopClient;
-        }
-
-        if (record.Product.Equals(
-                "Plex",
-                StringComparison.OrdinalIgnoreCase) ||
-            record.Product.Equals(
-                "Jellyfin",
-                StringComparison.OrdinalIgnoreCase) ||
-            record.Product.Equals(
-                "Emby",
-                StringComparison.OrdinalIgnoreCase))
-        {
-            return ApplicationRole.Server;
-        }
-
-        if (ApplicationIdentityRoles.IsTopLevel(
-                record.Role))
-        {
-            return ApplicationRole.WebApplication;
-        }
-
-        return ApplicationRole.Unknown;
-    }
-
-    private static ApplicationRuntimeKind
-        ResolveApplicationRuntime(
-            ApplicationIdentityRecord record,
-            OpsIntegration? integration)
-    {
-        var kind =
-            string.Join(
-                " ",
-                new[]
-                {
-                    record.Kind,
-                    integration?.Kind
-                }.Where(value =>
-                    !string.IsNullOrWhiteSpace(
-                        value)));
-
-        if (kind.Contains(
-                "docker",
-                StringComparison.OrdinalIgnoreCase) ||
-            kind.Contains(
-                "container",
-                StringComparison.OrdinalIgnoreCase))
-        {
-            return ApplicationRuntimeKind.Container;
-        }
-
-        if (kind.Contains(
-                "systemd",
-                StringComparison.OrdinalIgnoreCase))
-        {
-            return ApplicationRuntimeKind.SystemdService;
-        }
-
-        if (ResolveApplicationEndpoint(
-                record,
-                integration) is not null)
-        {
-            return ApplicationRuntimeKind.RemoteApi;
-        }
-
-        if (kind.Contains(
-                "process",
-                StringComparison.OrdinalIgnoreCase) ||
-            kind.Contains(
-                "native",
-                StringComparison.OrdinalIgnoreCase))
-        {
-            return ApplicationRuntimeKind.NativeProcess;
-        }
-
-        return ApplicationRuntimeKind.Unknown;
     }
 
     private static Uri?

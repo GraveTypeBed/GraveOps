@@ -13,6 +13,12 @@ var tests = new (string Name, Action Run)[]
     ("application requires owner target", ApplicationRequiresOwnerTarget),
     ("application registry preserves other target inventories", ApplicationRegistryPreservesOtherTargets),
     ("application registry resolves and enforces owner target", ApplicationRegistryResolvesAndEnforcesOwner),
+    ("shared identity catalog preserves product categories", SharedIdentityCatalogPreservesProductCategories),
+    ("classifier distinguishes Plex server and desktop", ClassifierDistinguishesPlexServerAndDesktop),
+    ("classifier distinguishes qBittorrent desktop and Web UI", ClassifierDistinguishesQBittorrentDesktopAndWebUi),
+    ("classifier recognizes container hosted applications", ClassifierRecognizesContainerHostedApplications),
+    ("classifier canonicalizes product aliases", ClassifierCanonicalizesProductAliases),
+    ("classifier preserves supporting service identity", ClassifierPreservesSupportingServiceIdentity),
     ("application cache omits endpoints and secrets", ApplicationCacheOmitsEndpointsAndSecrets),
     ("application cache round trips safe ownership", ApplicationCacheRoundTripsSafeOwnership),
     ("application cache ignores malformed documents", ApplicationCacheIgnoresMalformedDocuments),
@@ -236,6 +242,176 @@ static ApplicationInstance CreateApplication(
         ApplicationRuntimeKind.RemoteApi,
         new Uri("http://example.invalid"),
         TargetCapabilities.Empty);
+
+static void SharedIdentityCatalogPreservesProductCategories()
+{
+    Assert(
+        ApplicationIdentityCatalog.Find(
+            "Plex")?.Category ==
+        "Library",
+        "The shared catalog lost the Plex category.");
+
+    Assert(
+        ApplicationIdentityCatalog.Find(
+            "qBittorrent")?.Category ==
+        "Acquisition",
+        "The shared catalog lost the qBittorrent category.");
+
+    Assert(
+        ApplicationIdentityCatalog.ProductNames.Contains(
+            "Pi-hole",
+            StringComparer.OrdinalIgnoreCase),
+        "The shared catalog lost Pi-hole.");
+}
+
+static void ClassifierDistinguishesPlexServerAndDesktop()
+{
+    var server =
+        ApplicationIdentityClassifier.Classify(
+            new ApplicationIdentityEvidence(
+                "Plex",
+                ApplicationIdentityRoles.NativeApplication,
+                "systemd",
+                "Native service",
+                "plexmediaserver.service",
+                "exact unit plexmediaserver.service",
+                HasManagementEndpoint: true));
+
+    var desktop =
+        ApplicationIdentityClassifier.Classify(
+            new ApplicationIdentityEvidence(
+                "Plex",
+                string.Empty,
+                "Native process",
+                "Desktop client",
+                "Plex.exe",
+                "local desktop process Plex.exe",
+                HasManagementEndpoint: false));
+
+    Assert(
+        server.ProductId == "Plex" &&
+        server.Role == ApplicationRole.Server &&
+        server.Runtime ==
+            ApplicationRuntimeKind.SystemdService,
+        "Plex Media Server was not classified as a hosted server.");
+
+    Assert(
+        desktop.ProductId == "Plex" &&
+        desktop.Role ==
+            ApplicationRole.DesktopClient &&
+        desktop.Runtime ==
+            ApplicationRuntimeKind.NativeProcess,
+        "Plex Desktop was not classified as a desktop client.");
+}
+
+static void ClassifierDistinguishesQBittorrentDesktopAndWebUi()
+{
+    var desktop =
+        ApplicationIdentityClassifier.Classify(
+            new ApplicationIdentityEvidence(
+                "qBittorrent",
+                string.Empty,
+                "Native process",
+                "GUI application",
+                "qBittorrent.exe",
+                "desktop process",
+                HasManagementEndpoint: false));
+
+    var web =
+        ApplicationIdentityClassifier.Classify(
+            new ApplicationIdentityEvidence(
+                "qBittorrent",
+                ApplicationIdentityRoles.NativeApplication,
+                "Remote API",
+                "Web UI",
+                "qBittorrent Web UI",
+                "remote API endpoint",
+                HasManagementEndpoint: true));
+
+    Assert(
+        desktop.Role ==
+            ApplicationRole.DesktopClient &&
+        desktop.Runtime ==
+            ApplicationRuntimeKind.NativeProcess,
+        "qBittorrent Desktop was not classified as a desktop client.");
+
+    Assert(
+        web.Role ==
+            ApplicationRole.WebApplication &&
+        web.Runtime ==
+            ApplicationRuntimeKind.RemoteApi,
+        "qBittorrent Web UI was not classified as a remote Web application.");
+}
+
+static void ClassifierRecognizesContainerHostedApplications()
+{
+    var classification =
+        ApplicationIdentityClassifier.Classify(
+            new ApplicationIdentityEvidence(
+                "Sonarr",
+                ApplicationIdentityRoles.EmbeddedApplication,
+                "Docker Compose",
+                "Verified Arr API",
+                "Sonarr TV",
+                "container image linuxserver/sonarr",
+                HasManagementEndpoint: true));
+
+    Assert(
+        classification.ProductId == "Sonarr",
+        "The container classification changed the Sonarr product.");
+    Assert(
+        classification.Role ==
+            ApplicationRole.WebApplication,
+        "A container-hosted Arr application was not classified as a Web application.");
+    Assert(
+        classification.Runtime ==
+            ApplicationRuntimeKind.Container,
+        "A Docker Compose application was not classified as a container runtime.");
+}
+
+static void ClassifierCanonicalizesProductAliases()
+{
+    var classification =
+        ApplicationIdentityClassifier.Classify(
+            new ApplicationIdentityEvidence(
+                string.Empty,
+                ApplicationIdentityRoles.NativeApplication,
+                "Docker",
+                string.Empty,
+                "linuxserver/sonarr",
+                "container image linuxserver/sonarr",
+                HasManagementEndpoint: false));
+
+    Assert(
+        classification.ProductId == "Sonarr",
+        "A known container alias did not resolve to the canonical product.");
+    Assert(
+        classification.Category == "Acquisition",
+        "Canonical alias classification returned the wrong category.");
+}
+
+static void ClassifierPreservesSupportingServiceIdentity()
+{
+    var classification =
+        ApplicationIdentityClassifier.Classify(
+            new ApplicationIdentityEvidence(
+                "Plex",
+                ApplicationIdentityRoles.SupportingService,
+                "systemd",
+                "Supporting dependency",
+                "mullvad-plex-bypass.service",
+                "systemd unit mullvad-plex-bypass.service",
+                HasManagementEndpoint: false));
+
+    Assert(
+        classification.Role ==
+            ApplicationRole.Service,
+        "A supporting service was promoted to an application owner.");
+    Assert(
+        classification.Runtime ==
+            ApplicationRuntimeKind.SystemdService,
+        "The supporting service runtime was not preserved.");
+}
 
 static void ApplicationCacheOmitsEndpointsAndSecrets()
 {
