@@ -102,6 +102,7 @@ public partial class MainWindow
             OnArrTargetChanged();
             OnQBittorrentTargetChanged();
             OnSABnzbdTargetChanged();
+            OnMediaLifecycleTargetChanged();
         }
         catch (Exception exception)
         {

@@ -18,8 +18,8 @@ public partial class MainWindow : Window
                 "Interactive environment health, ownership and active-host operations"),
             ["IntelligenceNav"] = new("WarningsPage", "Intelligence",
                 "Fleet impact, root cause, evidence and contextual next actions"),
-            ["LifecycleNav"] = new("ParityPage", "Media Lifecycle",
-                "Track active media across acquisition, download, import and library stages"),
+            ["LifecycleNav"] = new("LifecyclePage", "Media Lifecycle",
+                "Correlate Arr work, download clients and Plex playback with conservative evidence"),
             ["HistoryNav"] = new("ParityPage", "History & Incidents",
                 "Health transitions, GraveOps activity and incident replay"),
             ["ServersNav"] = new("ServersPage", "Servers",
@@ -74,6 +74,7 @@ public partial class MainWindow : Window
         InitializeArrWorkspace();
         InitializeQBittorrentWorkspace();
         InitializeSABnzbdWorkspace();
+        InitializeMediaLifecycleWorkspace();
 
         Opened += async (_, _) =>
         {
@@ -248,6 +249,17 @@ public partial class MainWindow : Window
         else
         {
             UpdateSABnzbdTimerCadence();
+        }
+
+        if (navigationName.Equals(
+                "LifecycleNav",
+                StringComparison.Ordinal))
+        {
+            ActivateWindowsMediaLifecycleWorkspace();
+        }
+        else
+        {
+            UpdateMediaLifecycleTimerCadence();
         }
 
         RecordActivity(

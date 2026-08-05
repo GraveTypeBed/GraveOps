@@ -2746,6 +2746,314 @@
             </Grid>
 
 
+
+            <Grid x:Name="LifecyclePage" IsVisible="False">
+              <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="10">
+                  <Border Classes="card">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                      <Border
+                          Width="44"
+                          Height="44"
+                          CornerRadius="10"
+                          Background="{DynamicResource AccentTintBrush}">
+                        <Path
+                            Width="22"
+                            Height="22"
+                            Stretch="Uniform"
+                            Data="M2,8 L5,8 M6,8 L9,8 M10,8 L14,8 M4,5 L6,8 L4,11 M8,5 L10,8 L8,11"
+                            Stroke="{DynamicResource AccentBrush}"
+                            StrokeThickness="1.5"
+                            StrokeLineCap="Round"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+                      </Border>
+
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                        <TextBlock
+                            Text="Media Lifecycle"
+                            FontSize="18"
+                            FontWeight="SemiBold" />
+                        <TextBlock
+                            Text="Conservative read-only correlation across Arr, qBittorrent, SABnzbd and Plex."
+                            Classes="pageSubtitle"
+                            TextWrapping="Wrap" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                          <TextBlock
+                              x:Name="MediaLifecycleTargetText"
+                              Text="Local Windows"
+                              Classes="dim"
+                              FontSize="10" />
+                          <TextBlock
+                              x:Name="MediaLifecycleFreshnessText"
+                              Text="CHECKING..."
+                              Classes="dim"
+                              FontSize="10" />
+                        </StackPanel>
+                      </StackPanel>
+
+                      <Button
+                          Grid.Column="2"
+                          Classes="primary compact"
+                          Content="Refresh lifecycle"
+                          VerticalAlignment="Center"
+                          Click="MediaLifecycleRefreshButton_OnClick" />
+                    </Grid>
+                  </Border>
+
+                  <Grid ColumnDefinitions="*,*,*,*,*,*" ColumnSpacing="8">
+                    <Border Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="STATE" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="MediaLifecycleStateText"
+                            Text="CHECKING"
+                            FontSize="17"
+                            FontWeight="SemiBold" />
+                        <TextBlock Text="Cross-application evidence" Classes="dim" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="ITEMS" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="MediaLifecycleTotalText"
+                            Text="--"
+                            FontSize="20"
+                            FontWeight="SemiBold" />
+                        <TextBlock Text="Active and recent" Classes="dim" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="TRANSFERS" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="MediaLifecycleTransferText"
+                            Text="--"
+                            FontSize="20"
+                            FontWeight="SemiBold" />
+                        <TextBlock Text="Downloading or paused" Classes="dim" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="3" Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="PROCESSING" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="MediaLifecycleProcessingText"
+                            Text="--"
+                            FontSize="20"
+                            FontWeight="SemiBold" />
+                        <TextBlock Text="Post-process or completed" Classes="dim" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="4" Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="PLAYING" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="MediaLifecyclePlayingText"
+                            Text="--"
+                            FontSize="20"
+                            FontWeight="SemiBold" />
+                        <TextBlock Text="Verified Plex sessions" Classes="dim" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="5" Classes="card">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="ATTENTION" Classes="eyebrow" />
+                        <TextBlock
+                            x:Name="MediaLifecycleAttentionText"
+                            Text="--"
+                            FontSize="20"
+                            FontWeight="SemiBold" />
+                        <TextBlock Text="Failures or unavailable sources" Classes="dim" />
+                      </StackPanel>
+                    </Border>
+                  </Grid>
+
+                  <Grid ColumnDefinitions="2.2*,1*" ColumnSpacing="10">
+                    <Border Classes="card">
+                      <Grid RowDefinitions="Auto,*" RowSpacing="10">
+                        <Grid ColumnDefinitions="*,Auto">
+                          <StackPanel>
+                            <TextBlock Text="Correlated media" Classes="sectionTitle" />
+                            <TextBlock
+                                Text="Arr work, active transfers, recent completions and Plex playback joined by conservative title evidence."
+                                Classes="pageSubtitle"
+                                Margin="0,3,0,0"
+                                TextWrapping="Wrap" />
+                          </StackPanel>
+
+                          <TextBlock
+                              Grid.Column="1"
+                              x:Name="MediaLifecycleItemCountText"
+                              Text="--"
+                              Classes="dim"
+                              VerticalAlignment="Center" />
+                        </Grid>
+
+                        <Grid Grid.Row="1">
+                          <ListBox
+                              x:Name="MediaLifecycleItemsList"
+                              Classes="dataList"
+                              IsVisible="False"
+                              MaxHeight="620">
+                            <ListBox.ItemTemplate>
+                              <DataTemplate x:CompileBindings="False">
+                                <Border Classes="selectionRow" Margin="0,0,0,7" Padding="12">
+                                  <Grid ColumnDefinitions="2.2*,1*,1*,1.2*" ColumnSpacing="12">
+                                    <StackPanel Spacing="3">
+                                      <TextBlock
+                                          Text="{ReflectionBinding Title}"
+                                          FontWeight="SemiBold"
+                                          TextWrapping="Wrap" />
+                                      <TextBlock
+                                          Text="{ReflectionBinding Evidence}"
+                                          Classes="dim"
+                                          FontSize="9.5"
+                                          TextWrapping="Wrap" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                      <TextBlock Text="PIPELINE" Classes="eyebrow" />
+                                      <TextBlock
+                                          Text="{ReflectionBinding Stage}"
+                                          FontWeight="SemiBold" />
+                                      <TextBlock
+                                          Text="{ReflectionBinding MediaType}"
+                                          Classes="dim" />
+                                      <TextBlock
+                                          Text="{ReflectionBinding ManagedBy}"
+                                          Classes="dim"
+                                          FontSize="9.5" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2" Spacing="3">
+                                      <TextBlock Text="TRANSFER" Classes="eyebrow" />
+                                      <TextBlock Text="{ReflectionBinding DownloadClient}" />
+                                      <TextBlock
+                                          Text="{ReflectionBinding Progress}"
+                                          FontWeight="SemiBold" />
+                                      <TextBlock
+                                          Text="{ReflectionBinding Remaining}"
+                                          Classes="dim" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="3" Spacing="3">
+                                      <TextBlock Text="PLEX / CONFIDENCE" Classes="eyebrow" />
+                                      <TextBlock
+                                          Text="{ReflectionBinding Plex}"
+                                          TextWrapping="Wrap" />
+                                      <TextBlock
+                                          Text="{ReflectionBinding Confidence}"
+                                          Classes="dim"
+                                          TextWrapping="Wrap" />
+                                    </StackPanel>
+                                  </Grid>
+                                </Border>
+                              </DataTemplate>
+                            </ListBox.ItemTemplate>
+                          </ListBox>
+
+                          <Border
+                              x:Name="MediaLifecycleEmptyState"
+                              Classes="emptyState"
+                              IsVisible="True">
+                            <TextBlock
+                                x:Name="MediaLifecycleEmptyText"
+                                Text="Lifecycle evidence is loading."
+                                Classes="muted"
+                                TextWrapping="Wrap" />
+                          </Border>
+                        </Grid>
+                      </Grid>
+                    </Border>
+
+                    <StackPanel Grid.Column="1" Spacing="10">
+                      <Border Classes="card">
+                        <Grid RowDefinitions="Auto,*" RowSpacing="9">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel>
+                              <TextBlock Text="Source health" Classes="sectionTitle" />
+                              <TextBlock
+                                  x:Name="MediaLifecycleSourceSummaryText"
+                                  Text="Waiting for configured application telemetry."
+                                  Classes="pageSubtitle"
+                                  Margin="0,3,0,0"
+                                  TextWrapping="Wrap" />
+                            </StackPanel>
+                            <TextBlock
+                                Grid.Column="1"
+                                x:Name="MediaLifecycleSourceCountText"
+                                Text="--"
+                                Classes="dim"
+                                VerticalAlignment="Center" />
+                          </Grid>
+
+                          <ListBox
+                              Grid.Row="1"
+                              x:Name="MediaLifecycleSourcesList"
+                              Classes="dataList"
+                              MaxHeight="330">
+                            <ListBox.ItemTemplate>
+                              <DataTemplate x:CompileBindings="False">
+                                <Border Classes="selectionRow" Margin="0,0,0,6" Padding="10">
+                                  <Grid ColumnDefinitions="110,90,*" ColumnSpacing="9">
+                                    <TextBlock
+                                        Text="{ReflectionBinding Source}"
+                                        FontWeight="SemiBold" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Text="{ReflectionBinding State}" />
+                                    <TextBlock
+                                        Grid.Column="2"
+                                        Text="{ReflectionBinding Summary}"
+                                        Classes="dim"
+                                        FontSize="9.5"
+                                        TextWrapping="Wrap" />
+                                  </Grid>
+                                </Border>
+                              </DataTemplate>
+                            </ListBox.ItemTemplate>
+                          </ListBox>
+                        </Grid>
+                      </Border>
+
+                      <Border Classes="card">
+                        <StackPanel Spacing="7">
+                          <TextBlock Text="Interpretation boundary" Classes="sectionTitle" />
+                          <TextBlock
+                              Text="A transfer match requires conservative normalized-title evidence. GraveOps does not inspect storage paths, tracker URLs, credentials or download-client IDs."
+                              Classes="muted"
+                              TextWrapping="Wrap" />
+                          <TextBlock
+                              Text="Plex item availability is claimed only when an active session title matches. Otherwise the view reports Plex server readiness and marks the individual item unverified."
+                              Classes="muted"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+
+                      <Border Classes="card">
+                        <StackPanel Spacing="5">
+                          <TextBlock Text="Lifecycle status" Classes="sectionTitle" />
+                          <TextBlock
+                              x:Name="MediaLifecycleStatusText"
+                              Text="Collecting read-only Arr, download-client and Plex evidence."
+                              Classes="muted"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+                    </StackPanel>
+                  </Grid>
+                </StackPanel>
+              </ScrollViewer>
+            </Grid>
+
+
             <Grid x:Name="ParityPage" IsVisible="False">
               <Border Classes="card">
                 <Border Classes="emptyState" VerticalAlignment="Center">
