@@ -99,6 +99,7 @@ public partial class MainWindow
 
             await RefreshAsync();
             OnPlexTargetChanged();
+            OnArrTargetChanged();
         }
         catch (Exception exception)
         {

@@ -79,6 +79,58 @@ public static class WindowsTargetCatalog
             $"graveops/target/{targetId.Trim()}/plex-token";
     }
 
+    public static string ApplicationCredentialReferenceFor(
+        string targetId,
+        string applicationId,
+        string secretName)
+    {
+        var target =
+            NormalizeCredentialSegment(
+                targetId,
+                nameof(targetId));
+
+        var application =
+            NormalizeCredentialSegment(
+                applicationId,
+                nameof(applicationId));
+
+        var secret =
+            NormalizeCredentialSegment(
+                secretName,
+                nameof(secretName));
+
+        return
+            $"graveops/target/{target}/application/{application}/{secret}";
+    }
+
+    private static string NormalizeCredentialSegment(
+        string value,
+        string parameterName)
+    {
+        if (string.IsNullOrWhiteSpace(
+                value))
+        {
+            throw new ArgumentException(
+                "Credential reference segments are required.",
+                parameterName);
+        }
+
+        var normalized =
+            value.Trim()
+                .ToLowerInvariant();
+
+        if (normalized.Any(character =>
+                !char.IsLetterOrDigit(character) &&
+                character is not '-' and not '_'))
+        {
+            throw new ArgumentException(
+                "Credential reference segments may contain only letters, numbers, hyphens and underscores.",
+                parameterName);
+        }
+
+        return normalized;
+    }
+
     public static TargetProfile CreateRemote(
         string targetId,
         string displayName,
@@ -358,6 +410,66 @@ public sealed class WindowsTargetSession
             new CredentialReference(
                 WindowsTargetCatalog.PlexCredentialReferenceFor(
                     targetId)),
+            cancellationToken);
+
+    public async Task StoreApplicationSecretAsync(
+        string targetId,
+        string applicationId,
+        string secretName,
+        string value,
+        CancellationToken cancellationToken = default)
+    {
+        var normalized =
+            value?.Trim() ??
+            string.Empty;
+
+        if (normalized.Length is < 8 or > 512 ||
+            normalized.Contains('\r') ||
+            normalized.Contains('\n'))
+        {
+            throw new ArgumentException(
+                "Application secrets must contain 8 to 512 characters on one line.",
+                nameof(value));
+        }
+
+        using var secret =
+            new SecretValue(
+                normalized);
+
+        await _credentialVault.StoreAsync(
+            new CredentialReference(
+                WindowsTargetCatalog.ApplicationCredentialReferenceFor(
+                    targetId,
+                    applicationId,
+                    secretName)),
+            secret,
+            cancellationToken);
+    }
+
+    public Task<SecretValue?> RetrieveApplicationSecretAsync(
+        string targetId,
+        string applicationId,
+        string secretName,
+        CancellationToken cancellationToken = default) =>
+        _credentialVault.RetrieveAsync(
+            new CredentialReference(
+                WindowsTargetCatalog.ApplicationCredentialReferenceFor(
+                    targetId,
+                    applicationId,
+                    secretName)),
+            cancellationToken);
+
+    public Task DeleteApplicationSecretAsync(
+        string targetId,
+        string applicationId,
+        string secretName,
+        CancellationToken cancellationToken = default) =>
+        _credentialVault.DeleteAsync(
+            new CredentialReference(
+                WindowsTargetCatalog.ApplicationCredentialReferenceFor(
+                    targetId,
+                    applicationId,
+                    secretName)),
             cancellationToken);
 
     public async Task<IReadOnlyList<TargetProfile>>

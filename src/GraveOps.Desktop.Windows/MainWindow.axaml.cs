@@ -28,6 +28,10 @@ public partial class MainWindow : Window
                 "Fleet health, discovery and all media applications"),
             ["PlexNav"] = new("PlexPage", "Plex",
                 "Server identity, library and session workspace"),
+            ["SonarrNav"] = new("ArrPage", "Sonarr",
+                "Series health, episode queue and protected API telemetry"),
+            ["RadarrNav"] = new("ArrPage", "Radarr",
+                "Movie health, queue and protected API telemetry"),
             ["QBittorrentNav"] = new("QBittorrentPage", "qBittorrent",
                 "Transfer queue, categories and history workspace"),
             ["LogsNav"] = new("WarningsPage", "Logs",
@@ -61,6 +65,7 @@ public partial class MainWindow : Window
         InitializeLinuxShellParity();
         InitializeServersEditor();
         InitializePlexWorkspace();
+        InitializeArrWorkspace();
 
         Opened += async (_, _) =>
         {
@@ -184,6 +189,25 @@ public partial class MainWindow : Window
         else
         {
             UpdatePlexTimerCadence();
+        }
+
+        if (navigationName.Equals(
+                "SonarrNav",
+                StringComparison.Ordinal))
+        {
+            ActivateWindowsArrWorkspace(
+                "Sonarr");
+        }
+        else if (navigationName.Equals(
+                     "RadarrNav",
+                     StringComparison.Ordinal))
+        {
+            ActivateWindowsArrWorkspace(
+                "Radarr");
+        }
+        else
+        {
+            UpdateArrTimerCadence();
         }
 
         RecordActivity(
@@ -458,6 +482,18 @@ public partial class MainWindow : Window
                     "Plex",
                     StringComparison.OrdinalIgnoreCase));
 
+        var sonarr =
+            integrations.FirstOrDefault(integration =>
+                integration.Name.Equals(
+                    "Sonarr",
+                    StringComparison.OrdinalIgnoreCase));
+
+        var radarr =
+            integrations.FirstOrDefault(integration =>
+                integration.Name.Equals(
+                    "Radarr",
+                    StringComparison.OrdinalIgnoreCase));
+
         var qbittorrent =
             integrations.FirstOrDefault(integration =>
                 integration.Name.Equals(
@@ -488,11 +524,19 @@ public partial class MainWindow : Window
         UpdatePlexDiscovery(
             plex);
 
+        UpdateArrDiscovery(
+            "Sonarr",
+            sonarr);
+
+        UpdateArrDiscovery(
+            "Radarr",
+            radarr);
+
         var qbittorrentVisible =
             qbittorrent is not null;
 
         Get<TextBlock>("AcquisitionGroupLabel").IsVisible =
-            qbittorrentVisible;
+            true;
 
         Get<Button>("QBittorrentNav").IsVisible =
             qbittorrentVisible;
