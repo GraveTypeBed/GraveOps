@@ -359,7 +359,7 @@ public partial class MainWindow
             ResolveIntegrationUrl(
                 integration);
 
-        LinuxPlexSnapshot? plexSnapshot =
+        PlexTelemetrySnapshot? plexSnapshot =
             null;
 
         if (activeTarget &&

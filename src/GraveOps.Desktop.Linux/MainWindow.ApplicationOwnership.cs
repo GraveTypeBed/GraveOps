@@ -303,6 +303,118 @@ public partial class MainWindow
             "IntegrationActionStatusText");
     }
 
+    private bool ActiveTargetHasNavigationApplication(
+        string integrationName) =>
+        _integrations.Any(integration =>
+            integration.ShowInNavigation &&
+            integration.Name.Equals(
+                integrationName,
+                StringComparison.OrdinalIgnoreCase));
+
+    private bool FleetHasNavigationApplication(
+        string integrationName) =>
+        ApplicationNavigationResolver
+            .FindCandidates(
+                _applicationRegistry,
+                integrationName)
+            .Count > 0;
+
+    private bool IsApplicationInventoryStale(
+        string targetId) =>
+        _targetApplicationInventories.TryGetValue(
+            targetId,
+            out var inventory) &&
+        inventory.IsStale;
+
+    private async Task<bool>
+        EnsureNavigationApplicationOwnerActiveAsync(
+            string integrationName)
+    {
+        if (ActiveTargetHasNavigationApplication(
+                integrationName))
+        {
+            return true;
+        }
+
+        var application =
+            ApplicationNavigationResolver
+                .ResolvePreferredOwner(
+                    _applicationRegistry,
+                    integrationName,
+                    _controlPlane.ActiveProfile.Id,
+                    IsApplicationInventoryStale);
+
+        if (application is null)
+            return false;
+
+        var profile =
+            _controlPlane.Profiles.Find(
+                application.OwnerTargetId);
+
+        if (profile is null)
+        {
+            SetControlPlaneState(
+                OpsSeverity.Error,
+                "OWNER MISSING",
+                $"The saved owner target for {integrationName} no longer exists.");
+            return false;
+        }
+
+        try
+        {
+            var ownerIsActive =
+                profile.Id.Equals(
+                    _controlPlane.ActiveProfile.Id,
+                    StringComparison.OrdinalIgnoreCase);
+
+            if (!ownerIsActive)
+            {
+                SetControlPlaneState(
+                    OpsSeverity.Info,
+                    "ACTIVATING OWNER",
+                    $"{integrationName} belongs to {profile.DisplayName}.");
+
+                await SwitchActiveTargetAsync(
+                    profile);
+            }
+            else if (
+                IsApplicationInventoryStale(
+                    profile.Id) ||
+                !_acceptedTargetId.Equals(
+                    profile.Id,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                await RefreshAsync();
+            }
+        }
+        catch (Exception exception)
+        {
+            SetControlPlaneState(
+                OpsSeverity.Error,
+                "TARGET SWITCH FAILED",
+                exception.Message);
+            return false;
+        }
+
+        var ready =
+            _controlPlane.ActiveProfile.Id.Equals(
+                profile.Id,
+                StringComparison.OrdinalIgnoreCase) &&
+            _acceptedTargetId.Equals(
+                profile.Id,
+                StringComparison.OrdinalIgnoreCase);
+
+        if (!ready)
+        {
+            SetControlPlaneState(
+                OpsSeverity.Warning,
+                "TARGET NOT READY",
+                $"Could not refresh {profile.DisplayName} before opening {integrationName}.");
+        }
+
+        return ready;
+    }
+
     private static ApplicationInstance
         CreateApplicationInstance(
             LinuxHostProfile profile,

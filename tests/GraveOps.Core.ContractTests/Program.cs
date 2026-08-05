@@ -3,6 +3,7 @@ using GraveOps.Core.Providers;
 using GraveOps.Core.Security;
 using GraveOps.Core.Snapshots;
 using GraveOps.Core.Targets;
+using GraveOps.Core.Telemetry;
 
 var tests = new (string Name, Action Run)[]
 {
@@ -13,12 +14,19 @@ var tests = new (string Name, Action Run)[]
     ("application requires owner target", ApplicationRequiresOwnerTarget),
     ("application registry preserves other target inventories", ApplicationRegistryPreservesOtherTargets),
     ("application registry resolves and enforces owner target", ApplicationRegistryResolvesAndEnforcesOwner),
+    ("fleet navigation resolves remote application owner", FleetNavigationResolvesRemoteApplicationOwner),
     ("shared identity catalog preserves product categories", SharedIdentityCatalogPreservesProductCategories),
     ("classifier distinguishes Plex server and desktop", ClassifierDistinguishesPlexServerAndDesktop),
     ("classifier distinguishes qBittorrent desktop and Web UI", ClassifierDistinguishesQBittorrentDesktopAndWebUi),
     ("classifier recognizes container hosted applications", ClassifierRecognizesContainerHostedApplications),
     ("classifier canonicalizes product aliases", ClassifierCanonicalizesProductAliases),
     ("classifier preserves supporting service identity", ClassifierPreservesSupportingServiceIdentity),
+    ("telemetry contracts are platform neutral", TelemetryContractsArePlatformNeutral),
+    ("telemetry envelope preserves ownership", TelemetryEnvelopePreservesOwnership),
+    ("telemetry envelope detects stale snapshots", TelemetryEnvelopeDetectsStaleSnapshots),
+    ("telemetry health classifier normalizes states", TelemetryHealthClassifierNormalizesStates),
+    ("shared telemetry snapshots expose capture time", SharedTelemetrySnapshotsExposeCaptureTime),
+    ("Pi-hole telemetry formats shared metrics", PiHoleTelemetryFormatsSharedMetrics),
     ("application cache omits endpoints and secrets", ApplicationCacheOmitsEndpointsAndSecrets),
     ("application cache round trips safe ownership", ApplicationCacheRoundTripsSafeOwnership),
     ("application cache ignores malformed documents", ApplicationCacheIgnoresMalformedDocuments),
@@ -228,6 +236,129 @@ static void ApplicationRegistryResolvesAndEnforcesOwner()
     }
 }
 
+static void FleetNavigationResolvesRemoteApplicationOwner()
+{
+    var registry =
+        new ApplicationRegistry();
+
+    registry.ReplaceTargetInventory(
+        "local-linux",
+        new[]
+        {
+            CreateApplication(
+                "plex-local",
+                "Plex",
+                "Plex",
+                "local-linux") with
+            {
+                Metadata =
+                    NavigationMetadata(
+                        visible: true)
+            }
+        });
+
+    registry.ReplaceTargetInventory(
+        "pi-hole-old",
+        new[]
+        {
+            CreateApplication(
+                "pihole-old",
+                "Pi-hole",
+                "Pi-hole",
+                "pi-hole-old") with
+            {
+                Metadata =
+                    NavigationMetadata(
+                        visible: true)
+            }
+        });
+
+    registry.ReplaceTargetInventory(
+        "pi-hole-current",
+        new[]
+        {
+            CreateApplication(
+                "pihole-current",
+                "Pi-hole",
+                "Pi-hole",
+                "pi-hole-current") with
+            {
+                Metadata =
+                    NavigationMetadata(
+                        visible: true)
+            }
+        });
+
+    registry.ReplaceTargetInventory(
+        "hidden-target",
+        new[]
+        {
+            CreateApplication(
+                "pihole-hidden",
+                "Pi-hole",
+                "Pi-hole",
+                "hidden-target") with
+            {
+                Metadata =
+                    NavigationMetadata(
+                        visible: false)
+            }
+        });
+
+    var candidates =
+        ApplicationNavigationResolver
+            .FindCandidates(
+                registry,
+                "Pi-hole");
+
+    Assert(
+        candidates.Count == 2,
+        "Fleet navigation did not preserve visible remote owners or excluded a hidden application.");
+
+    var preferred =
+        ApplicationNavigationResolver
+            .ResolvePreferredOwner(
+                registry,
+                "Pi-hole",
+                "local-linux",
+                targetId =>
+                    targetId.Equals(
+                        "pi-hole-old",
+                        StringComparison.OrdinalIgnoreCase));
+
+    Assert(
+        preferred?.OwnerTargetId ==
+        "pi-hole-current",
+        "Fleet navigation did not resolve the current remote application owner.");
+
+    var activeOwner =
+        ApplicationNavigationResolver
+            .ResolvePreferredOwner(
+                registry,
+                "Pi-hole",
+                "pi-hole-old",
+                targetId =>
+                    targetId.Equals(
+                        "pi-hole-old",
+                        StringComparison.OrdinalIgnoreCase));
+
+    Assert(
+        activeOwner?.OwnerTargetId ==
+        "pi-hole-old",
+        "Fleet navigation did not preserve an already-active application owner.");
+}
+
+static IReadOnlyDictionary<string, string>
+    NavigationMetadata(
+        bool visible) =>
+    new Dictionary<string, string>(
+        StringComparer.OrdinalIgnoreCase)
+    {
+        [ApplicationNavigationResolver
+            .ShowInNavigationMetadataKey] =
+            visible.ToString()
+    };
+
 static ApplicationInstance CreateApplication(
     string id,
     string productId,
@@ -411,6 +542,227 @@ static void ClassifierPreservesSupportingServiceIdentity()
         classification.Runtime ==
             ApplicationRuntimeKind.SystemdService,
         "The supporting service runtime was not preserved.");
+}
+
+static void TelemetryContractsArePlatformNeutral()
+{
+    var types =
+        new[]
+        {
+            typeof(PlexTelemetrySnapshot),
+            typeof(ArrLiveTelemetrySnapshot),
+            typeof(DownloadClientTelemetrySnapshot),
+            typeof(PiHoleTelemetrySnapshot),
+            typeof(IApplicationTelemetrySnapshot),
+            typeof(IApplicationTelemetryAdapter<,>)
+        };
+
+    Assert(
+        types.All(type =>
+            type.Namespace ==
+            "GraveOps.Core.Telemetry"),
+        "A shared telemetry contract remained in a platform namespace.");
+
+    Assert(
+        !types.Any(type =>
+            type.Name.StartsWith(
+                "Linux",
+                StringComparison.OrdinalIgnoreCase) ||
+            type.Name.StartsWith(
+                "Windows",
+                StringComparison.OrdinalIgnoreCase)),
+        "A shared telemetry contract retained a platform prefix.");
+}
+
+static void TelemetryEnvelopePreservesOwnership()
+{
+    var sampledAt =
+        DateTimeOffset.UtcNow;
+
+    var snapshot =
+        new PlexTelemetrySnapshot
+        {
+            State =
+                "Online",
+            SampledAt =
+                sampledAt
+        };
+
+    var envelope =
+        new ApplicationTelemetryEnvelope<
+            PlexTelemetrySnapshot>(
+            "local-linux",
+            "plex-local",
+            "Plex",
+            ApplicationTelemetrySourceKind.Hybrid,
+            sampledAt,
+            snapshot,
+            Array.Empty<string>());
+
+    envelope.Validate();
+
+    Assert(
+        envelope.TargetId == "local-linux",
+        "Telemetry target ownership changed.");
+    Assert(
+        envelope.ApplicationId == "plex-local",
+        "Telemetry application ownership changed.");
+    Assert(
+        envelope.ProductId == "Plex",
+        "Telemetry product identity changed.");
+}
+
+static void TelemetryEnvelopeDetectsStaleSnapshots()
+{
+    var now =
+        DateTimeOffset.UtcNow;
+
+    var snapshot =
+        new DownloadClientTelemetrySnapshot
+        {
+            ClientKey =
+                "qBittorrent",
+            SampledAt =
+                now.AddMinutes(-10)
+        };
+
+    var envelope =
+        new ApplicationTelemetryEnvelope<
+            DownloadClientTelemetrySnapshot>(
+            "local-linux",
+            "qbit-local",
+            "qBittorrent",
+            ApplicationTelemetrySourceKind.ApplicationApi,
+            now,
+            snapshot,
+            Array.Empty<string>());
+
+    Assert(
+        envelope.IsStale(
+            TimeSpan.FromMinutes(5),
+            now),
+        "An old telemetry snapshot was treated as current.");
+
+    Assert(
+        !envelope.IsStale(
+            TimeSpan.FromMinutes(15),
+            now),
+        "A telemetry snapshot inside the freshness window was stale.");
+}
+
+static void TelemetryHealthClassifierNormalizesStates()
+{
+    Assert(
+        ApplicationTelemetryHealthClassifier
+            .FromState("ONLINE") ==
+        ApplicationTelemetryHealth.Healthy,
+        "ONLINE did not normalize to healthy.");
+
+    Assert(
+        ApplicationTelemetryHealthClassifier
+            .FromState("blocking disabled") ==
+        ApplicationTelemetryHealth.Warning,
+        "Disabled blocking did not normalize to warning.");
+
+    Assert(
+        ApplicationTelemetryHealthClassifier
+            .FromState("DNS OFFLINE") ==
+        ApplicationTelemetryHealth.Error,
+        "DNS offline did not normalize to error.");
+
+    Assert(
+        ApplicationTelemetryHealthClassifier
+            .FromState(string.Empty) ==
+        ApplicationTelemetryHealth.Unknown,
+        "An empty state did not normalize to unknown.");
+}
+
+static void SharedTelemetrySnapshotsExposeCaptureTime()
+{
+    var capturedAt =
+        DateTimeOffset.UtcNow;
+
+    IApplicationTelemetrySnapshot plex =
+        new PlexTelemetrySnapshot
+        {
+            SampledAt =
+                capturedAt
+        };
+
+    IApplicationTelemetrySnapshot download =
+        new DownloadClientTelemetrySnapshot
+        {
+            SampledAt =
+                capturedAt
+        };
+
+    IApplicationTelemetrySnapshot arr =
+        new ArrLiveTelemetrySnapshot(
+            capturedAt,
+            Array.Empty<ArrServiceTelemetryRow>(),
+            Array.Empty<ArrWorkItemRow>(),
+            "ONLINE",
+            "--",
+            "0",
+            "0");
+
+    Assert(
+        plex.CapturedAt == capturedAt,
+        "Plex capture time was not exposed through the shared contract.");
+    Assert(
+        download.CapturedAt == capturedAt,
+        "Download-client capture time was not exposed through the shared contract.");
+    Assert(
+        arr.CapturedAt == capturedAt,
+        "Arr capture time was not exposed through the shared contract.");
+}
+
+static void PiHoleTelemetryFormatsSharedMetrics()
+{
+    var snapshot =
+        new PiHoleTelemetrySnapshot(
+            DateTimeOffset.UtcNow,
+            ApplicationTelemetryHealth.Healthy,
+            "HEALTHY",
+            DnsOnline: true,
+            BlockingEnabled: true,
+            CoreVersion: "v6",
+            WebVersion: "v6",
+            FtlVersion: "v6",
+            Host: "raspberrypi",
+            Uptime: "2 days",
+            Load: "0.2",
+            Temperature: "40.0 °C",
+            Queries: 1000,
+            Blocked: 250,
+            PercentBlocked: 25.0,
+            ActiveClients: 12,
+            TotalClients: 20,
+            QueryRate: 1.5,
+            GravityDomains: 200000,
+            GravityUpdatedAt:
+                DateTimeOffset.Now.AddHours(-2),
+            WebUrl:
+                "http://example.invalid/admin",
+            RawEvidence:
+                string.Empty);
+
+    Assert(
+        snapshot.QueriesText.Contains(
+            "1",
+            StringComparison.Ordinal),
+        "Pi-hole query formatting returned no value.");
+    Assert(
+        snapshot.PercentBlockedText == "25.0%",
+        "Pi-hole blocked percentage formatting changed.");
+    Assert(
+        snapshot.ClientText.Contains(
+            "12",
+            StringComparison.Ordinal) &&
+        snapshot.ClientText.Contains(
+            "20",
+            StringComparison.Ordinal),
+        "Pi-hole client formatting changed.");
 }
 
 static void ApplicationCacheOmitsEndpointsAndSecrets()

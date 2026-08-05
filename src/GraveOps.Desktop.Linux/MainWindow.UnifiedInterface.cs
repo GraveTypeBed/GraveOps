@@ -1738,9 +1738,9 @@ public partial class MainWindow
                             ? sample
                             : null)
                     .Where(item => item is not null)
-                    .Cast<LinuxDownloadClientSnapshot>()
+                    .Cast<DownloadClientTelemetrySnapshot>()
                     .ToArray()
-                : Array.Empty<LinuxDownloadClientSnapshot>();
+                : Array.Empty<DownloadClientTelemetrySnapshot>();
         var activeTransfers =
             downloadSnapshots.Sum(item =>
                 item.ActiveCount);

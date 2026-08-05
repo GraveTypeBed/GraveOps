@@ -33,7 +33,7 @@ public partial class MainWindow
 
     private readonly Dictionary<
         string,
-        LinuxPlexSnapshot>
+        PlexTelemetrySnapshot>
         _plexCache =
             new(
                 StringComparer.OrdinalIgnoreCase);
@@ -191,7 +191,7 @@ public partial class MainWindow
 
         Get<ListBox>("PlexSessionsList")
             .ItemsSource =
-            Array.Empty<LinuxPlexSessionRow>();
+            Array.Empty<PlexSessionTelemetry>();
 
         Get<ListBox>("PlexSessionsList")
             .IsVisible =
@@ -219,7 +219,7 @@ public partial class MainWindow
     }
 
     private void ApplyPlexSnapshot(
-        LinuxPlexSnapshot snapshot)
+        PlexTelemetrySnapshot snapshot)
     {
         var severity =
             PlexSeverity(
@@ -302,7 +302,7 @@ public partial class MainWindow
 
         var sessions =
             snapshot.Sessions ??
-            new List<LinuxPlexSessionRow>();
+            new List<PlexSessionTelemetry>();
 
         var list =
             Get<ListBox>("PlexSessionsList");

@@ -6,7 +6,11 @@ namespace GraveOps.Desktop.Linux;
 
 public partial class MainWindow
 {
-    private PiHoleWorkspaceSnapshot?
+    private readonly LinuxPiHoleTelemetryAdapter
+        _piHoleTelemetry =
+            new();
+
+    private PiHoleTelemetrySnapshot?
         _piHoleSnapshot;
     private bool _piHoleCaptureBusy;
 
@@ -46,10 +50,11 @@ public partial class MainWindow
         try
         {
             _piHoleSnapshot =
-                await PiHoleWorkspaceService.CaptureAsync(
-                    _controlPlane,
-                    _controlPlane.ActiveProfile,
-                    PiHoleVerifiedEndpoint());
+                await _piHoleTelemetry.CaptureAsync(
+                    new LinuxPiHoleTelemetryContext(
+                        _controlPlane,
+                        _controlPlane.ActiveProfile,
+                        PiHoleVerifiedEndpoint()));
             PopulatePiHoleWorkspace();
 
             _controlPlane.State.RecordActivity(

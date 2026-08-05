@@ -24,7 +24,7 @@ public partial class MainWindow
 
     private readonly Dictionary<
         string,
-        LinuxDownloadClientSnapshot>
+        DownloadClientTelemetrySnapshot>
         _downloadClientCache =
             new(
                 StringComparer.OrdinalIgnoreCase);
@@ -329,7 +329,7 @@ public partial class MainWindow
     }
 
     private void ApplyDownloadClientSnapshot(
-        LinuxDownloadClientSnapshot snapshot)
+        DownloadClientTelemetrySnapshot snapshot)
     {
         var isQbit =
             snapshot.ClientKey.Equals(
@@ -516,15 +516,15 @@ public partial class MainWindow
     }
 
     private void SetDownloadClientCollections(
-        LinuxDownloadClientSnapshot? snapshot)
+        DownloadClientTelemetrySnapshot? snapshot)
     {
         var queue =
             snapshot?.Queue ??
-            new List<LinuxDownloadQueueRow>();
+            new List<DownloadQueueTelemetry>();
 
         var history =
             snapshot?.History ??
-            new List<LinuxDownloadHistoryRow>();
+            new List<DownloadHistoryTelemetry>();
 
         var isQbit =
             _activeDownloadClient.Equals(
@@ -542,11 +542,11 @@ public partial class MainWindow
         qbitQueueList.ItemsSource =
             isQbit
                 ? queue
-                : Array.Empty<LinuxDownloadQueueRow>();
+                : Array.Empty<DownloadQueueTelemetry>();
 
         sabQueueList.ItemsSource =
             isQbit
-                ? Array.Empty<LinuxDownloadQueueRow>()
+                ? Array.Empty<DownloadQueueTelemetry>()
                 : queue;
 
         qbitQueueList.IsVisible =
@@ -659,8 +659,9 @@ public partial class MainWindow
 
             var snapshot =
                 await _downloadClientTelemetry.CaptureAsync(
-                    _controlPlane,
-                    requestedClient);
+                    new LinuxDownloadClientTelemetryContext(
+                        _controlPlane,
+                        requestedClient));
 
             _downloadClientCache[requestedClient] =
                 snapshot;

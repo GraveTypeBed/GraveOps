@@ -12,83 +12,35 @@ public enum PiHoleControlAction
     ReloadDns
 }
 
-public sealed record PiHoleWorkspaceSnapshot(
-    DateTimeOffset CapturedAt,
-    OpsSeverity Severity,
-    string State,
-    bool DnsOnline,
-    bool BlockingEnabled,
-    string CoreVersion,
-    string WebVersion,
-    string FtlVersion,
-    string Host,
-    string Uptime,
-    string Load,
-    string Temperature,
-    long? Queries,
-    long? Blocked,
-    double? PercentBlocked,
-    long? ActiveClients,
-    long? TotalClients,
-    double? QueryRate,
-    long? GravityDomains,
-    DateTimeOffset? GravityUpdatedAt,
-    string WebUrl,
-    string RawEvidence)
-{
-    public string QueriesText =>
-        Queries is { } value
-            ? value.ToString("N0", CultureInfo.CurrentCulture)
-            : "--";
-
-    public string BlockedText =>
-        Blocked is { } value
-            ? value.ToString("N0", CultureInfo.CurrentCulture)
-            : "--";
-
-    public string PercentBlockedText =>
-        PercentBlocked is { } value
-            ? $"{value:0.0}%"
-            : "--";
-
-    public string ClientText =>
-        ActiveClients is { } active
-            ? TotalClients is { } total
-                ? $"{active:N0} active · {total:N0} known"
-                : $"{active:N0} active"
-            : "--";
-
-    public string QueryRateText =>
-        QueryRate is { } value && value > 0
-            ? $"{value:0.0} q/s"
-            : "--";
-
-    public string GravityText =>
-        GravityDomains is { } value
-            ? value.ToString("N0", CultureInfo.CurrentCulture)
-            : "--";
-
-    public string GravityAgeText
-    {
-        get
-        {
-            if (GravityUpdatedAt is not { } updated)
-                return "Update time unavailable";
-
-            var age = DateTimeOffset.Now - updated;
-            return age.TotalDays >= 1
-                ? $"Updated {age.TotalDays:0.#}d ago"
-                : age.TotalHours >= 1
-                    ? $"Updated {age.TotalHours:0.#}h ago"
-                    : $"Updated {Math.Max(0, age.TotalMinutes):0}m ago";
-        }
-    }
-}
-
 public sealed record PiHoleControlResult(
     bool Success,
     string Summary,
     string Detail);
+
+internal sealed record LinuxPiHoleTelemetryContext(
+    LinuxControlPlaneCoordinator ControlPlane,
+    LinuxHostProfile Profile,
+    string? VerifiedEndpoint);
+
+internal sealed class LinuxPiHoleTelemetryAdapter :
+    IApplicationTelemetryAdapter<
+        LinuxPiHoleTelemetryContext,
+        PiHoleTelemetrySnapshot>
+{
+    public Task<PiHoleTelemetrySnapshot> CaptureAsync(
+        LinuxPiHoleTelemetryContext context,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            context);
+
+        return PiHoleWorkspaceService.CaptureAsync(
+            context.ControlPlane,
+            context.Profile,
+            context.VerifiedEndpoint,
+            cancellationToken);
+    }
+}
 
 public static class PiHoleWorkspaceService
 {
@@ -119,7 +71,7 @@ public static class PiHoleWorkspaceService
         true
         """;
 
-    public static async Task<PiHoleWorkspaceSnapshot> CaptureAsync(
+    public static async Task<PiHoleTelemetrySnapshot> CaptureAsync(
         LinuxControlPlaneCoordinator controlPlane,
         LinuxHostProfile profile,
         string? verifiedEndpoint,
@@ -253,7 +205,7 @@ public static class PiHoleWorkspaceService
             .TrimEnd('/');
     }
 
-    private static PiHoleWorkspaceSnapshot Parse(
+    private static PiHoleTelemetrySnapshot Parse(
         string output,
         LinuxHostProfile profile,
         string? verifiedEndpoint)
@@ -383,10 +335,10 @@ public static class PiHoleWorkspaceService
 
         var severity =
             !dnsOnline
-                ? OpsSeverity.Error
+                ? ApplicationTelemetryHealth.Error
                 : !blockingEnabled
-                    ? OpsSeverity.Warning
-                    : OpsSeverity.Healthy;
+                    ? ApplicationTelemetryHealth.Warning
+                    : ApplicationTelemetryHealth.Healthy;
         var state =
             !dnsOnline
                 ? "DNS OFFLINE"
@@ -394,7 +346,7 @@ public static class PiHoleWorkspaceService
                     ? "BLOCKING DISABLED"
                     : "HEALTHY";
 
-        return new PiHoleWorkspaceSnapshot(
+        return new PiHoleTelemetrySnapshot(
             DateTimeOffset.Now,
             severity,
             state,

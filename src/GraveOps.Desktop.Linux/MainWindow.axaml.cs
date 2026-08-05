@@ -189,15 +189,28 @@ public partial class MainWindow : Window
     private void ToggleMaximized() =>
         WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
 
-    private void NavigationButton_OnClick(
+    private async void NavigationButton_OnClick(
         object? sender,
         RoutedEventArgs e)
     {
-        if (sender is Button button &&
-            !string.IsNullOrWhiteSpace(button.Name))
+        if (sender is not Button button ||
+            string.IsNullOrWhiteSpace(
+                button.Name))
         {
-            Navigate(button.Name);
+            return;
         }
+
+        if (IntegrationNavigationTargets.TryGetValue(
+                button.Name,
+                out var integrationName) &&
+            !await EnsureNavigationApplicationOwnerActiveAsync(
+                integrationName))
+        {
+            return;
+        }
+
+        Navigate(
+            button.Name);
     }
 
     private void LibraryGroupButton_OnClick(
@@ -361,11 +374,10 @@ public partial class MainWindow : Window
     private void UpdateIntegrationNavigation()
     {
         bool Detected(string name) =>
-            _integrations.Any(item =>
-                item.ShowInNavigation &&
-                item.Name.Equals(
-                    name,
-                    StringComparison.OrdinalIgnoreCase));
+            ActiveTargetHasNavigationApplication(
+                name) ||
+            FleetHasNavigationApplication(
+                name);
 
         void SetButton(string buttonName, string integrationName) =>
             Get<Button>(buttonName).IsVisible =

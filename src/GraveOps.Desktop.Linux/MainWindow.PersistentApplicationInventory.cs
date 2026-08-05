@@ -144,6 +144,12 @@ public partial class MainWindow
                 cached,
                 "visible",
                 fallback: true);
+        var showInNavigation =
+            CachedBoolean(
+                cached,
+                ApplicationNavigationResolver
+                    .ShowInNavigationMetadataKey,
+                fallback: false);
 
         return new OpsIntegration(
             cached.ProductId,
@@ -175,7 +181,7 @@ public partial class MainWindow
             IsVisible =
                 visible,
             ShowInNavigation =
-                false,
+                showInNavigation,
             Provenance =
                 "Persistent redacted cache"
         };

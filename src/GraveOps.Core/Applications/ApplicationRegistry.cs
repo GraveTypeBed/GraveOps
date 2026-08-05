@@ -11,6 +11,9 @@ public interface IApplicationRegistry
     IReadOnlyList<ApplicationInstance> ForTarget(
         string targetId);
 
+    IReadOnlyList<ApplicationInstance> ForProduct(
+        string productId);
+
     ApplicationInstance? Find(
         string applicationId);
 
@@ -164,6 +167,35 @@ public sealed class ApplicationRegistry :
                     StringComparer.OrdinalIgnoreCase)
                 .ThenBy(item =>
                     item.Id,
+                    StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+    }
+
+    public IReadOnlyList<ApplicationInstance> ForProduct(
+        string productId)
+    {
+        if (string.IsNullOrWhiteSpace(
+                productId))
+        {
+            return Array.Empty<ApplicationInstance>();
+        }
+
+        lock (_sync)
+        {
+            return _applications.Values
+                .Where(application =>
+                    application.ProductId.Equals(
+                        productId.Trim(),
+                        StringComparison.OrdinalIgnoreCase))
+                .OrderBy(application =>
+                    application.OwnerTargetId,
+                    StringComparer.OrdinalIgnoreCase)
+                .ThenBy(application =>
+                    application.DisplayName,
+                    StringComparer.OrdinalIgnoreCase)
+                .ThenBy(application =>
+                    application.Id,
                     StringComparer.OrdinalIgnoreCase)
                 .ToArray();
         }
