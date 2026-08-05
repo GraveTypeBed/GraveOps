@@ -1215,383 +1215,34 @@ public sealed class LinuxControlPlaneCoordinator
 internal sealed class RemoteLinuxHostProbe :
     ILocalHostProbe
 {
-    private static readonly (
-        string Name,
-        string[] Tokens)[] IntegrationCatalog =
-    {
-        ("Plex", new[] { "plex" }),
-        ("Tautulli", new[] { "tautulli" }),
-        ("Kometa", new[] { "kometa", "plex-meta-manager" }),
-        ("Sonarr", new[] { "sonarr" }),
-        ("Radarr", new[] { "radarr" }),
-        ("Lidarr", new[] { "lidarr" }),
-        ("Prowlarr", new[] { "prowlarr" }),
-        ("Readarr", new[] { "readarr" }),
-        ("Whisparr", new[] { "whisparr" }),
-        ("Mylar3", new[] { "mylar3", "mylar" }),
-        ("Bazarr", new[] { "bazarr" }),
-        ("SABnzbd", new[] { "sabnzbd" }),
-        ("qBittorrent", new[] { "qbittorrent" }),
-        ("Decypharr", new[] { "decypharr" }),
-        ("Recyclarr", new[] { "recyclarr" }),
-        ("Configarr", new[] { "configarr" }),
-        ("Profilarr", new[] { "profilarr" }),
-        ("Cleanuparr", new[] { "cleanuparr" }),
-        ("Maintainerr", new[] { "maintainerr" }),
-        ("Unpackerr", new[] { "unpackerr" }),
-        ("autobrr", new[] { "autobrr" }),
-        ("Zurg", new[] { "zurg" }),
-        ("Tdarr", new[] { "tdarr" }),
-        ("Seerr", new[] { "seerr", "overseerr", "jellyseerr" }),
-        ("DUMB", new[] { "dumb" })
-    };
-
-    private const char Separator = '\u001f';
-
-    private const string CaptureScript =
-        """
-        set +e
-        export LC_ALL=C
-
-        emit() {
-          printf '%s\037%s\n' "$1" "$2"
-        }
-
-        emit HOSTNAME "$(hostname 2>/dev/null)"
-        if [ -r /etc/os-release ]; then
-          . /etc/os-release
-          emit OS "${PRETTY_NAME:-Linux}"
-        else
-          emit OS "Linux"
-        fi
-        emit KERNEL "$(uname -r 2>/dev/null)"
-        emit UPTIME "$(uptime -p 2>/dev/null)"
-        emit SYSTEM "$(systemctl is-system-running 2>/dev/null || true)"
-        emit DOCKER "$(systemctl is-active docker 2>/dev/null || printf 'not-found')"
-        emit CPU "$(lscpu 2>/dev/null | awk -F: '/Model name/ {sub(/^[ \t]+/, "", $2); print $2; exit}')"
-        emit LOAD "$(awk '{print $1 " " $2 " " $3}' /proc/loadavg 2>/dev/null)"
-        emit MEMORY "$(free -h 2>/dev/null | awk '/^Mem:/ {print $3 " used / " $2 " total"}')"
-        emit IPS "$(hostname -I 2>/dev/null | xargs)"
-
-        printf '__STORAGE__\n'
-        df -PTh \
-          -x tmpfs \
-          -x devtmpfs \
-          -x squashfs \
-          -x overlay \
-          -x proc \
-          -x sysfs \
-          -x cgroup2 \
-          2>/dev/null |
-          tail -n +2 |
-          while read -r source filesystem size used available percent mountpoint; do
-            printf '%s\037%s\037%s\037%s\037%s\037%s\037%s\n' \
-              "$source" \
-              "$filesystem" \
-              "$size" \
-              "$used" \
-              "$available" \
-              "$percent" \
-              "$mountpoint"
-          done
-
-        printf '__SERVICES__\n'
-        base_units='docker.service ssh.service sshd.service plexmediaserver.service sonarr.service radarr.service lidarr.service prowlarr.service readarr.service whisparr.service bazarr.service sabnzbd.service sabnzbdplus.service qbittorrent.service qbittorrent-nox.service'
-        discovered_units="$(
-          systemctl list-unit-files \
-            --type=service \
-            --no-legend \
-            --no-pager \
-            2>/dev/null |
-            awk '{print $1}' |
-            grep -Ei '(plex|tautulli|kometa|sonarr|radarr|lidarr|prowlarr|readarr|whisparr|mylar|bazarr|sabnzbd|qbittorrent|decypharr|recyclarr|configarr|profilarr|cleanuparr|maintainerr|unpackerr|autobrr|zurg|tdarr|seerr|overseerr|jellyseerr|dumb)' ||
-          true
-        )'
-
-        printf '%s\n' $base_units $discovered_units |
-          sed '/^$/d' |
-          sort -u |
-          while read -r unit; do
-            description="$(systemctl show "$unit" --property=Description --value 2>/dev/null)"
-            active="$(systemctl show "$unit" --property=ActiveState --value 2>/dev/null)"
-            sub="$(systemctl show "$unit" --property=SubState --value 2>/dev/null)"
-            enabled="$(systemctl show "$unit" --property=UnitFileState --value 2>/dev/null)"
-
-            if [ -n "$description$active$sub$enabled" ]; then
-              printf '%s\037%s\037%s\037%s\037%s\n' \
-                "$unit" \
-                "$description" \
-                "$active" \
-                "$sub" \
-                "$enabled"
-            fi
-          done
-
-        printf '__CONTAINERS__\n'
-        if command -v docker >/dev/null 2>&1; then
-          docker ps -a \
-            --format '{{.Names}}\037{{.Image}}\037{{.State}}\037{{.Status}}\037{{.Ports}}' \
-            2>/dev/null ||
-          true
-        fi
-
-        printf '__FAILED__\n'
-        systemctl --failed \
-          --no-legend \
-          --no-pager \
-          2>/dev/null |
-          awk '{print $1}' ||
-        true
-
-        printf '__LOGS__\n'
-        journalctl \
-          -p warning..alert \
-          -n 80 \
-          --no-pager \
-          -o short-iso \
-          2>/dev/null ||
-        true
-        """;
-
-    private readonly LinuxHostProfile _profile;
-    private readonly LinuxCredentialStore _credentials;
-    private readonly string _knownHostsDirectory;
+    private readonly LinuxSnapshotCollector _collector;
 
     public RemoteLinuxHostProbe(
         LinuxHostProfile profile,
         LinuxCredentialStore credentials,
         string knownHostsDirectory)
+        : this(
+            new LinuxSnapshotCollector(
+                new SshLinuxCommandRunner(
+                    new LinuxSshScriptExecutor(
+                        profile,
+                        credentials,
+                        knownHostsDirectory))))
     {
-        _profile = profile;
-        _credentials = credentials;
-        _knownHostsDirectory =
-            knownHostsDirectory;
     }
 
-    public async Task<HostSnapshot> CaptureAsync(
-        CancellationToken cancellationToken = default)
+    internal RemoteLinuxHostProbe(
+        LinuxSnapshotCollector collector)
     {
-        var result =
-            await LinuxSshTransport.RunScriptAsync(
-                _profile,
-                _credentials,
-                _knownHostsDirectory,
-                CaptureScript,
-                suppliedSecret: null,
-                cancellationToken);
-
-        return ParseSnapshot(
-            result.StandardOutput,
-            result.StandardError);
+        _collector = collector ??
+            throw new ArgumentNullException(
+                nameof(collector));
     }
 
-    private static HostSnapshot ParseSnapshot(
-        string output,
-        string standardError)
-    {
-        var header =
-            new Dictionary<string, string>(
-                StringComparer.OrdinalIgnoreCase);
-        var storage =
-            new List<StorageVolumeSnapshot>();
-        var services =
-            new List<ServiceSnapshot>();
-        var containers =
-            new List<DockerContainerSnapshot>();
-        var failed =
-            new List<string>();
-        var logs =
-            new List<string>();
-        var warnings =
-            new List<string>();
-
-        var section = "HEADER";
-
-        foreach (var rawLine in output.Split('\n'))
-        {
-            var line =
-                rawLine.TrimEnd('\r');
-
-            if (line.Length == 0)
-                continue;
-
-            if (line.StartsWith(
-                    "__",
-                    StringComparison.Ordinal) &&
-                line.EndsWith(
-                    "__",
-                    StringComparison.Ordinal))
-            {
-                section = line;
-                continue;
-            }
-
-            var parts = line.Split(Separator);
-
-            switch (section)
-            {
-                case "HEADER":
-                    if (parts.Length >= 2)
-                        header[parts[0]] = parts[1];
-                    break;
-
-                case "__STORAGE__":
-                    if (parts.Length >= 7)
-                    {
-                        storage.Add(
-                            new StorageVolumeSnapshot(
-                                parts[0],
-                                parts[1],
-                                parts[2],
-                                parts[3],
-                                parts[4],
-                                parts[5],
-                                parts[6]));
-                    }
-                    break;
-
-                case "__SERVICES__":
-                    if (parts.Length >= 5)
-                    {
-                        services.Add(
-                            new ServiceSnapshot(
-                                parts[0],
-                                parts[1],
-                                parts[2],
-                                parts[3],
-                                parts[4]));
-                    }
-                    break;
-
-                case "__CONTAINERS__":
-                    if (parts.Length >= 5)
-                    {
-                        containers.Add(
-                            new DockerContainerSnapshot(
-                                parts[0],
-                                parts[1],
-                                parts[2],
-                                parts[3],
-                                parts[4]));
-                    }
-                    break;
-
-                case "__FAILED__":
-                    failed.Add(line);
-                    break;
-
-                case "__LOGS__":
-                    logs.Add(line);
-                    break;
-            }
-        }
-
-        if (!string.IsNullOrWhiteSpace(
-                standardError))
-        {
-            warnings.Add(
-                standardError.Trim());
-        }
-
-        var integrations =
-            DetectIntegrations(
-                services,
-                containers);
-
-        string Read(
-            string key,
-            string fallback) =>
-            header.TryGetValue(
-                key,
-                out var value) &&
-            !string.IsNullOrWhiteSpace(value)
-                ? value
-                : fallback;
-
-        return new HostSnapshot(
-            DateTimeOffset.Now,
-            Read("HOSTNAME", "remote-linux"),
-            Read("OS", "Linux"),
-            Read("KERNEL", "unknown"),
-            Read("UPTIME", "unknown"),
-            Read("SYSTEM", "unknown"),
-            Read("DOCKER", "unknown"),
-            Read("CPU", "unknown"),
-            Read("LOAD", "unknown"),
-            Read("MEMORY", "unknown"),
-            Read("IPS", "unknown"),
-            storage,
-            services,
-            containers,
-            integrations,
-            failed,
-            logs,
-            warnings);
-    }
-
-    private static IReadOnlyList<IntegrationSnapshot>
-        DetectIntegrations(
-            IReadOnlyList<ServiceSnapshot> services,
-            IReadOnlyList<DockerContainerSnapshot> containers)
-    {
-        var rows =
-            new List<IntegrationSnapshot>();
-
-        foreach (var rule in IntegrationCatalog)
-        {
-            foreach (var service in services)
-            {
-                var identity =
-                    $"{service.Unit} {service.Description}";
-
-                if (!rule.Tokens.Any(token =>
-                        identity.Contains(
-                            token,
-                            StringComparison.OrdinalIgnoreCase)))
-                {
-                    continue;
-                }
-
-                rows.Add(
-                    new IntegrationSnapshot(
-                        rule.Name,
-                        "systemd",
-                        $"{service.ActiveState}/{service.SubState}",
-                        service.Unit));
-            }
-
-            foreach (var container in containers)
-            {
-                var identity =
-                    $"{container.Name} {container.Image}";
-
-                if (!rule.Tokens.Any(token =>
-                        identity.Contains(
-                            token,
-                            StringComparison.OrdinalIgnoreCase)))
-                {
-                    continue;
-                }
-
-                rows.Add(
-                    new IntegrationSnapshot(
-                        rule.Name,
-                        "Docker",
-                        container.Status,
-                        container.Name));
-            }
-        }
-
-        return rows
-            .GroupBy(
-                row =>
-                    $"{row.Name}|{row.Kind}|{row.Evidence}",
-                StringComparer.OrdinalIgnoreCase)
-            .Select(group => group.First())
-            .OrderBy(row => row.Name)
-            .ThenBy(row => row.Evidence)
-            .ToArray();
-    }
+    public Task<HostSnapshot> CaptureAsync(
+        CancellationToken cancellationToken = default) =>
+        _collector.CaptureAsync(
+            cancellationToken);
 }
 
 internal static class LinuxSshTransport
@@ -1732,17 +1383,38 @@ internal static class LinuxSshTransport
             string? suppliedSecret,
             CancellationToken cancellationToken)
     {
+        var scan = await ScanFingerprintAsync(
+            profile,
+            cancellationToken);
+
+        return await RunVerifiedScriptAsync(
+            profile,
+            credentials,
+            knownHostsDirectory,
+            script,
+            suppliedSecret,
+            scan,
+            cancellationToken);
+    }
+
+    public static async Task<SshCommandResult>
+        RunVerifiedScriptAsync(
+            LinuxHostProfile profile,
+            LinuxCredentialStore credentials,
+            string knownHostsDirectory,
+            string script,
+            string? suppliedSecret,
+            LinuxHostKeyScanResult scan,
+            CancellationToken cancellationToken)
+    {
         LinuxHostProfileStore.Validate(profile);
+        ArgumentNullException.ThrowIfNull(scan);
 
         if (profile.IsLocal)
         {
             throw new InvalidOperationException(
                 "The SSH transport cannot run against the local provider.");
         }
-
-        var scan = await ScanFingerprintAsync(
-            profile,
-            cancellationToken);
 
         if (!scan.Success)
         {
@@ -1816,6 +1488,44 @@ internal static class LinuxSshTransport
                 "No password is stored for this host. Save it through the Secret Service keyring or use SSH agent authentication.");
         }
 
+        var runtimeDirectory =
+            Environment.GetEnvironmentVariable(
+                "XDG_RUNTIME_DIR");
+        if (string.IsNullOrWhiteSpace(
+                runtimeDirectory))
+        {
+            runtimeDirectory =
+                Path.GetTempPath();
+        }
+
+        var controlDirectory =
+            Path.Combine(
+                runtimeDirectory,
+                "go");
+        Directory.CreateDirectory(
+            controlDirectory);
+
+        if (OperatingSystem.IsLinux())
+        {
+            try
+            {
+                File.SetUnixFileMode(
+                    controlDirectory,
+                    UnixFileMode.UserRead |
+                    UnixFileMode.UserWrite |
+                    UnixFileMode.UserExecute);
+            }
+            catch
+            {
+                // Control-socket permission tightening is best effort.
+            }
+        }
+
+        var controlPath =
+            Path.Combine(
+                controlDirectory,
+                "%C");
+
         var sshArguments = new List<string>
         {
             "-p",
@@ -1832,7 +1542,13 @@ internal static class LinuxSshTransport
             "-o",
             "GlobalKnownHostsFile=/dev/null",
             "-o",
-            "LogLevel=ERROR"
+            "LogLevel=ERROR",
+            "-o",
+            "ControlMaster=auto",
+            "-o",
+            "ControlPersist=30",
+            "-o",
+            $"ControlPath={controlPath}"
         };
 
         switch (profile.Authentication)

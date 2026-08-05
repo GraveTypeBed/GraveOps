@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using GraveOps.Core.Hosts;
 using GraveOps.Platform.Linux;
 
@@ -6,7 +7,11 @@ var tests = new (string Name, Func<Task> Run)[]
     ("collector parses the existing Linux snapshot shape", CollectorParsesSnapshotAsync),
     ("compatibility probe delegates to the collector", CompatibilityProbeMatchesCollectorAsync),
     ("collector preserves nonzero warning behavior", CollectorPreservesWarningsAsync),
-    ("runner cancellation reaches the collector", CollectorHonorsCancellationAsync)
+    ("runner cancellation reaches the collector", CollectorHonorsCancellationAsync),
+    ("SSH runner preserves remote exit and stderr", SshRunnerPreservesExitAsync),
+    ("SSH runner quotes every command argument", SshRunnerQuotesArgumentsAsync),
+    ("SSH runner reads remote text files", SshRunnerReadsTextFileAsync),
+    ("SSH runner reports command timeout", SshRunnerReportsTimeoutAsync)
 };
 
 var failures = 0;
@@ -144,6 +149,148 @@ static async Task CollectorHonorsCancellationAsync()
             .CaptureAsync(cancellation.Token));
 }
 
+static async Task SshRunnerPreservesExitAsync()
+{
+    var executor =
+        new FixtureSshScriptExecutor(
+            (script, _) =>
+            {
+                var marker =
+                    FixtureSshScriptExecutor.FindExitMarker(
+                        script);
+
+                return Task.FromResult(
+                    new LinuxSshScriptResult(
+                        "fixture stdout\n",
+                        $"fixture stderr\n{marker}7\n"));
+            });
+
+    var result =
+        await new SshLinuxCommandRunner(
+                executor)
+            .ExecuteAsync(
+                new LinuxCommandRequest(
+                    "fixture-command",
+                    new[] { "--value" },
+                    "fixture SSH command"));
+
+    Equal(7, result.ExitCode, "SSH exit code");
+    Equal(
+        "fixture stdout",
+        result.StandardOutput,
+        "SSH stdout");
+    Equal(
+        "fixture stderr",
+        result.StandardError,
+        "SSH stderr");
+    Equal(
+        string.Empty,
+        result.FailureMessage,
+        "SSH failure message");
+}
+
+static async Task SshRunnerQuotesArgumentsAsync()
+{
+    var executor =
+        new FixtureSshScriptExecutor(
+            (script, _) =>
+            {
+                var marker =
+                    FixtureSshScriptExecutor.FindExitMarker(
+                        script);
+
+                return Task.FromResult(
+                    new LinuxSshScriptResult(
+                        string.Empty,
+                        $"{marker}0\n"));
+            });
+
+    const string dangerousArgument =
+        "alpha beta'; touch /tmp/graveops-should-not-exist; #";
+
+    var result =
+        await new SshLinuxCommandRunner(
+                executor)
+            .ExecuteAsync(
+                new LinuxCommandRequest(
+                    "printf",
+                    new[]
+                    {
+                        "%s",
+                        dangerousArgument
+                    },
+                    "shell quoting"));
+
+    Equal(0, result.ExitCode, "quoted command exit");
+    True(
+        executor.LastScript.Contains(
+            "'alpha beta'\"'\"'; touch /tmp/graveops-should-not-exist; #'",
+            StringComparison.Ordinal),
+        "single-quoted SSH argument");
+}
+
+static async Task SshRunnerReadsTextFileAsync()
+{
+    var executor =
+        new FixtureSshScriptExecutor(
+            (script, _) =>
+            {
+                var marker =
+                    FixtureSshScriptExecutor.FindExitMarker(
+                        script);
+
+                return Task.FromResult(
+                    new LinuxSshScriptResult(
+                        "remote file content\n",
+                        $"{marker}0\n"));
+            });
+
+    var result =
+        await new SshLinuxCommandRunner(
+                executor)
+            .ReadTextFileAsync(
+                "/etc/os-release");
+
+    True(result.Success, "remote file success");
+    Equal(
+        "remote file content",
+        result.Content,
+        "remote file content");
+    True(
+        executor.LastScript.Contains(
+            "'cat' '--' '/etc/os-release'",
+            StringComparison.Ordinal),
+        "remote cat command");
+}
+
+static async Task SshRunnerReportsTimeoutAsync()
+{
+    var executor =
+        new FixtureSshScriptExecutor(
+            async (_, cancellationToken) =>
+            {
+                await Task.Delay(
+                    Timeout.InfiniteTimeSpan,
+                    cancellationToken);
+
+                return new LinuxSshScriptResult(
+                    string.Empty,
+                    string.Empty);
+            });
+
+    var result =
+        await new SshLinuxCommandRunner(
+                executor)
+            .ExecuteAsync(
+                new LinuxCommandRequest(
+                    "sleep",
+                    new[] { "10" },
+                    "timeout fixture",
+                    TimeSpan.FromMilliseconds(100)));
+
+    True(result.TimedOut, "SSH timeout");
+}
+
 static string TemporaryCachePath() =>
     Path.Combine(
         Path.GetTempPath(),
@@ -186,6 +333,65 @@ static async Task ThrowsAsync<TException>(Func<Task> action)
 
     throw new InvalidOperationException(
         $"Expected {typeof(TException).Name}.");
+}
+
+internal sealed class FixtureSshScriptExecutor :
+    ILinuxSshScriptExecutor
+{
+    private readonly Func<
+        string,
+        CancellationToken,
+        Task<LinuxSshScriptResult>> _handler;
+
+    public FixtureSshScriptExecutor(
+        Func<
+            string,
+            CancellationToken,
+            Task<LinuxSshScriptResult>> handler)
+    {
+        _handler = handler;
+    }
+
+    public string ExecutorId =>
+        "fixture";
+
+    public string CacheKey =>
+        "fixture-ssh";
+
+    public string MachineNameFallback =>
+        "fixture-remote";
+
+    public string LastScript { get; private set; } =
+        string.Empty;
+
+    public async Task<LinuxSshScriptResult> ExecuteScriptAsync(
+        string script,
+        CancellationToken cancellationToken = default)
+    {
+        LastScript = script;
+
+        return await _handler(
+            script,
+            cancellationToken);
+    }
+
+    public static string FindExitMarker(
+        string script)
+    {
+        var match =
+            Regex.Match(
+                script,
+                @"__GRAVEOPS_EXIT_[a-f0-9]{32}__",
+                RegexOptions.CultureInvariant);
+
+        if (!match.Success)
+        {
+            throw new InvalidOperationException(
+                "The generated SSH script did not contain an exit marker.");
+        }
+
+        return match.Value;
+    }
 }
 
 internal sealed class FixtureRunner : ILinuxCommandRunner
