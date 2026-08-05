@@ -22,18 +22,6 @@ public partial class MainWindow
                 item.Value.Subtitle))
             .ToArray();
 
-        _suppressTargetSelection = true;
-
-        Get<ComboBox>("ActiveTargetComboBox").ItemsSource =
-            new[]
-            {
-                new TargetRow(
-                    "Local Windows",
-                    "Native Windows provider")
-            };
-
-        Get<ComboBox>("ActiveTargetComboBox").SelectedIndex = 0;
-        _suppressTargetSelection = false;
 
         Get<ListBox>("CommandPaletteList").ItemsSource =
             _linuxShellCommands;
@@ -62,16 +50,23 @@ public partial class MainWindow
         }
     }
 
-    private void ActiveTargetComboBox_OnSelectionChanged(
+    private async void ActiveTargetComboBox_OnSelectionChanged(
         object? sender,
         SelectionChangedEventArgs e)
     {
         if (_suppressTargetSelection)
             return;
 
-        RecordActivity(
-            "Active target",
-            "Selected the local native Windows provider.");
+        if (Get<ComboBox>(
+                "ActiveTargetComboBox")
+            .SelectedItem is not
+            WindowsTargetRow targetRow)
+        {
+            return;
+        }
+
+        await SelectActiveTargetAsync(
+            targetRow);
     }
 
     private void DashboardQuickModuleButton_OnClick(
@@ -211,18 +206,6 @@ public partial class MainWindow
     private void PopulateLinuxShellParity(
         HostSnapshot snapshot)
     {
-        _suppressTargetSelection = true;
-
-        Get<ComboBox>("ActiveTargetComboBox").ItemsSource =
-            new[]
-            {
-                new TargetRow(
-                    snapshot.Hostname,
-                    $"Local | {snapshot.IpAddresses}")
-            };
-
-        Get<ComboBox>("ActiveTargetComboBox").SelectedIndex = 0;
-        _suppressTargetSelection = false;
 
         SetText("OverviewHostText", snapshot.Hostname);
         SetText(
@@ -261,7 +244,8 @@ public partial class MainWindow
 
         SetText(
             "FooterStatusText",
-            $"{snapshot.Hostname} | Windows provider | read-only");
+            $"{snapshot.Hostname} | " +
+            $"{ActiveTargetConnectionSummary()} | read-only");
     }
 
     private void UpdateLinuxParityPage(
@@ -285,7 +269,4 @@ public partial class MainWindow
         string Title,
         string Subtitle);
 
-    private sealed record TargetRow(
-        string DisplayName,
-        string ConnectionSummary);
 }

@@ -50,7 +50,7 @@ public partial class MainWindow : Window
                 "Capture limitations and read-only operational findings")
         };
 
-    private readonly ILocalHostProbe _hostProbe = new LocalWindowsHostProbe();
+
     private readonly List<ActivityRow> _activity = new();
     private CancellationTokenSource? _refreshCancellation;
     private HostSnapshot? _snapshot;
@@ -62,8 +62,13 @@ public partial class MainWindow : Window
 
         Opened += async (_, _) =>
         {
+            if (!await InitializeTargetSessionAsync())
+                return;
+
             Navigate("DashboardNav");
-            RecordActivity("Client opened", "Windows Avalonia Linux-shell client initialized.");
+            RecordActivity(
+                "Client opened",
+                "Windows Avalonia target-aware client initialized.");
             await RefreshAsync();
         };
     }
@@ -129,6 +134,25 @@ public partial class MainWindow : Window
         if (!Navigation.TryGetValue(navigationName, out var target))
             return;
 
+        if (!WindowsTargetNavigationPolicy.IsSupported(
+                navigationName,
+                _targetSession.CurrentCapabilities))
+        {
+            var reason =
+                WindowsTargetNavigationPolicy.UnsupportedReason(
+                    navigationName);
+
+            SetText(
+                "FooterStatusText",
+                reason);
+
+            RecordActivity(
+                "Navigation blocked",
+                reason);
+
+            return;
+        }
+
         foreach (var pageName in Navigation.Values
                      .Select(item => item.PageName)
                      .Distinct(StringComparer.Ordinal))
@@ -161,33 +185,72 @@ public partial class MainWindow : Window
 
     private async Task RefreshAsync()
     {
-        _refreshCancellation?.Cancel();
-        _refreshCancellation?.Dispose();
-        _refreshCancellation = new CancellationTokenSource();
+        var previousRequest =
+            _refreshCancellation;
 
-        var cancellationToken = _refreshCancellation.Token;
-        var refreshButton = Get<Button>("RefreshButton");
+        var request =
+            new CancellationTokenSource();
 
-        refreshButton.IsEnabled = false;
+        _refreshCancellation =
+            request;
+
+        previousRequest?.Cancel();
+        previousRequest?.Dispose();
+
+        var cancellationToken =
+            request.Token;
+
+        var refreshButton =
+            Get<Button>(
+                "RefreshButton");
+
+        refreshButton.IsEnabled =
+            false;
+
+        var activeTarget =
+            ActiveTargetOrThrow();
+
         SetConnectionState(
             "CAPTURING",
-            "Native Windows provider",
+            WindowsTargetUiProjection.ProviderSummary(
+                activeTarget),
             isHealthy: false);
 
         SetText(
             "CaptureStatusText",
-            "Capturing the local Windows host snapshot...");
+            WindowsTargetUiProjection.CaptureStatus(
+                activeTarget));
 
         try
         {
-            var snapshot = await _hostProbe.CaptureAsync(cancellationToken);
+            var envelope =
+                await _targetSession.CaptureAsync(
+                    cancellationToken);
+
+            if (!ReferenceEquals(
+                    _refreshCancellation,
+                    request))
+            {
+                return;
+            }
+
             cancellationToken.ThrowIfCancellationRequested();
 
-            _snapshot = snapshot;
-            PopulateSnapshot(snapshot);
+            var snapshot =
+                envelope.Snapshot;
+
+            _snapshot =
+                snapshot;
+
+            ApplyTargetCapabilities(
+                envelope.Capabilities);
+
+            PopulateSnapshot(
+                snapshot);
 
             RecordActivity(
                 "Snapshot captured",
+                $"{activeTarget.DisplayName} | " +
                 $"{snapshot.Storage.Count} volume(s), " +
                 $"{snapshot.Services.Count} service(s), " +
                 $"{snapshot.Containers.Count} container(s), " +
@@ -195,12 +258,24 @@ public partial class MainWindow : Window
         }
         catch (OperationCanceledException)
         {
-            SetText(
-                "CaptureStatusText",
-                "Snapshot refresh was replaced by a newer request.");
+            if (ReferenceEquals(
+                    _refreshCancellation,
+                    request))
+            {
+                SetText(
+                    "CaptureStatusText",
+                    "Snapshot refresh was replaced by a newer request.");
+            }
         }
         catch (Exception exception)
         {
+            if (!ReferenceEquals(
+                    _refreshCancellation,
+                    request))
+            {
+                return;
+            }
+
             SetConnectionState(
                 "FAILED",
                 exception.Message,
@@ -209,19 +284,29 @@ public partial class MainWindow : Window
 
             SetText(
                 "CaptureStatusText",
-                "Snapshot failed: " + exception.Message);
+                "Snapshot failed: " +
+                exception.Message);
 
             SetList(
                 "WarningsList",
-                new[] { exception.ToString() });
+                new[]
+                {
+                    exception.ToString()
+                });
 
             RecordActivity(
                 "Snapshot failed",
-                exception.Message);
+                $"{activeTarget.DisplayName} | {exception.Message}");
         }
         finally
         {
-            refreshButton.IsEnabled = true;
+            if (ReferenceEquals(
+                    _refreshCancellation,
+                    request))
+            {
+                refreshButton.IsEnabled =
+                    true;
+            }
         }
     }
 
@@ -232,7 +317,7 @@ public partial class MainWindow : Window
 
         SetConnectionState(
             "READY",
-            "Native Windows provider",
+            ActiveTargetConnectionSummary(),
             isHealthy: true);
 
         SetText("SidebarHostname", snapshot.Hostname);
@@ -345,7 +430,8 @@ public partial class MainWindow : Window
 
         SetText(
             "FooterStatusText",
-            $"Windows provider | {snapshot.Hostname} | read-only");
+            $"{ActiveTargetDisplayName()} | " +
+            $"{snapshot.Hostname} | read-only");
 
         PopulateLinuxShellParity(snapshot);
         PopulateActivity();

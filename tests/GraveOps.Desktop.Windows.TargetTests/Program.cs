@@ -22,6 +22,10 @@ var tests =
             ActiveTargetPersistenceAsync),
 
         (
+            "target selector rows are ordered and redacted",
+            TargetProjectionAsync),
+
+        (
             "Windows composition resolves local and remote providers",
             ProviderCompositionAsync),
 
@@ -256,6 +260,73 @@ static async Task ActiveTargetPersistenceAsync()
                 await fallbackStore.LoadAsync(),
                 "fallback selection persisted");
         });
+}
+
+static Task TargetProjectionAsync()
+{
+    var local =
+        WindowsTargetCatalog.CreateLocal();
+
+    var remote =
+        WindowsTargetCatalog.CreateRemote(
+            "projection-remote",
+            "Projection Remote",
+            "server.example.test",
+            5986,
+            "graveops-user",
+            WindowsRemoteAuthentication.Negotiate,
+            60);
+
+    var rows =
+        WindowsTargetUiProjection.CreateRows(
+            new[]
+            {
+                remote,
+                local
+            });
+
+    Equal(
+        2,
+        rows.Count,
+        "target row count");
+
+    Equal(
+        local.Id,
+        rows[0].TargetId,
+        "local target sorted first");
+
+    var remoteRow =
+        rows.Single(
+            row =>
+                row.TargetId.Equals(
+                    remote.Id,
+                    StringComparison.Ordinal));
+
+    True(
+        remoteRow.ConnectionSummary.Contains(
+            "server.example.test:5986",
+            StringComparison.Ordinal),
+        "remote endpoint shown");
+
+    True(
+        remoteRow.ConnectionSummary.Contains(
+            "WinRM HTTPS",
+            StringComparison.Ordinal),
+        "remote transport shown");
+
+    True(
+        !remoteRow.ConnectionSummary.Contains(
+            remote.Connection.CredentialReference!,
+            StringComparison.Ordinal),
+        "credential reference redacted");
+
+    True(
+        !remoteRow.ConnectionSummary.Contains(
+            remote.Connection.Username!,
+            StringComparison.Ordinal),
+        "username omitted from selector");
+
+    return Task.CompletedTask;
 }
 
 static Task ProviderCompositionAsync()
