@@ -268,6 +268,14 @@ public sealed class ArrTelemetryClient
             {
                 workCount = indexers.Root.GetArrayLength();
                 workLabel = $"Indexers {workCount}";
+
+                foreach (var item in indexers.Root.EnumerateArray())
+                {
+                    workItems.Add(
+                        ParseIndexerRow(
+                            serviceName,
+                            item));
+                }
             }
             else
             {
@@ -467,6 +475,7 @@ public sealed class ArrTelemetryClient
             GetString(item, "title") ??
             GetNestedString(item, "series", "title") ??
             GetNestedString(item, "movie", "title") ??
+            GetNestedString(item, "album", "title") ??
             GetNestedString(item, "artist", "artistName") ??
             GetNestedString(item, "artist", "name") ??
             GetNestedString(item, "book", "title") ??
@@ -495,6 +504,91 @@ public sealed class ArrTelemetryClient
             status,
             FormatProgress(item),
             remaining,
+            detail);
+    }
+
+    private static ArrWorkItemRow ParseIndexerRow(
+        string serviceName,
+        JsonElement item)
+    {
+        var name =
+            GetString(
+                item,
+                "name") ??
+            GetString(
+                item,
+                "implementationName") ??
+            "Configured indexer";
+
+        var implementation =
+            GetString(
+                item,
+                "implementationName") ??
+            GetString(
+                item,
+                "implementation") ??
+            string.Empty;
+
+        var protocol =
+            GetString(
+                item,
+                "protocol") ??
+            "Indexer";
+
+        var priority =
+            GetInt(
+                item,
+                "priority");
+
+        var enabled =
+            GetBoolean(
+                item,
+                "enable") ??
+            GetBoolean(
+                item,
+                "enabled");
+
+        var state =
+            enabled switch
+            {
+                true =>
+                    "Enabled",
+
+                false =>
+                    "Disabled",
+
+                _ =>
+                    "Configured"
+            };
+
+        var detail =
+            string.Join(
+                " Â· ",
+                new[]
+                {
+                    string.IsNullOrWhiteSpace(
+                        implementation) ||
+                    implementation.Equals(
+                        name,
+                        StringComparison.OrdinalIgnoreCase)
+                        ? null
+                        : implementation,
+
+                    priority.HasValue
+                        ? $"priority {priority.Value}"
+                        : null
+                }
+                .Where(value =>
+                    !string.IsNullOrWhiteSpace(
+                        value)));
+
+        return new ArrWorkItemRow(
+            serviceName,
+            "Indexer",
+            name,
+            state,
+            protocol,
+            string.Empty,
             detail);
     }
 
@@ -634,6 +728,37 @@ public sealed class ArrTelemetryClient
         }
 
         return GetString(nested, property);
+    }
+
+    private static bool? GetBoolean(
+        JsonElement element,
+        string property)
+    {
+        if (element.ValueKind != JsonValueKind.Object ||
+            !element.TryGetProperty(
+                property,
+                out var value))
+        {
+            return null;
+        }
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.True =>
+                true,
+
+            JsonValueKind.False =>
+                false,
+
+            JsonValueKind.String
+                when bool.TryParse(
+                    value.GetString(),
+                    out var parsed) =>
+                parsed,
+
+            _ =>
+                null
+        };
     }
 
     private static int? GetInt(JsonElement element, string property)

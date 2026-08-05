@@ -97,28 +97,152 @@ public partial class MainWindow
 
     private void SetArrProductLabels()
     {
-        SetText("ArrProductTitleText", _activeArrProduct);
+        SetText(
+            "ArrProductTitleText",
+            _activeArrProduct);
+
+        var labels =
+            _activeArrProduct.ToLowerInvariant() switch
+            {
+                "sonarr" =>
+                    new ArrWorkspaceLabels(
+                        "Series and episode health, queue state and protected API telemetry.",
+                        "QUEUE",
+                        "Current episode work",
+                        "Episode queue & health",
+                        "Item-level episode queue progress and application health messages.",
+                        "Episode queue and health telemetry is loading.",
+                        "No queued episode or active health issue was returned."),
+
+                "radarr" =>
+                    new ArrWorkspaceLabels(
+                        "Movie health, queue state and protected API telemetry.",
+                        "QUEUE",
+                        "Current movie work",
+                        "Movie queue & health",
+                        "Item-level movie queue progress and application health messages.",
+                        "Movie queue and health telemetry is loading.",
+                        "No queued movie or active health issue was returned."),
+
+                "lidarr" =>
+                    new ArrWorkspaceLabels(
+                        "Artist, album and music queue health with protected API telemetry.",
+                        "QUEUE",
+                        "Current album work",
+                        "Album queue & health",
+                        "Album-level queue progress, import state and application health messages.",
+                        "Album queue and health telemetry is loading.",
+                        "No queued album or active health issue was returned."),
+
+                "prowlarr" =>
+                    new ArrWorkspaceLabels(
+                        "Indexer inventory, availability and protected API health telemetry.",
+                        "INDEXERS",
+                        "Configured indexers",
+                        "Indexer inventory & health",
+                        "Safe indexer identity, protocol, enabled state, priority and application health.",
+                        "Indexer inventory and health telemetry is loading.",
+                        "No configured indexer or active health issue was returned."),
+
+                _ =>
+                    new ArrWorkspaceLabels(
+                        "Protected Arr API telemetry.",
+                        "WORK",
+                        "Current work",
+                        "Work & health",
+                        "Application work and health telemetry.",
+                        "Arr work and health telemetry is loading.",
+                        "No actionable work or active health issue was returned.")
+            };
 
         SetText(
             "ArrProductSubtitleText",
-            _activeArrProduct.Equals(
-                "Sonarr",
-                StringComparison.OrdinalIgnoreCase)
-                ? "Series and episode health, queue state and protected API telemetry."
-                : "Movie health, queue state and protected API telemetry.");
+            labels.Subtitle);
 
-        SetText("ArrWorkMetricLabelText", "QUEUE");
+        SetText(
+            "ArrWorkMetricLabelText",
+            labels.MetricLabel);
+
+        SetText(
+            "ArrWorkMetricHintText",
+            labels.MetricHint);
 
         SetText(
             "ArrWorkSectionTitleText",
-            _activeArrProduct.Equals(
-                "Sonarr",
-                StringComparison.OrdinalIgnoreCase)
-                ? "Episode queue & health"
-                : "Movie queue & health");
+            labels.SectionTitle);
 
-        Get<Button>("ArrOpenButton").Content = $"Open {_activeArrProduct}";
+        SetText(
+            "ArrWorkSectionSubtitleText",
+            labels.SectionSubtitle);
+
+        Get<Button>(
+                "ArrOpenButton")
+            .Content =
+                $"Open {_activeArrProduct}";
     }
+
+    private ArrWorkspaceLabels ActiveArrLabels() =>
+        _activeArrProduct.ToLowerInvariant() switch
+        {
+            "sonarr" =>
+                new ArrWorkspaceLabels(
+                    string.Empty,
+                    "QUEUE",
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    "Episode queue and health telemetry is loading.",
+                    "No queued episode or active health issue was returned."),
+
+            "radarr" =>
+                new ArrWorkspaceLabels(
+                    string.Empty,
+                    "QUEUE",
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    "Movie queue and health telemetry is loading.",
+                    "No queued movie or active health issue was returned."),
+
+            "lidarr" =>
+                new ArrWorkspaceLabels(
+                    string.Empty,
+                    "QUEUE",
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    "Album queue and health telemetry is loading.",
+                    "No queued album or active health issue was returned."),
+
+            "prowlarr" =>
+                new ArrWorkspaceLabels(
+                    string.Empty,
+                    "INDEXERS",
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    "Indexer inventory and health telemetry is loading.",
+                    "No configured indexer or active health issue was returned."),
+
+            _ =>
+                new ArrWorkspaceLabels(
+                    string.Empty,
+                    "WORK",
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    "Arr work and health telemetry is loading.",
+                    "No actionable work or active health issue was returned.")
+        };
+
+    private sealed record ArrWorkspaceLabels(
+        string Subtitle,
+        string MetricLabel,
+        string MetricHint,
+        string SectionTitle,
+        string SectionSubtitle,
+        string LoadingText,
+        string EmptyText);
 
     private void SetArrLoadingState()
     {
@@ -140,7 +264,7 @@ public partial class MainWindow
 
         SetText(
             "ArrQueueEmptyText",
-            "Arr queue and health telemetry is loading.");
+            ActiveArrLabels().LoadingText);
         SetText(
             "ArrSecurityText",
             "API keys are stored only in Windows Credential Manager or read transiently from a local config.xml.");
@@ -180,7 +304,7 @@ public partial class MainWindow
 
         SetText(
             "ArrQueueEmptyText",
-            "No queued work or active health issue was returned.");
+            ActiveArrLabels().EmptyText);
 
         var service = snapshot.Services.FirstOrDefault();
 

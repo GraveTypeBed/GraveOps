@@ -341,6 +341,50 @@
                 </Button>
 
                 <Button
+                    x:Name="LidarrNav"
+                    Classes="nav sub"
+                    IsVisible="False"
+                    Click="NavigationButton_OnClick">
+                  <Grid ColumnDefinitions="24,*">
+                    <Path
+                        Width="16"
+                        Height="16"
+                        Stretch="Uniform"
+                        Data="M3,3 L13,3 L13,13 L3,13 Z M6,6 A2,2 0 1 0 10,6 A2,2 0 1 0 6,6 M6,11 L10,11"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.45"
+                        StrokeLineCap="Round" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="Lidarr"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                  </Grid>
+                </Button>
+
+                <Button
+                    x:Name="ProwlarrNav"
+                    Classes="nav sub"
+                    IsVisible="False"
+                    Click="NavigationButton_OnClick">
+                  <Grid ColumnDefinitions="24,*">
+                    <Path
+                        Width="16"
+                        Height="16"
+                        Stretch="Uniform"
+                        Data="M2,4 L14,4 M2,8 L14,8 M2,12 L14,12 M5,2 L5,14 M11,2 L11,14"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.45"
+                        StrokeLineCap="Round" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="Prowlarr"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                  </Grid>
+                </Button>
+
+                <Button
                     x:Name="QBittorrentNav"
                     Classes="nav sub"
                     IsVisible="False"
@@ -1452,7 +1496,10 @@
                                    Text="--"
                                    FontSize="20"
                                    FontWeight="SemiBold" />
-                        <TextBlock Text="Current queued work" Classes="dim" />
+                        <TextBlock
+                            x:Name="ArrWorkMetricHintText"
+                            Text="Current queued work"
+                            Classes="dim" />
                       </StackPanel>
                     </Border>
 
@@ -1538,9 +1585,12 @@
                             <TextBlock x:Name="ArrWorkSectionTitleText"
                                        Text="Episode queue &amp; health"
                                        Classes="sectionTitle" />
-                            <TextBlock Text="Item-level queue progress and application health messages."
-                                       Classes="pageSubtitle"
-                                       Margin="0,3,0,0" />
+                            <TextBlock
+                                x:Name="ArrWorkSectionSubtitleText"
+                                Text="Item-level queue progress and application health messages."
+                                Classes="pageSubtitle"
+                                Margin="0,3,0,0"
+                                TextWrapping="Wrap" />
                           </StackPanel>
 
                           <Grid Grid.Row="1">

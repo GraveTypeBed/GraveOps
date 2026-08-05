@@ -10,6 +10,8 @@ var tests =
         ("Arr catalog preserves Sonarr and Radarr API roots", CatalogAsync),
         ("Sonarr falls back from v5 to v3 and parses queue telemetry", SonarrFallbackAsync),
         ("Radarr parses v3 status health and movie queue", RadarrAsync),
+        ("Lidarr parses album queue telemetry", LidarrAsync),
+        ("Prowlarr exposes safe indexer inventory without credential fields", ProwlarrAsync),
         ("Arr redirects are blocked without forwarding credentials", RedirectBlockedAsync),
         ("Arr authentication failures remain sanitized", AuthenticationRedactionAsync),
         ("Arr strict verification rejects protected endpoint failures", StrictVerificationAsync),
@@ -50,8 +52,23 @@ static Task CatalogAsync()
         ArrTelemetryCatalog.ApiRootsFor("Radarr"),
         "Radarr API roots");
 
+    SequenceEqual(
+        new[] { "api/v1" },
+        ArrTelemetryCatalog.ApiRootsFor("Lidarr"),
+        "Lidarr API roots");
+
+    SequenceEqual(
+        new[] { "api/v1" },
+        ArrTelemetryCatalog.ApiRootsFor("Prowlarr"),
+        "Prowlarr API roots");
+
     True(ArrTelemetryCatalog.SupportsQueue("Sonarr"), "Sonarr queue support");
     True(ArrTelemetryCatalog.SupportsQueue("Radarr"), "Radarr queue support");
+    True(ArrTelemetryCatalog.SupportsQueue("Lidarr"), "Lidarr queue support");
+    True(
+        !ArrTelemetryCatalog.SupportsQueue("Prowlarr"),
+        "Prowlarr indexer-inventory support");
+
     return Task.CompletedTask;
 }
 
@@ -205,6 +222,206 @@ static async Task RadarrAsync()
             item.ItemIssue.Equals("Fixture Movie", StringComparison.Ordinal) &&
             item.Progress.Equals("50%", StringComparison.Ordinal)),
         "Radarr queue row");
+}
+
+static async Task LidarrAsync()
+{
+    var handler = new FixtureHandler(
+        request =>
+        {
+            var path = request.RequestUri?.AbsolutePath ?? string.Empty;
+
+            return path switch
+            {
+                "/api/v1/system/status" => Json(
+                    """
+                    {
+                      "appName": "Lidarr",
+                      "version": "2.13.3.4711"
+                    }
+                    """),
+
+                "/api/v1/health" => Json("[]"),
+
+                "/api/v1/queue" => Json(
+                    """
+                    {
+                      "totalRecords": 1,
+                      "records": [
+                        {
+                          "album": {
+                            "title": "Fixture Album"
+                          },
+                          "artist": {
+                            "artistName": "Fixture Artist"
+                          },
+                          "trackedDownloadStatus": "downloading",
+                          "size": 5000,
+                          "sizeleft": 1250,
+                          "timeleft": "00:12:00",
+                          "downloadClient": "SABnzbd"
+                        }
+                      ]
+                    }
+                    """),
+
+                _ => Json("{}", HttpStatusCode.NotFound)
+            };
+        });
+
+    using var http = new HttpClient(handler);
+    var client = new ArrTelemetryClient(http);
+    using var key = new SecretValue("lidarr-fixture-api-key");
+
+    var snapshot = await client.CaptureAsync(
+        new ArrTelemetryRequest(
+            new Uri("http://localhost:8686/"),
+            "Lidarr",
+            "local|lidarr",
+            "Lidarr",
+            key));
+
+    Equal("ONLINE", snapshot.OverallState, "Lidarr overall state");
+    Equal("2.13.3.4711", snapshot.VersionSummary, "Lidarr version");
+    Equal("1", snapshot.WorkSummary, "Lidarr queue count");
+
+    True(
+        snapshot.WorkItems.Any(item =>
+            item.Type.Equals("Album", StringComparison.Ordinal) &&
+            item.ItemIssue.Equals("Fixture Album", StringComparison.Ordinal) &&
+            item.Progress.Equals("75%", StringComparison.Ordinal)),
+        "Lidarr album queue row");
+
+    True(
+        !snapshot.WorkItems.Any(item =>
+            item.ItemIssue.Equals("Fixture Artist", StringComparison.Ordinal)),
+        "Lidarr queue prefers album title over artist fallback");
+
+    SequenceEqual(
+        new[]
+        {
+            "/api/v1/system/status",
+            "/api/v1/health",
+            "/api/v1/queue"
+        },
+        handler.Requests.Select(item => item.Path),
+        "Lidarr request order");
+}
+
+static async Task ProwlarrAsync()
+{
+    const string nestedIndexerSecret =
+        "nested-indexer-secret-must-not-appear";
+
+    var handler = new FixtureHandler(
+        request =>
+        {
+            var path = request.RequestUri?.AbsolutePath ?? string.Empty;
+
+            return path switch
+            {
+                "/api/v1/system/status" => Json(
+                    """
+                    {
+                      "appName": "Prowlarr",
+                      "version": "1.37.0.5076"
+                    }
+                    """),
+
+                "/api/v1/health" => Json("[]"),
+
+                "/api/v1/indexer" => Json(
+                    $$"""
+                    [
+                      {
+                        "name": "NZB Fixture",
+                        "implementationName": "Newznab",
+                        "protocol": "usenet",
+                        "priority": 25,
+                        "enable": true,
+                        "fields": [
+                          {
+                            "name": "apiKey",
+                            "value": "{{nestedIndexerSecret}}"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "Torrent Fixture",
+                        "implementationName": "Torznab",
+                        "protocol": "torrent",
+                        "priority": 50,
+                        "enable": false
+                      }
+                    ]
+                    """),
+
+                _ => Json("{}", HttpStatusCode.NotFound)
+            };
+        });
+
+    using var http = new HttpClient(handler);
+    var client = new ArrTelemetryClient(http);
+    using var key = new SecretValue("prowlarr-fixture-api-key");
+
+    var snapshot = await client.CaptureAsync(
+        new ArrTelemetryRequest(
+            new Uri("http://localhost:9696/"),
+            "Prowlarr",
+            "local|prowlarr",
+            "Prowlarr",
+            key));
+
+    Equal("ONLINE", snapshot.OverallState, "Prowlarr overall state");
+    Equal("1.37.0.5076", snapshot.VersionSummary, "Prowlarr version");
+    Equal("2", snapshot.WorkSummary, "Prowlarr indexer count");
+
+    True(
+        snapshot.WorkItems.Any(item =>
+            item.Type.Equals("Indexer", StringComparison.Ordinal) &&
+            item.ItemIssue.Equals("NZB Fixture", StringComparison.Ordinal) &&
+            item.State.Equals("Enabled", StringComparison.Ordinal) &&
+            item.Progress.Equals("usenet", StringComparison.Ordinal) &&
+            item.Detail.Contains("priority 25", StringComparison.Ordinal)),
+        "Prowlarr enabled indexer row");
+
+    True(
+        snapshot.WorkItems.Any(item =>
+            item.Type.Equals("Indexer", StringComparison.Ordinal) &&
+            item.ItemIssue.Equals("Torrent Fixture", StringComparison.Ordinal) &&
+            item.State.Equals("Disabled", StringComparison.Ordinal) &&
+            item.Progress.Equals("torrent", StringComparison.Ordinal)),
+        "Prowlarr disabled indexer row");
+
+    var projectedText =
+        string.Join(
+            "|",
+            snapshot.WorkItems.Select(item =>
+                string.Join(
+                    "|",
+                    item.Service,
+                    item.Type,
+                    item.ItemIssue,
+                    item.State,
+                    item.Progress,
+                    item.Remaining,
+                    item.Detail)));
+
+    True(
+        !projectedText.Contains(
+            nestedIndexerSecret,
+            StringComparison.Ordinal),
+        "Prowlarr projection omits nested indexer secrets");
+
+    SequenceEqual(
+        new[]
+        {
+            "/api/v1/system/status",
+            "/api/v1/health",
+            "/api/v1/indexer"
+        },
+        handler.Requests.Select(item => item.Path),
+        "Prowlarr request order");
 }
 
 static async Task RedirectBlockedAsync()
@@ -393,6 +610,24 @@ static Task EndpointValidationAsync()
                 "Radarr")
             .AbsoluteUri,
         "Radarr local default");
+
+    Equal(
+        "http://127.0.0.1:8686/",
+        WindowsArrProductPolicy
+            .DefaultEndpoint(
+                WindowsTargetCatalog.CreateLocal(),
+                "Lidarr")
+            .AbsoluteUri,
+        "Lidarr local default");
+
+    Equal(
+        "http://127.0.0.1:9696/",
+        WindowsArrProductPolicy
+            .DefaultEndpoint(
+                WindowsTargetCatalog.CreateLocal(),
+                "Prowlarr")
+            .AbsoluteUri,
+        "Prowlarr local default");
 
     return Task.CompletedTask;
 }

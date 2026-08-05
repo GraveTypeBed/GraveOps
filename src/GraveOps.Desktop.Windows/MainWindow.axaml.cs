@@ -32,6 +32,10 @@ public partial class MainWindow : Window
                 "Series health, episode queue and protected API telemetry"),
             ["RadarrNav"] = new("ArrPage", "Radarr",
                 "Movie health, queue and protected API telemetry"),
+            ["LidarrNav"] = new("ArrPage", "Lidarr",
+                "Artist, album and music queue telemetry"),
+            ["ProwlarrNav"] = new("ArrPage", "Prowlarr",
+                "Indexer inventory, availability and protected API health"),
             ["QBittorrentNav"] = new("QBittorrentPage", "qBittorrent",
                 "Transfer queue, categories and history workspace"),
             ["LogsNav"] = new("WarningsPage", "Logs",
@@ -191,19 +195,29 @@ public partial class MainWindow : Window
             UpdatePlexTimerCadence();
         }
 
-        if (navigationName.Equals(
-                "SonarrNav",
-                StringComparison.Ordinal))
+        var arrProduct =
+            navigationName switch
+            {
+                "SonarrNav" =>
+                    "Sonarr",
+
+                "RadarrNav" =>
+                    "Radarr",
+
+                "LidarrNav" =>
+                    "Lidarr",
+
+                "ProwlarrNav" =>
+                    "Prowlarr",
+
+                _ =>
+                    null
+            };
+
+        if (arrProduct is not null)
         {
             ActivateWindowsArrWorkspace(
-                "Sonarr");
-        }
-        else if (navigationName.Equals(
-                     "RadarrNav",
-                     StringComparison.Ordinal))
-        {
-            ActivateWindowsArrWorkspace(
-                "Radarr");
+                arrProduct);
         }
         else
         {
@@ -494,6 +508,18 @@ public partial class MainWindow : Window
                     "Radarr",
                     StringComparison.OrdinalIgnoreCase));
 
+        var lidarr =
+            integrations.FirstOrDefault(integration =>
+                integration.Name.Equals(
+                    "Lidarr",
+                    StringComparison.OrdinalIgnoreCase));
+
+        var prowlarr =
+            integrations.FirstOrDefault(integration =>
+                integration.Name.Equals(
+                    "Prowlarr",
+                    StringComparison.OrdinalIgnoreCase));
+
         var qbittorrent =
             integrations.FirstOrDefault(integration =>
                 integration.Name.Equals(
@@ -531,6 +557,14 @@ public partial class MainWindow : Window
         UpdateArrDiscovery(
             "Radarr",
             radarr);
+
+        UpdateArrDiscovery(
+            "Lidarr",
+            lidarr);
+
+        UpdateArrDiscovery(
+            "Prowlarr",
+            prowlarr);
 
         var qbittorrentVisible =
             qbittorrent is not null;
