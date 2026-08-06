@@ -3104,27 +3104,6 @@
             <Grid x:Name="SettingsPage" IsVisible="False" />
             <Grid x:Name="ToolsPage" IsVisible="False" />
 
-            <Grid x:Name="ParityPage" IsVisible="False">
-              <Border Classes="card">
-                <Border Classes="emptyState" VerticalAlignment="Center">
-                  <StackPanel Spacing="8">
-                    <TextBlock
-                        x:Name="ParityPageTitleText"
-                        Text="Linux page destination connected"
-                        FontSize="17"
-                        FontWeight="SemiBold" />
-                    <TextBlock
-                        x:Name="ParityPageBodyText"
-                        Text="The canonical shell destination is active. Windows page data will be ported next."
-                        Classes="muted"
-                        TextWrapping="Wrap" />
-                    <TextBlock
-                        Text="This parity foundation remains read-only."
-                        Foreground="{DynamicResource SuccessBrush}" />
-                  </StackPanel>
-                </Border>
-              </Border>
-            </Grid>
           </Grid>
 
           <Border

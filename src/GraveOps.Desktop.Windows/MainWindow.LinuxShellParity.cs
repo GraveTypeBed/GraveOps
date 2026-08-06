@@ -248,22 +248,6 @@ public partial class MainWindow
             $"{ActiveTargetConnectionSummary()} | read-only");
     }
 
-    private void UpdateLinuxParityPage(
-        NavigationTarget target)
-    {
-        if (target.PageName != "ParityPage")
-            return;
-
-        SetText(
-            "ParityPageTitleText",
-            $"{target.Title} shell destination connected");
-
-        SetText(
-            "ParityPageBodyText",
-            $"{target.Title} now follows the canonical Linux navigation. " +
-            "Windows-specific data and controls will be ported into this page next.");
-    }
-
     private sealed record CommandRow(
         string NavigationName,
         string Title,

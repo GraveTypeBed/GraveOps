@@ -21,6 +21,7 @@ var tests = new (string Name, Action Run)[]
     ("Linux navigation language is present", NavigationLanguageMatches),
     ("Lifecycle follows Media Hub in the Media section", LifecycleIsInMedia),
     ("Working Windows telemetry pages remain registered", TelemetryPagesRemain),
+    ("Obsolete parity placeholder is removed", ParityPlaceholderIsRemoved),
     ("Removed flat navigation controls are not requested", RemovedControlsAreAbsent),
     ("Windows desktop source contains no mojibake", SourceEncodingIsClean),
     ("Windows presentation keeps platform boundaries", PlatformBoundariesRemain)
@@ -129,6 +130,23 @@ void TelemetryPagesRemain()
     })
     {
         Present(window, value);
+    }
+}
+
+void ParityPlaceholderIsRemoved()
+{
+    Missing(window, "x:Name=\"ParityPage\"");
+    Missing(window, "ParityPageTitleText");
+    Missing(window, "ParityPageBodyText");
+
+    foreach (var file in Directory.EnumerateFiles(
+                 windowsRoot,
+                 "*.cs",
+                 SearchOption.AllDirectories))
+    {
+        var source = File.ReadAllText(file);
+        Missing(source, "UpdateLinuxParityPage");
+        Missing(source, "\"ParityPage\"");
     }
 }
 

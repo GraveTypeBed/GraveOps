@@ -289,7 +289,6 @@ public partial class MainWindow : Window
 
         Get<TextBlock>("PageTitleText").Text = target.Title;
         Get<TextBlock>("PageSubtitleText").Text = target.Subtitle;
-        UpdateLinuxParityPage(target);
 
         if (navigationName.Equals(
                 "PlexNav",
