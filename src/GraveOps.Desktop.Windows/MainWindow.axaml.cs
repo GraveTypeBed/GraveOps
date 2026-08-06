@@ -24,7 +24,7 @@ public partial class MainWindow : Window
                 "Health transitions, GraveOps activity and incident replay"),
             ["ServersNav"] = new("ServersPage", "Hosts & Connections",
                 "Local and remote host profiles, capabilities and secure connections"),
-                        ["MediaHubNav"] = new("IntegrationsPage", "Media Hub",
+                        ["MediaHubNav"] = new("MediaHubPage", "Media Hub",
                 "Fleet health, discovery and all media applications"),
             ["PlexNav"] = new("PlexPage", "Plex",
                 "Server identity, library and session workspace"),
@@ -83,6 +83,7 @@ public partial class MainWindow : Window
         InitializeSharedUnifiedFleetApplications();
         InitializeSharedUnifiedSystemWorkspaces();
         InitializeSharedUnifiedOperationsWorkspaces();
+        InitializeSharedUnifiedMediaWorkspaces();
 
         Opened += async (_, _) =>
         {
@@ -94,6 +95,7 @@ public partial class MainWindow : Window
                 "Client opened",
                 "Windows Avalonia target-aware client initialized.");
             await RefreshAsync();
+            UpdateSharedUnifiedMediaWorkspaces();
         };
     }
 
@@ -101,6 +103,7 @@ public partial class MainWindow : Window
     {
         _refreshCancellation?.Cancel();
         _refreshCancellation?.Dispose();
+        DisposeSharedUnifiedMediaWorkspaces();
         base.OnClosed(e);
     }
 
