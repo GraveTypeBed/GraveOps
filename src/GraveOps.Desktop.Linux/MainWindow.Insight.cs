@@ -660,6 +660,7 @@ public partial class MainWindow
             "IntelligenceFindingsList");
 
         PopulateIntelligenceSelectedFinding();
+        UpdateSharedUnifiedFindings();
     }
 
     private void IntelligenceImpactList_OnSelectionChanged(

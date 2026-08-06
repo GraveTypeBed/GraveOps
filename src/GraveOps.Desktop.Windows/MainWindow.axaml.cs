@@ -78,6 +78,7 @@ public partial class MainWindow : Window
         InitializeMediaLifecycleWorkspace();
         InitializeSharedUnifiedDashboard();
         InitializeSharedUnifiedShell();
+        InitializeSharedUnifiedFindings();
 
         Opened += async (_, _) =>
         {
@@ -613,6 +614,11 @@ public partial class MainWindow : Window
         PopulateLinuxShellParity(snapshot);
         PopulateActivity();
         UpdateSharedUnifiedDashboard(
+            snapshot,
+            recommendations,
+            health);
+
+        UpdateSharedUnifiedFindings(
             snapshot,
             recommendations,
             health);
