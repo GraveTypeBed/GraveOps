@@ -20,7 +20,7 @@ public partial class MainWindow : Window
                 "Fleet impact, root cause, evidence and contextual next actions"),
             ["LifecycleNav"] = new("LifecyclePage", "Media Lifecycle",
                 "Correlate Arr work, download clients and Plex playback with conservative evidence"),
-            ["HistoryNav"] = new("ParityPage", "Activity & Incidents",
+            ["HistoryNav"] = new("HistoryPage", "Activity & Incidents",
                 "Health transitions, GraveOps activity and incident replay"),
             ["ServersNav"] = new("ServersPage", "Hosts & Connections",
                 "Local and remote host profiles, capabilities and secure connections"),
@@ -79,6 +79,7 @@ public partial class MainWindow : Window
         InitializeSharedUnifiedDashboard();
         InitializeSharedUnifiedShell();
         InitializeSharedUnifiedFindings();
+        InitializeSharedUnifiedActivity();
 
         Opened += async (_, _) =>
         {
@@ -929,7 +930,7 @@ public partial class MainWindow : Window
         _activity.Insert(
             0,
             new ActivityRow(
-                DateTimeOffset.Now.ToString("t"),
+                DateTimeOffset.Now,
                 title,
                 detail));
 
@@ -937,6 +938,7 @@ public partial class MainWindow : Window
             _activity.RemoveRange(12, _activity.Count - 12);
 
         PopulateActivity();
+        UpdateSharedUnifiedActivity();
     }
 
     private void PopulateActivity() =>
@@ -974,9 +976,13 @@ public partial class MainWindow : Window
         string Evidence);
 
     private sealed record ActivityRow(
-        string Time,
+        DateTimeOffset Timestamp,
         string Title,
-        string Detail);
+        string Detail)
+    {
+        public string Time =>
+            Timestamp.ToLocalTime().ToString("t");
+    }
 
     private sealed record HealthSummary(
         int Pass,

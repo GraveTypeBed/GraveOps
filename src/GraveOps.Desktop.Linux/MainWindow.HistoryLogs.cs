@@ -197,6 +197,8 @@ public partial class MainWindow
         {
             ClearReliableHistorySelection();
         }
+
+        UpdateSharedUnifiedActivity();
     }
 
     private void ApplyReliableLogsFilter()
