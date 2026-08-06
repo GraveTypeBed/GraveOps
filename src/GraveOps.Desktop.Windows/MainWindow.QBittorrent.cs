@@ -359,7 +359,7 @@ public partial class MainWindow
     {
         _qbittorrentDiscovery = integration;
 
-        Get<TextBlock>("AcquisitionGroupLabel").IsVisible = true;
+        ApplyWindowsMediaNavigationAvailability();
         Get<Button>("QBittorrentNav").IsVisible = true;
 
         RefreshQBittorrentDiscoveryEvidence();

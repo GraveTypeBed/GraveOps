@@ -409,7 +409,7 @@ public partial class MainWindow
         var normalized = WindowsArrProductPolicy.Normalize(product);
         _arrDiscovery[normalized] = integration;
 
-        Get<TextBlock>("AcquisitionGroupLabel").IsVisible = true;
+        ApplyWindowsMediaNavigationAvailability();
         Get<Button>(normalized + "Nav").IsVisible = true;
 
         if (_activeArrProduct.Equals(

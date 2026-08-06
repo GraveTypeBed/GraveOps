@@ -593,7 +593,7 @@ public sealed class WindowsPlexTelemetryService
         snapshot.Security =
             resolvedSecret is null
                 ? snapshot.Security
-                : "Protected Plex telemetry Â· " +
+                : "Protected Plex telemetry · " +
                   $"token source: {resolvedSecret.Source}";
 
         return snapshot;
@@ -656,12 +656,12 @@ public sealed class WindowsPlexTelemetryService
                     cancellationToken);
 
                 snapshot.Security =
-                    "Protected Plex telemetry Â· token stored in Windows Credential Manager";
+                    "Protected Plex telemetry · token stored in Windows Credential Manager";
             }
             else if (resolvedSecret is not null)
             {
                 snapshot.Security =
-                    "Protected Plex telemetry Â· " +
+                    "Protected Plex telemetry · " +
                     $"token source: {resolvedSecret.Source}";
             }
 

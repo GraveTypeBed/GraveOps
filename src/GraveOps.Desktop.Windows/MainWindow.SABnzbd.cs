@@ -489,10 +489,7 @@ public partial class MainWindow
         _sabnzbdDiscovery =
             integration;
 
-        Get<TextBlock>(
-                "AcquisitionGroupLabel")
-            .IsVisible =
-                true;
+        ApplyWindowsMediaNavigationAvailability();
 
         Get<Button>(
                 "SABnzbdNav")

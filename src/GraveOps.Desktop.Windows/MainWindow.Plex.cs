@@ -146,7 +146,7 @@ public partial class MainWindow
             "PlexServiceDetailText",
             _plexDiscovery is null
                 ? "Waiting for API identity"
-                : $"{_plexDiscovery.Kind} Â· {_plexDiscovery.State}");
+                : $"{_plexDiscovery.Kind} · {_plexDiscovery.State}");
 
         SetText(
             "PlexVersionText",
@@ -225,7 +225,7 @@ public partial class MainWindow
 
         SetText(
             "PlexServiceDetailText",
-            $"{snapshot.Service} Â· {snapshot.ServiceDetail}");
+            $"{snapshot.Service} · {snapshot.ServiceDetail}");
 
         SetText(
             "PlexVersionText",
@@ -309,7 +309,7 @@ public partial class MainWindow
 
         SetText(
             "PlexFreshnessText",
-            $"LIVE Â· {PlexCadenceLabel()} Â· updated " +
+            $"LIVE · {PlexCadenceLabel()} · updated " +
             $"{snapshot.SampledAt.ToLocalTime():h:mm:ss tt}");
     }
 
@@ -342,8 +342,8 @@ public partial class MainWindow
         SetText(
             "PlexFreshnessText",
             hasCachedSnapshot
-                ? $"LIVE Â· {PlexCadenceLabel()} Â· updating"
-                : $"UPDATING Â· {PlexCadenceLabel()}");
+                ? $"LIVE · {PlexCadenceLabel()} · updating"
+                : $"UPDATING · {PlexCadenceLabel()}");
 
         if (showStatus)
         {
@@ -390,12 +390,12 @@ public partial class MainWindow
 
                 SetText(
                     "PlexFreshnessText",
-                    $"STALE Â· {PlexCadenceLabel()} Â· retrying");
+                    $"STALE · {PlexCadenceLabel()} · retrying");
 
                 SetText(
                     "PlexStatusText",
                     showStatus
-                        ? "Last live snapshot retained Â· " +
+                        ? "Last live snapshot retained · " +
                           exception.Message
                         : "Last live snapshot retained while Plex telemetry retries.");
             }
