@@ -848,8 +848,7 @@ public static class WindowsTargetNavigationPolicy
                     CapabilityIds.JournalRead),
 
             "BackupsNav" =>
-                capabilities.Supports(
-                    CapabilityIds.BackupInventoryRead),
+                true,
 
             _ =>
                 true

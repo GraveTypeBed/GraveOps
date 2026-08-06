@@ -906,10 +906,10 @@ static Task NavigationPolicyAsync()
         "containers rejected");
 
     True(
-        !WindowsTargetNavigationPolicy.IsSupported(
+        WindowsTargetNavigationPolicy.IsSupported(
             "BackupsNav",
             capabilities),
-        "backups rejected");
+        "backups capability-state workspace reachable");
 
     return Task.CompletedTask;
 }

@@ -42,11 +42,11 @@ public partial class MainWindow : Window
                 "Transfer queue, categories and history workspace"),
             ["LogsNav"] = new("LogsPage", "Logs",
                 "Grouped warnings, provider output and crash evidence"),
-            ["BackupsNav"] = new("ParityPage", "Backups",
+            ["BackupsNav"] = new("BackupsPage", "Backups",
                 "Schedule, artifact and restore-readiness evidence"),
-            ["SettingsNav"] = new("ParityPage", "Settings",
+            ["SettingsNav"] = new("SettingsPage", "Settings",
                 "Windows paths, provider state and parity configuration"),
-            ["ToolsNav"] = new("ParityPage", "Operator Tools",
+            ["ToolsNav"] = new("ToolsPage", "Operator Tools",
                 "Redacted diagnostics, validation and safe local access"),
             ["ServicesNav"] = new("ServicesPage", "Services",
                 "Cataloged Windows service inventory and state"),
@@ -82,6 +82,7 @@ public partial class MainWindow : Window
         InitializeSharedUnifiedActivity();
         InitializeSharedUnifiedFleetApplications();
         InitializeSharedUnifiedSystemWorkspaces();
+        InitializeSharedUnifiedOperationsWorkspaces();
 
         Opened += async (_, _) =>
         {
@@ -631,6 +632,9 @@ public partial class MainWindow : Window
             snapshot);
 
         UpdateSharedUnifiedSystemWorkspaces(
+            snapshot);
+
+        UpdateSharedUnifiedOperationsWorkspaces(
             snapshot);
     }
     private void PopulateMediaWorkspaces(

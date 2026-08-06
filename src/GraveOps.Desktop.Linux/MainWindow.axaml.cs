@@ -138,6 +138,7 @@ public partial class MainWindow : Window
         InitializeSharedUnifiedActivity();
         InitializeSharedUnifiedFleetApplications();
         InitializeSharedUnifiedSystemWorkspaces();
+        InitializeSharedUnifiedOperationsWorkspaces();
 
         _arrLiveTimer = new DispatcherTimer
         {
@@ -173,6 +174,7 @@ public partial class MainWindow : Window
         DisposeUiDataPipeline();
         DisposeRefreshOrchestration();
         DisposeControlPlaneFoundation();
+        DisposeSharedUnifiedOperationsWorkspaces();
         DisposeUnifiedInterface();
         base.OnClosed(e);
     }
@@ -1140,8 +1142,11 @@ public partial class MainWindow : Window
         PopulateAll();
     }
 
-    private void PopulateAll() =>
+    private void PopulateAll()
+    {
         ProjectRefreshedSnapshot();
+        UpdateSharedUnifiedOperationsWorkspaces();
+    }
 
     private void PopulateDashboard() =>
         PopulateDashboardV43();

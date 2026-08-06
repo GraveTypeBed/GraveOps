@@ -3099,6 +3099,10 @@
 
             <Grid x:Name="HistoryPage" IsVisible="False" />
 
+            <Grid x:Name="BackupsPage" IsVisible="False" />
+            <Grid x:Name="SettingsPage" IsVisible="False" />
+            <Grid x:Name="ToolsPage" IsVisible="False" />
+
             <Grid x:Name="ParityPage" IsVisible="False">
               <Border Classes="card">
                 <Border Classes="emptyState" VerticalAlignment="Center">
