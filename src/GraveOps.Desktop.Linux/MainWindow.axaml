@@ -1,6 +1,7 @@
 <Window
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:dashboard="using:GraveOps.Presentation.Avalonia.Dashboard"
     x:Class="GraveOps.Desktop.Linux.MainWindow"
     x:CompileBindings="False"
     Title="GraveOps"
@@ -1042,9 +1043,12 @@
             <Grid
                 x:Name="DashboardPage"
                 IsVisible="True">
+              <dashboard:UnifiedDashboardView
+                  x:Name="SharedDashboardView" />
 
               <ScrollViewer
                   x:Name="UnifiedDashboardScrollViewer"
+                  IsVisible="False"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
 

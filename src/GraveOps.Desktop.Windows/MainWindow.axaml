@@ -1,6 +1,7 @@
 <Window
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:dashboard="using:GraveOps.Presentation.Avalonia.Dashboard"
     x:Class="GraveOps.Desktop.Windows.MainWindow"
     x:CompileBindings="False"
     Title="GraveOps"
@@ -543,7 +544,7 @@
 
             <StackPanel Grid.Row="2" Margin="10,12,0,0">
               <TextBlock Text="GRAVEOPS" Classes="eyebrow" Foreground="{DynamicResource AccentBrush}" />
-              <TextBlock Text="Native and remote providers" Classes="dim" FontSize="10" Margin="0,4,0,0" />
+              <TextBlock Text="Native + remote providers" Classes="dim" FontSize="10" Margin="0,4,0,0" />
             </StackPanel>
           </Grid>
         </Border>
@@ -570,21 +571,22 @@
               </StackPanel>
 
               <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="7">
-                <Button x:Name="OverviewButton" Classes="compact headerCommand" MinWidth="68"
+                <Button x:Name="OverviewButton" Classes="compact headerCommand commandOverview" MinWidth="68"
                         Content="Overview" Click="OverviewButton_OnClick" />
-                <Button x:Name="JobsButton" Classes="compact headerCommand" MinWidth="52"
+                <Button x:Name="JobsButton" Classes="compact headerCommand commandJobs" MinWidth="52"
                         Content="Jobs" Click="JobsButton_OnClick" />
-                <Button Classes="compact headerCommand" MinWidth="84"
-                        Content="Intelligence" Tag="IntelligenceNav"
+                <Button x:Name="IntelligenceButton" Classes="compact headerCommand commandIntelligence" MinWidth="84"
+                        Content="Findings" Tag="IntelligenceNav"
                         Click="DashboardQuickModuleButton_OnClick" />
-                <Button x:Name="ActivityButton" Classes="compact headerCommand" MinWidth="72"
+                <Button x:Name="ActivityButton" Classes="compact headerCommand commandActivity" MinWidth="72"
                         Content="Activity" Click="ActivityButton_OnClick" />
-                <Button Classes="compact headerCommand" MinWidth="88"
+                <Button Classes="compact headerCommand commandTerminal" MinWidth="88"
                         Content="Terminal" Tag="ToolsNav"
                         Click="DashboardQuickModuleButton_OnClick" />
 
                 <Button
                     x:Name="RefreshButton"
+                    IsVisible="False"
                     Classes="primary compact"
                     MinWidth="96"
                     Content="Refresh host"
@@ -622,7 +624,9 @@
 
           <Grid Grid.Row="2" Margin="24">
             <Grid x:Name="DashboardPage" IsVisible="True">
-              <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+              <dashboard:UnifiedDashboardView
+                  x:Name="SharedDashboardView" />
+              <ScrollViewer x:Name="LegacyWindowsDashboardScrollViewer" IsVisible="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Spacing="10">
                   <Grid ColumnDefinitions="*,Auto">
                     <StackPanel>

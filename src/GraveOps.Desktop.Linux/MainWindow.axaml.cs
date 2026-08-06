@@ -132,6 +132,7 @@ public partial class MainWindow : Window
         InitializeDockerWorkspace();
         InitializeUiDataPipeline();
         InitializeUnifiedInterface();
+        InitializeSharedUnifiedDashboard();
 
         _arrLiveTimer = new DispatcherTimer
         {

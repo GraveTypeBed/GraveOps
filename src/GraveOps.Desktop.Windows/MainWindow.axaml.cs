@@ -76,6 +76,7 @@ public partial class MainWindow : Window
         InitializeQBittorrentWorkspace();
         InitializeSABnzbdWorkspace();
         InitializeMediaLifecycleWorkspace();
+        InitializeSharedUnifiedDashboard();
 
         Opened += async (_, _) =>
         {
@@ -465,6 +466,9 @@ public partial class MainWindow : Window
             RecordActivity(
                 "Snapshot failed",
                 $"{activeTarget.DisplayName} | {exception.Message}");
+
+            SetSharedUnifiedDashboardFailure(
+                exception.Message);
         }
         finally
         {
@@ -603,6 +607,10 @@ public partial class MainWindow : Window
 
         PopulateLinuxShellParity(snapshot);
         PopulateActivity();
+        UpdateSharedUnifiedDashboard(
+            snapshot,
+            recommendations,
+            health);
     }
     private void PopulateMediaWorkspaces(
         IReadOnlyList<IntegrationSnapshot> integrations)

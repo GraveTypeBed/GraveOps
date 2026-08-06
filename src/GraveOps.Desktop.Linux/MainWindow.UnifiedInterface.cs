@@ -611,6 +611,10 @@ public partial class MainWindow
         {
             PopulateDashboardCardPicker();
         }
+
+        UpdateSharedUnifiedDashboard(
+            actionable,
+            layout);
     }
 
     private IReadOnlyList<OpsFinding>
