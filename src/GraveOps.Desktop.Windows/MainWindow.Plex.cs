@@ -441,26 +441,14 @@ public partial class MainWindow
         _plexDiscovery =
             integration;
 
-        var visible =
-            integration is not null;
-
-        Get<TextBlock>(
-            "LibraryGroupLabel")
-            .IsVisible =
-                visible;
-
-        Get<Button>(
-            "PlexNav")
-            .IsVisible =
-                visible;
+        ApplyWindowsMediaNavigationAvailability();
 
         SetText(
             "PlexDiscoveryEvidenceText",
             integration is null
-                ? "No Windows provider evidence was reported."
-                : $"{integration.Kind} Â· {integration.State} Â· {integration.Evidence}");
+                ? "No Windows provider evidence was reported. Manual LAN or localhost API configuration remains available."
+                : $"{integration.Kind} · {integration.State} · {integration.Evidence}");
     }
-
     private void OnPlexTargetChanged()
     {
         Get<TextBox>(

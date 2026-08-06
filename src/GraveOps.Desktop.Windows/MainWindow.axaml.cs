@@ -69,6 +69,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         InitializeLinuxShellParity();
+        InitializeWindowsMediaNavigation();
         InitializeServersEditor();
         InitializePlexWorkspace();
         InitializeArrWorkspace();
@@ -143,6 +144,84 @@ public partial class MainWindow : Window
         {
             Navigate(button.Name);
         }
+    }
+
+    private static readonly IReadOnlyList<string>
+        ManualMediaNavigationButtons =
+            new[]
+            {
+                "PlexNav",
+                "SonarrNav",
+                "RadarrNav",
+                "LidarrNav",
+                "ProwlarrNav",
+                "SABnzbdNav",
+                "QBittorrentNav"
+            };
+
+    private void InitializeWindowsMediaNavigation()
+    {
+        ApplyWindowsMediaNavigationAvailability();
+
+        Get<StackPanel>(
+                "LibraryNavGroup")
+            .IsVisible =
+                true;
+
+        Get<StackPanel>(
+                "AcquisitionNavGroup")
+            .IsVisible =
+                true;
+    }
+
+    private void ApplyWindowsMediaNavigationAvailability()
+    {
+        Get<Button>(
+                "LibraryGroupButton")
+            .IsVisible =
+                true;
+
+        Get<Button>(
+                "AcquisitionGroupButton")
+            .IsVisible =
+                true;
+
+        foreach (var buttonName in
+                 ManualMediaNavigationButtons)
+        {
+            Get<Button>(
+                    buttonName)
+                .IsVisible =
+                    true;
+        }
+    }
+
+    private void LibraryGroupButton_OnClick(
+        object? sender,
+        RoutedEventArgs e) =>
+        ToggleNavigationGroup(
+            "LibraryNavGroup",
+            "LibraryGroupGlyph");
+
+    private void AcquisitionGroupButton_OnClick(
+        object? sender,
+        RoutedEventArgs e) =>
+        ToggleNavigationGroup(
+            "AcquisitionNavGroup",
+            "AcquisitionGroupGlyph");
+
+    private void ToggleNavigationGroup(
+        string panelName,
+        string glyphName)
+    {
+        var panel = Get<StackPanel>(panelName);
+        panel.IsVisible = !panel.IsVisible;
+
+        Get<Avalonia.Controls.Shapes.Path>(glyphName).Data =
+            Geometry.Parse(
+                panel.IsVisible
+                    ? "M2,4 L6,8 L10,4"
+                    : "M4,2 L8,6 L4,10");
     }
 
     private void Navigate(string navigationName)
@@ -616,14 +695,8 @@ public partial class MainWindow : Window
         UpdateSABnzbdDiscovery(
             sabnzbd);
 
-        Get<TextBlock>("AcquisitionGroupLabel").IsVisible =
-            true;
+        ApplyWindowsMediaNavigationAvailability();
 
-        Get<Button>("SABnzbdNav").IsVisible =
-            true;
-
-        Get<Button>("QBittorrentNav").IsVisible =
-            true;
     }
 
     private void PopulateMediaWorkspace(

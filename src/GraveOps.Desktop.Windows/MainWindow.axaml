@@ -260,46 +260,76 @@
                   </Grid>
                 </Button>
 
-                <TextBlock
-                    x:Name="LibraryGroupLabel"
-                    Text="LIBRARY"
-                    Classes="eyebrow"
-                    Margin="22,10,0,4"
-                    IsVisible="False" />
-
                 <Button
-                    x:Name="PlexNav"
-                    Classes="nav sub"
-                    IsVisible="False"
-                    Click="NavigationButton_OnClick">
-                  <Grid ColumnDefinitions="24,*">
+                    x:Name="LibraryGroupButton"
+                    Classes="navGroup"
+                    IsVisible="True"
+                    Click="LibraryGroupButton_OnClick">
+                  <Grid ColumnDefinitions="18,*">
                     <Path
-                        Width="16"
-                        Height="16"
-                        Stretch="Uniform"
-                        Data="M3,2 L8.2,2 L13,8 L8.2,14 L3,14 L8.1,8 Z"
-                        Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                        Stroke="Transparent"
-                        StrokeThickness="0" />
-                    <TextBlock
-                        Grid.Column="1"
-                        Text="Plex"
-                        VerticalAlignment="Center"
-                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                        x:Name="LibraryGroupGlyph"
+                        Width="12"
+                        Height="12"
+                        Data="M2,4 L6,8 L10,4"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.45"
+                        StrokeLineCap="Round"
+                        StrokeJoin="Round"
+                        Stretch="Uniform" />
+                    <TextBlock Grid.Column="1" Text="LIBRARY" VerticalAlignment="Center" />
                   </Grid>
                 </Button>
 
-                <TextBlock
-                    x:Name="AcquisitionGroupLabel"
-                    Text="ACQUISITION"
-                    Classes="eyebrow"
-                    Margin="22,10,0,4"
-                    IsVisible="False" />
+                <StackPanel x:Name="LibraryNavGroup" IsVisible="True">
+                  <Button
+                      x:Name="PlexNav"
+                      Classes="nav sub"
+                      IsVisible="True"
+                      Click="NavigationButton_OnClick">
+                    <Grid ColumnDefinitions="24,*">
+                      <Path
+                          Width="16"
+                          Height="16"
+                          Stretch="Uniform"
+                          Data="M3,2 L8.2,2 L13,8 L8.2,14 L3,14 L8.1,8 Z"
+                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                          Stroke="Transparent"
+                          StrokeThickness="0" />
+                      <TextBlock
+                          Grid.Column="1"
+                          Text="Plex"
+                          VerticalAlignment="Center"
+                          Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                    </Grid>
+                  </Button>
+                </StackPanel>
+
+                <Button
+                    x:Name="AcquisitionGroupButton"
+                    Classes="navGroup"
+                    IsVisible="True"
+                    Click="AcquisitionGroupButton_OnClick">
+                  <Grid ColumnDefinitions="18,*">
+                    <Path
+                        x:Name="AcquisitionGroupGlyph"
+                        Width="12"
+                        Height="12"
+                        Data="M2,4 L6,8 L10,4"
+                        Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                        StrokeThickness="1.45"
+                        StrokeLineCap="Round"
+                        StrokeJoin="Round"
+                        Stretch="Uniform" />
+                    <TextBlock Grid.Column="1" Text="ACQUISITION" VerticalAlignment="Center" />
+                  </Grid>
+                </Button>
+
+                <StackPanel x:Name="AcquisitionNavGroup" IsVisible="True">
 
                 <Button
                     x:Name="SonarrNav"
                     Classes="nav sub"
-                    IsVisible="False"
+                    IsVisible="True"
                     Click="NavigationButton_OnClick">
                   <Grid ColumnDefinitions="24,*">
                     <Path
@@ -321,7 +351,7 @@
                 <Button
                     x:Name="RadarrNav"
                     Classes="nav sub"
-                    IsVisible="False"
+                    IsVisible="True"
                     Click="NavigationButton_OnClick">
                   <Grid ColumnDefinitions="24,*">
                     <Path
@@ -343,7 +373,7 @@
                 <Button
                     x:Name="LidarrNav"
                     Classes="nav sub"
-                    IsVisible="False"
+                    IsVisible="True"
                     Click="NavigationButton_OnClick">
                   <Grid ColumnDefinitions="24,*">
                     <Path
@@ -365,7 +395,7 @@
                 <Button
                     x:Name="ProwlarrNav"
                     Classes="nav sub"
-                    IsVisible="False"
+                    IsVisible="True"
                     Click="NavigationButton_OnClick">
                   <Grid ColumnDefinitions="24,*">
                     <Path
@@ -387,7 +417,7 @@
                 <Button
                     x:Name="SABnzbdNav"
                     Classes="nav sub"
-                    IsVisible="False"
+                    IsVisible="True"
                     Click="NavigationButton_OnClick">
                   <Grid ColumnDefinitions="24,*">
                     <Path
@@ -410,7 +440,7 @@
                 <Button
                     x:Name="QBittorrentNav"
                     Classes="nav sub"
-                    IsVisible="False"
+                    IsVisible="True"
                     Click="NavigationButton_OnClick">
                   <Grid ColumnDefinitions="24,*">
                     <Path
@@ -428,6 +458,8 @@
                         Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
                   </Grid>
                 </Button>
+                </StackPanel>
+
                 <TextBlock Text="INFRASTRUCTURE" Classes="eyebrow" Margin="10,15,0,6" />
 
                 <Button x:Name="ServicesNav" Classes="nav" Click="NavigationButton_OnClick">
