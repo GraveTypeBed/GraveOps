@@ -43,6 +43,7 @@ public partial class MainWindow : Window
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 ["DumbNav"] = "DUMB",
+                ["PiHoleNav"] = "Pi-hole",
                 ["PlexNav"] = "Plex",
                 ["TautulliNav"] = "Tautulli",
                 ["KometaNav"] = "Kometa",
@@ -65,10 +66,10 @@ public partial class MainWindow : Window
         new Dictionary<string, NavigationTarget>(StringComparer.Ordinal)
         {
             ["DashboardNav"] = new("DashboardPage", "Dashboard", "Interactive environment health, ownership and active-host operations"),
-            ["IntelligenceNav"] = new("IntelligencePage", "Intelligence", "Fleet impact, root cause, dependencies and contextual next actions"),
-            ["LifecycleNav"] = new("LifecyclePage", "Media Lifecycle", "Track active media across acquisition, download, import, processing and library stages"),
-            ["HistoryNav"] = new("HistoryPage", "History & Incidents", "Fleet health transitions, GraveOps activity and incident replay"),
-            ["ServersNav"] = new("ServersPage", "Servers", "Local and remote host profiles, capabilities and secure credentials"),
+            ["IntelligenceNav"] = new("IntelligencePage", "Health & Findings", "Policy-aware findings, root cause, dependency evidence and next actions"),
+            ["LifecycleNav"] = new("LifecyclePage", "Media Lifecycle", "Track media from requests and acquisition through downloads, processing and library availability"),
+            ["HistoryNav"] = new("HistoryPage", "Activity & Incidents", "Meaningful activity, health transitions, notifications and incident replay"),
+            ["ServersNav"] = new("ServersPage", "Hosts & Connections", "Local and remote host profiles, capabilities and secure connections"),
             ["MediaHubNav"] = new("MediaHubPage", "Media Hub", "Fleet health, launcher configuration and all media applications"),
             ["DumbNav"] = new("ApplicationWorkspacePage", "DUMB", "Stack orchestration and verified local interface"),
             ["PlexNav"] = new("PlexWorkspacePage", "Plex", "Library availability, live sessions, playback decisions and guarded operations"),
@@ -87,6 +88,7 @@ public partial class MainWindow : Window
             ["DecypharrNav"] = new("ApplicationWorkspacePage", "Decypharr", "Debrid processing and related findings"),
             ["RecyclarrNav"] = new("RecyclarrWorkspacePage", "Recyclarr", "Container runtime, configuration targets, read-only preview and synchronization evidence"),
             ["ZurgNav"] = new("ApplicationWorkspacePage", "Zurg", "Debrid mount availability and related findings"),
+            ["PiHoleNav"] = new("PiHoleWorkspacePage", "Pi-hole", "DNS state, query statistics, gravity and guarded controls"),
             ["ServicesNav"] = new("ServicesPage", "Services & Actions", "Native systemd inventory and guarded actions"),
             ["DockerNav"] = new("DockerPage", "Docker", "Containers, images, state, ports and guarded actions"),
             ["StorageNav"] = new("StoragePage", "Storage", "Operational filesystems and capacity health"),
@@ -122,11 +124,14 @@ public partial class MainWindow : Window
         _operatorSettings = _operatorSettingsStore.Load();
         ApplyOperatorSettingsToUi();
         InitializeControlPlaneFoundation();
+        InitializePersistentApplicationInventory();
         InitializeDownloadClientWorkspace();
         InitializeMediaWorkspace();
         InitializePlexWorkspace();
         InitializeRecyclarrWorkspace();
         InitializeDockerWorkspace();
+        InitializeUiDataPipeline();
+        InitializeUnifiedInterface();
 
         _arrLiveTimer = new DispatcherTimer
         {
@@ -140,10 +145,12 @@ public partial class MainWindow : Window
 
         Opened += async (_, _) =>
         {
-            Navigate("DashboardNav");
+            Navigate(UnifiedInitialNavigation());
             await RefreshAsync();
             await RefreshVersionInfoAsync();
             _arrLiveTimer.Start();
+            PopulateUnifiedInterface();
+            ShowExpressSetupIfNeeded();
 
             if (_operatorSettings.OpenOverviewAfterStartup)
             {
@@ -157,7 +164,10 @@ public partial class MainWindow : Window
     {
         _arrLiveTimer.Stop();
         _arrTelemetry.Dispose();
+        DisposeUiDataPipeline();
+        DisposeRefreshOrchestration();
         DisposeControlPlaneFoundation();
+        DisposeUnifiedInterface();
         base.OnClosed(e);
     }
 
@@ -179,15 +189,28 @@ public partial class MainWindow : Window
     private void ToggleMaximized() =>
         WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
 
-    private void NavigationButton_OnClick(
+    private async void NavigationButton_OnClick(
         object? sender,
         RoutedEventArgs e)
     {
-        if (sender is Button button &&
-            !string.IsNullOrWhiteSpace(button.Name))
+        if (sender is not Button button ||
+            string.IsNullOrWhiteSpace(
+                button.Name))
         {
-            Navigate(button.Name);
+            return;
         }
+
+        if (IntegrationNavigationTargets.TryGetValue(
+                button.Name,
+                out var integrationName) &&
+            !await EnsureNavigationApplicationOwnerActiveAsync(
+                integrationName))
+        {
+            return;
+        }
+
+        Navigate(
+            button.Name);
     }
 
     private void LibraryGroupButton_OnClick(
@@ -232,6 +255,29 @@ public partial class MainWindow : Window
 
     private void Navigate(string navigationName)
     {
+        if (!TargetNavigationPolicy.IsSupported(
+                navigationName,
+                _activeTargetCapabilities))
+        {
+            SetControlPlaneState(
+                OpsSeverity.Warning,
+                "UNSUPPORTED",
+                TargetNavigationPolicy.UnsupportedReason(
+                    navigationName,
+                    _activeTargetCapabilities));
+
+            navigationName =
+                "DashboardNav";
+        }
+
+        if (navigationName.Equals(
+                "LogsNav",
+                StringComparison.Ordinal) &&
+            !_dashboardLogContextApplying)
+        {
+            ClearDashboardLogContext();
+        }
+
         if (!_navigation.TryGetValue(
                 navigationName,
                 out var target))
@@ -257,6 +303,7 @@ public partial class MainWindow : Window
 
         Get<TextBlock>("PageTitleText").Text = target.Title;
         Get<TextBlock>("PageSubtitleText").Text = target.Subtitle;
+        RecordUnifiedNavigation(navigationName);
 
         _controlPlane.State.RecordActivity(
             "Navigation",
@@ -303,6 +350,12 @@ public partial class MainWindow : Window
                 ActivateRecyclarrWorkspace();
             }
             else if (target.PageName.Equals(
+                         "PiHoleWorkspacePage",
+                         StringComparison.Ordinal))
+            {
+                ActivatePiHoleWorkspace();
+            }
+            else if (target.PageName.Equals(
                          "ApplicationWorkspacePage",
                          StringComparison.Ordinal))
             {
@@ -314,9 +367,9 @@ public partial class MainWindow : Window
             }
         }
         CloseCommandPalette();
-
-        if (navigationName is "SettingsNav" or "ToolsNav")
-            PopulateSettingsAndTools();
+        ProjectCurrentPageFromSnapshot(
+            navigationName,
+            navigationActivation: true);
     }
 
     private void SelectIntegrationByName(string integrationName)
@@ -336,17 +389,17 @@ public partial class MainWindow : Window
     private void UpdateIntegrationNavigation()
     {
         bool Detected(string name) =>
-            _integrations.Any(item =>
-                item.ShowInNavigation &&
-                item.Name.Equals(
-                    name,
-                    StringComparison.OrdinalIgnoreCase));
+            ActiveTargetHasNavigationApplication(
+                name) ||
+            FleetHasNavigationApplication(
+                name);
 
         void SetButton(string buttonName, string integrationName) =>
             Get<Button>(buttonName).IsVisible =
                 Detected(integrationName);
 
         SetButton("DumbNav", "DUMB");
+        SetButton("PiHoleNav", "Pi-hole");
         SetButton("PlexNav", "Plex");
         SetButton("TautulliNav", "Tautulli");
         SetButton("KometaNav", "Kometa");
@@ -419,6 +472,7 @@ public partial class MainWindow : Window
         {
             CloseCommandPalette();
             CloseControlPlaneDrawers();
+            CloseUnifiedOverlays();
             e.Handled = true;
         }
     }
@@ -646,7 +700,8 @@ public partial class MainWindow : Window
             Get<CheckBox>("SafeModeCheckBox").IsChecked == true;
 
         Get<TextBlock>("FooterTargetText").Text =
-            _snapshot.Hostname;
+            ActiveTargetFooterText(
+                _snapshot);
         Get<TextBlock>("FooterConnectionText").Text =
             Get<TextBlock>("ConnectionText").Text;
         Get<TextBlock>("FooterModeText").Text =
@@ -673,7 +728,10 @@ public partial class MainWindow : Window
                 : $"{customPolicies} custom storage " +
                   $"{(customPolicies == 1 ? "policy" : "policies")} active";
         Get<TextBlock>("OverviewBackupText").Text =
-            $"{_backup.State} · {_backup.Summary}";
+            SupportsTargetCapability(
+                GraveOps.Core.Targets.CapabilityIds.BackupInventoryRead)
+                ? $"{_backup.State} · {_backup.Summary}"
+                : "Backup inventory is not available for the active target.";
 
         var top = active
             .OrderByDescending(item => item.Severity)
@@ -717,6 +775,7 @@ public partial class MainWindow : Window
             ApplyLogsFilter();
             ApplyDockerWorkspaceFilter();
             UpdateActionButtons();
+            UpdatePiHoleActionAvailability();
             PopulateOperatorShell();
         }
     }
@@ -1045,96 +1104,10 @@ public partial class MainWindow : Window
             );
     }
 
-    private async Task RefreshAsync()
-    {
-        if (_controlPlaneCaptureBusy)
-            return;
-
-        var refresh = Get<Button>("RefreshButton");
-        var background = _controlPlaneBackgroundRefresh;
-
-        if (!background)
-        {
-            refresh.IsEnabled = false;
-            refresh.Content = "Refreshing environment...";
-        }
-
-        SetControlPlaneState(
-            OpsSeverity.Info,
-            "REFRESHING",
-            $"Capturing {_controlPlane.ActiveProfile.ConnectionSummary}");
-
-        try
-        {
-            _snapshot = await CaptureActiveTargetAsync();
-            _backup = await CaptureTargetBackupAsync();
-            _identityResolution =
-                await ApplicationIdentityResolver.ResolveAsync(
-                    _snapshot,
-                    _controlPlane.ActiveProfile.Id,
-                    ActiveTargetUrlHost(),
-                    _controlPlane.ActiveProfile.IsLocal,
-                    _applicationIdentityStore);
-            _integrations =
-                _identityResolution.Integrations;
-            _logs =
-                LinuxOpsAnalyzer
-                    .GroupLogs(_snapshot.RecentLogs)
-                    .Where(item =>
-                        !IsPlexTokenProbePrivilegeNoise(item))
-                    .ToArray();
-            var analysisLogs =
-                SignalQualityPolicy.ForHealthAnalysis(
-                    _logs,
-                    out _signalQualityExcludedGroups);
-            _rawAnalysis = LinuxOpsAnalyzer.Analyze(
-                _snapshot,
-                _backup,
-                analysisLogs,
-                _integrations);
-            _rawLifecycle = LinuxOpsAnalyzer.BuildLifecycle(
-                _snapshot,
-                _integrations,
-                _rawAnalysis);
-            ApplyFindingPolicies();
-            RecordInsightCapture();
-            _history.Record(
-                _snapshot,
-                _analysis!,
-                _lifecycle,
-                _backup,
-                _findingPolicies.EvaluateStorageSeverity);
-            PopulateAll();
-            RecordRefreshSuccessAndNotify();
-
-            if (!background)
-            {
-                _nextBackgroundRefreshAt =
-                    DateTimeOffset.Now +
-                    TimeSpan.FromSeconds(
-                        NormalizeBackgroundRefreshSeconds(
-                            _operatorSettings.BackgroundRefreshSeconds));
-            }
-        }
-        catch (Exception exception)
-        {
-            SetControlPlaneState(
-                OpsSeverity.Error,
-                "OFFLINE",
-                "Provider capture failed");
-            Get<TextBlock>("LastUpdatedText").Text =
-                $"Capture failed · {exception.Message}";
-            RecordRefreshFailure(exception);
-        }
-        finally
-        {
-            if (!background)
-            {
-                refresh.IsEnabled = true;
-                refresh.Content = "Refresh environment";
-            }
-        }
-    }
+    private Task RefreshAsync(
+        bool background = false) =>
+        RunCoordinatedRefreshAsync(
+            background);
 
     private void ApplyFindingPolicies()
     {
@@ -1157,48 +1130,8 @@ public partial class MainWindow : Window
         PopulateAll();
     }
 
-    private void PopulateAll()
-    {
-        if (_snapshot is null ||
-            _backup is null ||
-            _analysis is null ||
-            _policyEvaluation is null)
-        {
-            return;
-        }
-
-        Get<TextBlock>("SidebarHostname").Text = _snapshot.Hostname;
-        Get<TextBlock>("SidebarOperatingSystem").Text = _snapshot.OperatingSystem;
-        Get<TextBlock>("LastUpdatedText").Text =
-            $"Captured {_snapshot.CapturedAt.ToLocalTime():g}";
-        SetControlPlaneState(
-            OpsSeverity.Healthy,
-            "ONLINE",
-            ControlPlaneConnectionDetail());
-
-        PopulateDashboard();
-        PopulateIntelligence();
-        PopulateLifecycle();
-        PopulateHistory();
-        PopulateServerPage();
-        UpdateIntegrationNavigation();
-        ApplyMediaFilter();
-        PopulatePlexWorkspace();
-        PopulateDirectIntegrationWorkspace();
-        PopulateDownloadClientWorkspace();
-        PopulateArrApplicationPage();
-        PopulateRecyclarrWorkspace();
-        ApplyServicesFilter();
-        PopulateDockerWorkspaceFallback();
-        ApplyStorageFilter();
-        ApplyLogsFilter();
-        PopulateBackups();
-        UpdateActionButtons();
-        PopulateOperatorShell();
-        PopulateSettingsAndTools();
-        RebuildCommandPalette();
-        PopulateControlPlaneFoundation();
-    }
+    private void PopulateAll() =>
+        ProjectRefreshedSnapshot();
 
     private void PopulateDashboard() =>
         PopulateDashboardV43();
@@ -1990,27 +1923,42 @@ public partial class MainWindow : Window
                 item.PercentUsed))
             .ToArray();
 
-        var rows = volumes
-            .Select(volume =>
+        var evaluated = volumes
+            .Select(volume => new
+            {
+                Volume = volume,
+                Capacity =
+                    _findingPolicies.EvaluateStorageCapacity(volume)
+            })
+            .ToArray();
+
+        var rows = evaluated
+            .Select(item =>
             {
                 var custom =
                     _findingPolicies.HasCustomStorageThreshold(
-                        volume.MountPoint);
-                var severity =
-                    _findingPolicies.EvaluateStorageSeverity(
-                        volume);
+                        item.Volume.MountPoint);
+                var alertOverride =
+                    _findingPolicies.HasStorageCapacityAlertOverride(
+                        item.Volume.MountPoint);
+                var policyLabel =
+                    $"{(custom ? "Custom" : "Default")} · " +
+                    $"{(alertOverride ? "Mount" : "Global")} " +
+                    LinuxFindingPolicyStore.StorageCapacityAlertModeLabel(
+                        item.Capacity.Mode);
 
                 return new StorageDisplayRow(
-                    volume,
-                    volume.Source,
-                    volume.FileSystem,
-                    volume.Size,
-                    volume.Used,
-                    volume.Available,
-                    volume.PercentUsed,
-                    custom ? "Custom" : "Default",
-                    LinuxOpsAnalyzer.SeverityLabel(severity),
-                    volume.MountPoint);
+                    item.Volume,
+                    item.Volume.Source,
+                    item.Volume.FileSystem,
+                    item.Volume.Size,
+                    item.Volume.Used,
+                    item.Volume.Available,
+                    item.Volume.PercentUsed,
+                    policyLabel,
+                    item.Capacity.StatusLabel,
+                    OpsPalette.Foreground(item.Capacity.Severity),
+                    item.Volume.MountPoint);
             })
             .ToArray();
 
@@ -2020,19 +1968,24 @@ public partial class MainWindow : Window
                 selectedMount,
                 StringComparison.OrdinalIgnoreCase));
 
-        var attention = volumes.Count(item =>
-            _findingPolicies.EvaluateStorageSeverity(item) >=
-            OpsSeverity.Warning);
+        var attention = evaluated.Count(item =>
+            item.Capacity.Severity >= OpsSeverity.Warning);
+        var muted = evaluated.Count(item =>
+            item.Capacity.IsMuted);
+        var unmonitored = evaluated.Count(item =>
+            !item.Capacity.MonitoringEnabled);
         var customPolicies = volumes.Count(item =>
             _findingPolicies.HasCustomStorageThreshold(
                 item.MountPoint));
 
         Get<TextBlock>("StorageSummaryText").Text =
-            $"{rows.Length} shown · {attention} active capacity finding(s) · " +
+            $"{rows.Length} shown · {attention} capacity attention · " +
+            $"{muted} muted · {unmonitored} unmonitored · " +
             $"{customPolicies} custom " +
-            $"{(customPolicies == 1 ? "policy" : "policies")}";
+            $"{(customPolicies == 1 ? "threshold policy" : "threshold policies")}";
 
         UpdateStoragePolicyButtons();
+        PopulateStorageCapacityPolicySettings();
     }
 
     private StorageVolumeSnapshot? SelectedStorageVolume() =>
@@ -2096,7 +2049,7 @@ public partial class MainWindow : Window
         {
             title.Text = "No mount selected";
             status.Text =
-                "Select a mount to inspect or customize its policy.";
+                "Select a mount to inspect or customize its threshold policy.";
             return;
         }
 
@@ -2104,19 +2057,21 @@ public partial class MainWindow : Window
             selected.MountPoint);
         var custom = _findingPolicies.HasCustomStorageThreshold(
             selected.MountPoint);
-        var severity = _findingPolicies.EvaluateStorageSeverity(
+        var capacity = _findingPolicies.EvaluateStorageCapacity(
             selected);
 
         title.Text =
             $"{selected.MountPoint} · " +
-            $"{(custom ? "Custom policy active" : "Default policy")}";
+            $"{(custom ? "Custom thresholds active" : "Default thresholds")}";
 
         status.Text =
             $"Current: {selected.PercentUsed} used · {selected.Available} free · " +
-            $"Status: {LinuxOpsAnalyzer.SeverityLabel(severity)} · " +
+            $"Status: {capacity.StatusLabel} · " +
             $"Warning {policy.WarningPercent}% or < {FormatPolicyFree(policy.WarningFreeGiB)} · " +
             $"Error {policy.ErrorPercent}% or < {FormatPolicyFree(policy.ErrorFreeGiB)} · " +
-            $"Critical {policy.CriticalPercent}% or < {FormatPolicyFree(policy.CriticalFreeGiB)}";
+            $"Critical {policy.CriticalPercent}% or < {FormatPolicyFree(policy.CriticalFreeGiB)}" +
+            Environment.NewLine +
+            $"Capacity alerts: {capacity.PolicyLabel}";
     }
 
     private void AcknowledgeFindingButton_OnClick(
@@ -2335,8 +2290,10 @@ public partial class MainWindow : Window
 
     private void PopulateIntegrationWorkspace()
     {
+        var selectedRow =
+            SelectedMediaRow();
         var selected =
-            SelectedMediaIntegration();
+            selectedRow?.Integration;
 
         var name = Get<TextBlock>("IntegrationNameText");
         var runtime = Get<TextBlock>("IntegrationRuntimeText");
@@ -2356,7 +2313,8 @@ public partial class MainWindow : Window
         var actionStatus =
             Get<TextBlock>("IntegrationActionStatusText");
 
-        if (selected is null)
+        if (selected is null ||
+            selectedRow is null)
         {
             name.Text = "Select an application";
             runtime.Text = "--";
@@ -2378,51 +2336,100 @@ public partial class MainWindow : Window
             return;
         }
 
-        var related = _policyEvaluation?.Active
-            .Where(item =>
-                MatchesIntegration(item, selected.Name))
-            .ToArray() ??
-            Array.Empty<OpsPolicyFinding>();
+        var related =
+            selectedRow.IsActiveTarget
+                ? _policyEvaluation?.Active
+                    .Where(item =>
+                        MatchesIntegration(
+                            item,
+                            selected.Name))
+                    .ToArray() ??
+                  Array.Empty<OpsPolicyFinding>()
+                : Array.Empty<OpsPolicyFinding>();
 
-        var url = ResolveIntegrationUrl(selected);
+        var url =
+            ResolveIntegrationUrl(
+                selected);
+        var navigationName =
+            NavigationForIntegration(
+                selected.Name);
+        var ownerAvailable =
+            _controlPlane.Profiles.Find(
+                selectedRow.OwnerTargetId) is not null;
+
         name.Text =
             string.IsNullOrWhiteSpace(
                 selected.DisplayName)
                 ? selected.Name
                 : selected.DisplayName;
-        runtime.Text = selected.State;
+        runtime.Text =
+            selected.State;
         state.Text =
             LinuxOpsAnalyzer.SeverityLabel(
                 selected.Severity);
         state.Foreground =
-            OpsPalette.Foreground(selected.Severity);
+            OpsPalette.Foreground(
+                selected.Severity);
         stateBorder.Background =
-            OpsPalette.Background(selected.Severity);
-        kind.Text = selected.Kind;
-        endpoint.Text = url ??
-            (string.IsNullOrWhiteSpace(selected.Endpoint)
+            OpsPalette.Background(
+                selected.Severity);
+        kind.Text =
+            selected.Kind;
+        endpoint.Text =
+            url ??
+            (string.IsNullOrWhiteSpace(
+                selected.Endpoint)
                 ? "No verified web endpoint"
                 : selected.Endpoint);
-        role.Text = selected.Role;
+        role.Text =
+            $"{selected.Role} · {selectedRow.OwnerTargetName}";
         evidence.Text =
-            IntegrationEvidenceSummary(selected);
-        findingsSummary.Text = related.Length == 0
-            ? "No active findings"
-            : $"{related.Length} active";
-        findingsText.Text = related.Length == 0
-            ? "No active operational finding is associated with this application."
-            : string.Join(
-                Environment.NewLine + Environment.NewLine,
-                related.Select(item =>
-                    $"{item.Severity} · {item.Problem}" +
-                    (string.IsNullOrWhiteSpace(item.NextStep)
-                        ? string.Empty
-                        : Environment.NewLine + item.NextStep)));
-        open.IsEnabled = url is not null;
-        intelligence.IsEnabled = related.Length > 0;
-        actionStatus.Text = url is null
-            ? "No verified local web interface is available."
-            : "Ready to open the local interface.";
+            $"Target · {selectedRow.OwnerTargetName}" +
+            Environment.NewLine +
+            IntegrationEvidenceSummary(
+                selected);
+        findingsSummary.Text =
+            selectedRow.IsActiveTarget
+                ? related.Length == 0
+                    ? "No active findings"
+                    : $"{related.Length} active"
+                : "Activate target to evaluate current findings";
+        findingsText.Text =
+            selectedRow.IsActiveTarget
+                ? related.Length == 0
+                    ? "No active operational finding is associated with this application."
+                    : string.Join(
+                        Environment.NewLine +
+                        Environment.NewLine,
+                        related.Select(item =>
+                            $"{item.Severity} · {item.Problem}" +
+                            (string.IsNullOrWhiteSpace(
+                                item.NextStep)
+                                ? string.Empty
+                                : Environment.NewLine +
+                                  item.NextStep)))
+                : $"This inventory belongs to {selectedRow.OwnerTargetName}. " +
+                  "Open the application to activate its target and refresh current findings.";
+
+        open.IsEnabled =
+            ownerAvailable &&
+            (!string.IsNullOrWhiteSpace(
+                 navigationName) ||
+             url is not null);
+        intelligence.IsEnabled =
+            selectedRow.IsActiveTarget &&
+            related.Length > 0;
+
+        actionStatus.Text =
+            !ownerAvailable
+                ? "The owner target is no longer saved."
+                : selectedRow.IsActiveTarget
+                    ? url is null &&
+                      string.IsNullOrWhiteSpace(
+                          navigationName)
+                        ? "No verified application workspace or interface is available."
+                        : "Ready on the active target."
+                    : $"Open will activate {selectedRow.OwnerTargetName} first.";
     }
 
     private async void OpenIntegrationButton_OnClick(
@@ -2430,38 +2437,14 @@ public partial class MainWindow : Window
         RoutedEventArgs e)
     {
         var selected =
-            SelectedMediaIntegration();
+            SelectedMediaRow();
 
         if (selected is null)
             return;
 
-        var url = ResolveIntegrationUrl(selected);
-        if (url is null)
-            return;
-
-        try
-        {
-            using var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "xdg-open",
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-            process.StartInfo.ArgumentList.Add(url);
-            process.Start();
-
-            Get<TextBlock>("IntegrationActionStatusText").Text =
-                $"Opened {url}";
-            await Task.CompletedTask;
-        }
-        catch (Exception exception)
-        {
-            Get<TextBlock>("IntegrationActionStatusText").Text =
-                $"Could not open interface: {exception.Message}";
-        }
+        await ActivateOwnedApplicationAsync(
+            selected,
+            openIdentityEditor: false);
     }
 
     private void IntegrationFindingsButton_OnClick(
@@ -3144,6 +3127,7 @@ public partial class MainWindow : Window
         string PercentUsed,
         string PolicyLabel,
         string StatusLabel,
+        IBrush StatusBrush,
         string MountPoint);
 
     private sealed record NavigationTarget(

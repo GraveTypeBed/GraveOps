@@ -57,6 +57,9 @@ public sealed class LinuxOperatorSettingsStore
         HistoryPath = Path.Combine(
             DataDirectory,
             "fleet-history.json");
+        InventoryCachePath = Path.Combine(
+            DataDirectory,
+            "application-inventory-cache.json");
     }
 
     public string ConfigDirectory { get; }
@@ -65,6 +68,7 @@ public sealed class LinuxOperatorSettingsStore
     public string SettingsPath { get; }
     public string PolicyPath { get; }
     public string HistoryPath { get; }
+    public string InventoryCachePath { get; }
 
     public LinuxOperatorSettings Load()
     {
@@ -116,6 +120,7 @@ public sealed class LinuxOperatorSettingsStore
                 $"Settings file: {DescribeJson(SettingsPath)}",
                 $"Finding policy: {DescribeJson(PolicyPath)}",
                 $"History file: {DescribeJson(HistoryPath)}",
+                $"Fleet inventory cache: {DescribeJson(InventoryCachePath)}",
                 $"Diagnostics directory: {DescribeDirectory(DiagnosticsDirectory)}"
             });
     }

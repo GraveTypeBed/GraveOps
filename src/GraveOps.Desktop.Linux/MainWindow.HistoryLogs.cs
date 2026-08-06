@@ -279,6 +279,7 @@ public partial class MainWindow
         }
 
         PopulateReliableLogSelection();
+        ApplyDashboardLogContextProjection();
     }
 
     private void PopulateReliableLogSelection()
@@ -401,23 +402,33 @@ public partial class MainWindow
 
     private void LogsReliabilityFilter_OnChanged(
         object? sender,
-        SelectionChangedEventArgs e) =>
+        SelectionChangedEventArgs e)
+    {
+        ClearDashboardLogContext();
         ApplyReliableLogsFilter();
+    }
 
     private void LogsSourceFilterText_OnTextChanged(
         object? sender,
-        TextChangedEventArgs e) =>
+        TextChangedEventArgs e)
+    {
+        ClearDashboardLogContext();
         ApplyReliableLogsFilter();
+    }
 
     private void LogsTextFilterText_OnTextChanged(
         object? sender,
-        TextChangedEventArgs e) =>
+        TextChangedEventArgs e)
+    {
+        ClearDashboardLogContext();
         ApplyReliableLogsFilter();
+    }
 
     private void LogsResetFiltersButton_OnClick(
         object? sender,
         RoutedEventArgs e)
     {
+        ClearDashboardLogContext();
         Get<ComboBox>("LogsSeverityFilterComboBox")
             .SelectedIndex = 0;
         Get<ComboBox>("LogsTimeFilterComboBox")

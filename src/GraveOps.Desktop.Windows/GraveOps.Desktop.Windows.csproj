@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GraveOps.Core\GraveOps.Core.csproj" />
+    <ProjectReference Include="..\GraveOps.Presentation.Avalonia\GraveOps.Presentation.Avalonia.csproj" />
     <ProjectReference Include="..\GraveOps.Platform.Windows\GraveOps.Platform.Windows.csproj" />
   </ItemGroup>
 </Project>

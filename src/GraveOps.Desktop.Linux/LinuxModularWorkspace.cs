@@ -78,7 +78,7 @@ public sealed record ModularApplicationDescriptor(
 
 public sealed class ModularLayoutContract
 {
-    public string Version { get; set; } = "4.9.0-I";
+    public string Version { get; set; } = "4.10.0-RC1";
     public bool ViewportFirst { get; set; } = true;
     public bool PageLevelScrollDisabled { get; set; } = false;
     public bool DirectAppsUseDedicatedWorkspace { get; set; } = true;
@@ -222,6 +222,37 @@ public sealed class ModularLayoutContract
     public bool ArrTelemetryRedirectProtection { get; set; } = true;
     public bool SingleSharedQueueHorizontalScrollbar { get; set; } = true;
     public bool NoPerRowQueueScrollbars { get; set; } = true;
+    public bool UnifiedInterfaceFeatureFreeze { get; set; } = true;
+    public bool LinuxSourceAuthoritative { get; set; } = true;
+    public bool WindowsParityReferenceOnly { get; set; } = true;
+    public bool ProviderNeutralDashboardCards { get; set; } = true;
+    public bool DashboardPerHostCustomization { get; set; } = true;
+    public bool JellyfinEmbyMediaServerCards { get; set; } = true;
+    public bool GenericVerifiedApplicationFallbackCard { get; set; } = true;
+    public bool CompactDensityDefault { get; set; } = true;
+    public bool GraveOpsBrandmarkTitleBar { get; set; } = true;
+    public bool SilentBackgroundRefresh { get; set; } = true;
+    public bool DistinctGlobalCommandColors { get; set; } = true;
+    public bool ExpressSetupWizard { get; set; } = true;
+    public bool ElevenCompleteThemes { get; set; } = true;
+    public bool ThemeContrastValidation { get; set; } = true;
+    public bool SharedDetailsDrawer { get; set; } = true;
+    public bool DisabledActionReasons { get; set; } = true;
+    public bool TelemetryFreshnessStates { get; set; } = true;
+    public bool SessionRestoration { get; set; } = true;
+    public bool ActionableActivityFilter { get; set; } = true;
+    public bool LinuxNativeOperatorWorkspace { get; set; } = true;
+    public bool NativePiHoleWorkspace { get; set; } = true;
+    public bool FilesSftpHandoff { get; set; } = true;
+    public bool ScriptLibrary { get; set; } = true;
+    public bool ReadOnlyUpdateInventory { get; set; } = true;
+    public bool RedactedProfileExport { get; set; } = true;
+    public bool WindowsLinuxParityGate { get; set; } = true;
+    public bool NoRegressionOfVerifiedIdentity { get; set; } = true;
+    public bool NoRegressionOfArrTelemetry { get; set; } = true;
+    public bool NoRegressionOfDockerLogs { get; set; } = true;
+    public bool NoRegressionOfHistorySignalQuality { get; set; } = true;
+    public bool LocalUncommittedRcBuild { get; set; } = true;
     public int PrimaryReferenceWidth { get; set; } = 1920;
     public int PrimaryReferenceHeight { get; set; } = 1040;
     public int SidebarWidth { get; set; } = 260;

@@ -9,6 +9,8 @@ using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using GraveOps.Core.Hosts;
+using GraveOps.Core.Snapshots;
+using GraveOps.Core.Targets;
 
 namespace GraveOps.Desktop.Linux;
 
@@ -20,7 +22,6 @@ public partial class MainWindow
         _controlPlaneTimer = new();
     private bool _targetSelectionBusy;
     private bool _serverProfileBindingBusy;
-    private bool _controlPlaneBackgroundRefresh;
     private bool _controlPlaneCaptureBusy;
     private DateTimeOffset _nextBackgroundRefreshAt;
     private string _lastNotificationKey =
@@ -30,10 +31,20 @@ public partial class MainWindow
     {
         Get<ComboBox>("ServerConnectionTypeComboBox")
             .ItemsSource =
-            Enum.GetNames<LinuxHostKind>();
+            new[]
+            {
+                LinuxHostKind.Local.ToString(),
+                LinuxHostKind.RemoteLinux.ToString(),
+                LinuxHostKind.RemoteWindows.ToString()
+            };
         Get<ComboBox>("ServerAuthenticationComboBox")
             .ItemsSource =
-            Enum.GetNames<LinuxHostAuthentication>();
+            TargetEditorProjectionPolicy
+                .AuthenticationChoices(
+                    LinuxHostKind.RemoteLinux)
+                .Select(value =>
+                    value.ToString())
+                .ToArray();
         Get<ComboBox>("ActivityFilterComboBox")
             .ItemsSource =
             new[]
@@ -43,10 +54,13 @@ public partial class MainWindow
                 "Notifications",
                 "Targets",
                 "Actions",
-                "Failures"
+                "Failures",
+                "Actionable"
             };
         Get<ComboBox>("ActivityFilterComboBox")
             .SelectedIndex = 0;
+
+        InitializeTargetSessionState();
 
         _controlPlaneTimer.Interval =
             TimeSpan.FromSeconds(15);
@@ -128,8 +142,11 @@ public partial class MainWindow
         object? sender,
         EventArgs e)
     {
-        if (_controlPlane.State
-                .ExpireMaintenanceIfNeeded())
+        var maintenanceChanged =
+            _controlPlane.State
+                .ExpireMaintenanceIfNeeded();
+
+        if (maintenanceChanged)
         {
             _controlPlane.State.RecordActivity(
                 "Maintenance",
@@ -137,9 +154,8 @@ public partial class MainWindow
                 "Maintenance Mode expired",
                 "Normal notifications and alert presentation resumed.",
                 "DashboardNav");
+            PopulateControlPlaneFoundation();
         }
-
-        PopulateControlPlaneFoundation();
 
         if (_controlPlaneCaptureBusy ||
             DateTimeOffset.Now <
@@ -156,20 +172,23 @@ public partial class MainWindow
             DateTimeOffset.Now +
             TimeSpan.FromSeconds(seconds);
 
-        _controlPlaneBackgroundRefresh = true;
-
         try
         {
-            await RefreshAsync();
+            await RefreshAsync(
+                background: true);
         }
-        finally
+        catch (OperationCanceledException)
         {
-            _controlPlaneBackgroundRefresh = false;
+            // A newer manual refresh superseded this background request.
         }
     }
 
-    private async Task<HostSnapshot>
-        CaptureActiveTargetAsync()
+    private async Task<TargetSnapshotEnvelope<HostSnapshot>>
+        CaptureActiveTargetAsync(
+            LinuxHostProfile profile,
+            TargetRefreshLease lease,
+            bool background,
+            CancellationToken cancellationToken)
     {
         if (_controlPlaneCaptureBusy)
         {
@@ -177,10 +196,8 @@ public partial class MainWindow
                 "A control-plane capture is already running.");
         }
 
-        _controlPlaneCaptureBusy = true;
-        var profile = _controlPlane.ActiveProfile;
-        var background =
-            _controlPlaneBackgroundRefresh;
+        _controlPlaneCaptureBusy =
+            true;
 
         var jobId =
             _controlPlane.State.StartJob(
@@ -191,20 +208,31 @@ public partial class MainWindow
                 profile.ConnectionSummary,
                 background);
 
-        PopulateControlPlaneFoundation();
-
         try
         {
+            var providerMessage =
+                profile.Kind switch
+                {
+                    LinuxHostKind.Local =>
+                        "Capturing the native Linux provider.",
+                    LinuxHostKind.RemoteLinux =>
+                        "Opening the fingerprint-pinned SSH provider.",
+                    LinuxHostKind.RemoteWindows =>
+                        "Opening the certificate-validated WinRM HTTPS provider.",
+                    _ =>
+                        "Opening the selected target provider."
+                };
+
             _controlPlane.State.UpdateJob(
                 jobId,
                 25,
-                profile.IsLocal
-                    ? "Capturing the native Linux provider."
-                    : "Opening the fingerprint-pinned SSH provider.");
+                providerMessage);
 
-            var snapshot =
-                await _controlPlane
-                    .CaptureActiveAsync();
+            var envelope =
+                await _controlPlane.CaptureAsync(
+                    profile,
+                    lease,
+                    cancellationToken);
 
             _controlPlane.State.UpdateJob(
                 jobId,
@@ -214,21 +242,29 @@ public partial class MainWindow
             _controlPlane.State.CompleteJob(
                 jobId,
                 success: true,
-                $"{snapshot.Hostname} captured at {snapshot.CapturedAt.ToLocalTime():g}.");
+                $"{envelope.Snapshot.Hostname} captured.");
 
             if (!background)
             {
-                RecordRoutineControlPlaneActivity(
+                _controlPlane.State.RecordActivity(
                     "Capture",
                     profile.DisplayName,
                     "Environment refreshed",
-                    $"{snapshot.Hostname} · {snapshot.OperatingSystem}",
+                    $"{envelope.Snapshot.Hostname} · " +
+                    $"{envelope.Snapshot.OperatingSystem}",
                     "DashboardNav",
-                    TimeSpan.FromMinutes(30),
                     unread: false);
             }
 
-            return snapshot;
+            return envelope;
+        }
+        catch (OperationCanceledException)
+        {
+            _controlPlane.State.CompleteJob(
+                jobId,
+                success: false,
+                "Refresh superseded or cancelled.");
+            throw;
         }
         catch (Exception exception)
         {
@@ -243,49 +279,71 @@ public partial class MainWindow
                 "Environment capture failed",
                 exception.Message,
                 "ServersNav");
-
             throw;
         }
         finally
         {
-            _controlPlaneCaptureBusy = false;
-            PopulateControlPlaneFoundation();
+            _controlPlaneCaptureBusy =
+                false;
         }
     }
 
     private async Task<OpsBackupSnapshot>
-        CaptureTargetBackupAsync()
+        CaptureTargetBackupAsync(
+            LinuxHostProfile profile,
+            HostSnapshot snapshot,
+            CancellationToken cancellationToken)
     {
-        if (_controlPlane.ActiveProfile.IsLocal)
-            return await _backupProbe.CaptureAsync();
-
-        if (_snapshot is null)
+        if (profile.IsLocalLinux)
         {
-            throw new InvalidOperationException(
-                "Remote backup projection requires a host snapshot.");
+            return await Task.Run(
+                () =>
+                    _backupProbe.CaptureAsync(
+                        cancellationToken),
+                cancellationToken);
         }
 
         return _controlPlane
             .CreateRemoteBackupSnapshot(
-                _snapshot);
+                snapshot);
     }
 
     private string ControlPlaneConnectionDetail() =>
-        _controlPlane.ActiveProfile.IsLocal
-            ? "Native Linux provider"
-            : $"SSH · {_controlPlane.ActiveProfile.Username}@" +
-              $"{_controlPlane.ActiveProfile.Host}:" +
-              $"{_controlPlane.ActiveProfile.Port}";
+        ControlPlaneConnectionDetail(
+            _controlPlane.ActiveProfile);
+
+    private static string ControlPlaneConnectionDetail(
+        LinuxHostProfile profile) =>
+        profile.Kind switch
+        {
+            LinuxHostKind.Local =>
+                "Native Linux provider",
+            LinuxHostKind.RemoteLinux =>
+                $"SSH · {profile.Username}@" +
+                $"{profile.Host}:{profile.Port}",
+            LinuxHostKind.RemoteWindows =>
+                $"WinRM HTTPS · {profile.Username}@" +
+                $"{profile.Host}:{profile.Port}",
+            LinuxHostKind.LocalWindows =>
+                "Native Windows provider",
+            _ =>
+                profile.ConnectionSummary
+        };
 
     private bool CanRunLocalMutations() =>
-        _controlPlane.ActiveProfile.IsLocal;
+        _controlPlane.ActiveProfile.IsLocalLinux;
 
-    private string ActiveTargetUrlHost()
+    private string ActiveTargetUrlHost() =>
+        ActiveTargetUrlHost(
+            _controlPlane.ActiveProfile);
+
+    private static string ActiveTargetUrlHost(
+        LinuxHostProfile profile)
     {
         var host =
-            _controlPlane.ActiveProfile.IsLocal
+            profile.IsLocal
                 ? "127.0.0.1"
-                : _controlPlane.ActiveProfile.Host.Trim();
+                : profile.Host.Trim();
 
         return host.Contains(
                 ':',
@@ -298,11 +356,12 @@ public partial class MainWindow
     }
 
     private void RecordRefreshFailure(
+        LinuxHostProfile profile,
         Exception exception)
     {
         _controlPlane.State.RecordActivity(
             "Failure",
-            _controlPlane.ActiveProfile.DisplayName,
+            profile.DisplayName,
             "Control-plane projection failed",
             exception.Message,
             "DashboardNav");
@@ -310,7 +369,8 @@ public partial class MainWindow
         PopulateControlPlaneFoundation();
     }
 
-    private async void RecordRefreshSuccessAndNotify()
+    private async void RecordRefreshSuccessAndNotify(
+        LinuxHostProfile profile)
     {
         if (_snapshot is null ||
             _analysis is null)
@@ -319,7 +379,7 @@ public partial class MainWindow
         }
 
         _controlPlane.Profiles.TouchDetection(
-            _controlPlane.ActiveProfile.Id,
+            profile.Id,
             _snapshot.CapturedAt);
 
         if (_analysis.Severity <
@@ -334,7 +394,7 @@ public partial class MainWindow
         }
 
         var key =
-            $"{_controlPlane.ActiveProfile.Id}|" +
+            $"{profile.Id}|" +
             $"{_analysis.Severity}|" +
             $"{_analysis.Headline}";
 
@@ -350,12 +410,12 @@ public partial class MainWindow
 
         await LinuxDesktopNotifier.NotifyAsync(
             $"GraveOps · {_analysis.Label}",
-            $"{_controlPlane.ActiveProfile.DisplayName}: " +
+            $"{profile.DisplayName}: " +
             _analysis.Headline);
 
         _controlPlane.State.RecordActivity(
             "Notification",
-            _controlPlane.ActiveProfile.DisplayName,
+            profile.DisplayName,
             _analysis.Headline,
             _analysis.RootCause,
             "IntelligenceNav");
@@ -370,26 +430,51 @@ public partial class MainWindow
         PopulateActivityDrawer();
         PopulateMaintenanceProjection();
 
+        var activeProfile =
+            _controlPlane.ActiveProfile;
+        var currentSnapshot =
+            _snapshot is not null &&
+            _acceptedTargetId.Equals(
+                activeProfile.Id,
+                StringComparison.OrdinalIgnoreCase)
+                ? _snapshot
+                : null;
+
+        ProjectActiveTargetShell(
+            activeProfile,
+            currentSnapshot);
+        ApplyActiveTargetCapabilities();
+
         Get<TextBlock>("ServerKeyringStatusText").Text =
             _controlPlane.Credentials.CapabilityText;
-        Get<TextBlock>("ServerProfilesSummaryText").Text =
-            $"{_controlPlane.Profiles.Profiles.Count} saved " +
-            $"{(_controlPlane.Profiles.Profiles.Count == 1 ? "target" : "targets")} · " +
-            $"{_controlPlane.Profiles.Profiles.Count(item => !item.IsLocal)} remote";
+        var savedTargets =
+            _controlPlane.Profiles.Profiles;
+        var remoteTargets =
+            savedTargets.Count(item =>
+                !item.IsLocal);
+        var windowsTargets =
+            savedTargets.Count(item =>
+                item.IsWindows);
 
-        if (_snapshot is not null)
+        Get<TextBlock>("ServerProfilesSummaryText").Text =
+            $"{savedTargets.Count} saved " +
+            $"{(savedTargets.Count == 1 ? "target" : "targets")} · " +
+            $"{remoteTargets} remote · " +
+            $"{windowsTargets} Windows";
+
+        if (currentSnapshot is not null)
         {
             Get<TextBlock>("SidebarHostname").Text =
-                _snapshot.Hostname;
+                currentSnapshot.Hostname;
             Get<TextBlock>("SidebarOperatingSystem").Text =
-                _snapshot.OperatingSystem;
+                currentSnapshot.OperatingSystem;
         }
         else
         {
             Get<TextBlock>("SidebarHostname").Text =
-                _controlPlane.ActiveProfile.DisplayName;
+                activeProfile.DisplayName;
             Get<TextBlock>("SidebarOperatingSystem").Text =
-                _controlPlane.ActiveProfile.KindLabel;
+                activeProfile.KindLabel;
         }
 
         var local = CanRunLocalMutations();
@@ -478,38 +563,8 @@ public partial class MainWindow
             return;
         }
 
-        _controlPlane.SetActive(profile.Id);
-        _controlPlane.State.RecordActivity(
-            "Target",
-            profile.DisplayName,
-            "Active target changed",
-            profile.ConnectionSummary,
-            "ServersNav");
-
-        _snapshot = null;
-        _backup = null;
-        _analysis = null;
-        _rawAnalysis = null;
-        _integrations =
-            Array.Empty<OpsIntegration>();
-        _identityResolution =
-            ApplicationIdentityResolution.Empty;
-        _logs =
-            Array.Empty<OpsLogGroup>();
-        _arrTelemetrySnapshot = null;
-        _lastNotificationKey =
-            string.Empty;
-
-        SetControlPlaneState(
-            OpsSeverity.Info,
-            "SWITCHING",
-            profile.ConnectionSummary);
-
-        RefreshHostProfileLists(profile.Id);
-        UpdateActionButtons();
-        PopulateControlPlaneFoundation();
-
-        await RefreshAsync();
+        await SwitchActiveTargetAsync(
+            profile);
     }
 
     private void ServerProfilesList_OnSelectionChanged(
@@ -529,112 +584,174 @@ public partial class MainWindow
                 .SelectedItem as
             LinuxHostProfile;
 
-        if (selected is null)
+        _serverProfileBindingBusy =
+            true;
+
+        try
         {
-            Get<TextBlock>("ServerEditingIdText").Text =
-                string.Empty;
-            Get<TextBox>("ServerNameTextBox").Text =
-                string.Empty;
-            Get<TextBox>("ServerRoleTextBox").Text =
-                "Server";
-            Get<ComboBox>("ServerConnectionTypeComboBox")
-                .SelectedItem =
-                LinuxHostKind.RemoteLinux.ToString();
-            Get<TextBox>("ServerHostTextBox").Text =
-                string.Empty;
-            Get<TextBox>("ServerPortTextBox").Text =
-                "22";
-            Get<TextBox>("ServerUsernameTextBox").Text =
-                Environment.UserName;
-            Get<ComboBox>("ServerAuthenticationComboBox")
-                .SelectedItem =
-                LinuxHostAuthentication.Agent.ToString();
-            Get<TextBox>("ServerPrivateKeyPathTextBox").Text =
-                string.Empty;
-            Get<TextBox>("ServerFingerprintTextBox").Text =
-                string.Empty;
-            Get<TextBox>("ServerSecretTextBox").Text =
-                string.Empty;
-            Get<CheckBox>("ServerSaveSecretCheckBox")
-                .IsChecked = false;
-            Get<Button>("DeleteServerButton").IsEnabled =
-                false;
-            Get<Button>("SetActiveServerButton").IsEnabled =
-                false;
-            Get<TextBlock>("ServerProfileStatusText").Text =
-                "Create a remote Linux profile or select an existing target.";
-            Get<ListBox>("ServerDetectedIntegrationsList")
-                .ItemsSource =
-                Array.Empty<string>();
-            UpdateServerFormCapability();
-            return;
+            if (selected is null)
+            {
+                Get<TextBlock>("ServerEditingIdText").Text =
+                    string.Empty;
+                Get<TextBox>("ServerNameTextBox").Text =
+                    string.Empty;
+                Get<TextBox>("ServerRoleTextBox").Text =
+                    "Server";
+                Get<ComboBox>("ServerConnectionTypeComboBox")
+                    .SelectedItem =
+                    LinuxHostKind.RemoteLinux.ToString();
+                Get<TextBox>("ServerHostTextBox").Text =
+                    string.Empty;
+                Get<TextBox>("ServerPortTextBox").Text =
+                    "22";
+                Get<TextBox>("ServerUsernameTextBox").Text =
+                    Environment.UserName;
+                Get<ComboBox>("ServerAuthenticationComboBox")
+                    .SelectedItem =
+                    LinuxHostAuthentication.Agent.ToString();
+                Get<TextBox>("ServerPrivateKeyPathTextBox").Text =
+                    string.Empty;
+                Get<TextBox>("ServerFingerprintTextBox").Text =
+                    string.Empty;
+                Get<TextBox>("ServerOperationTimeoutTextBox").Text =
+                    "60";
+                Get<TextBox>("ServerSecretTextBox").Text =
+                    string.Empty;
+                Get<CheckBox>("ServerSaveSecretCheckBox")
+                    .IsChecked =
+                    false;
+                Get<Button>("DeleteServerButton").IsEnabled =
+                    false;
+                Get<Button>("SetActiveServerButton").IsEnabled =
+                    false;
+                Get<TextBlock>("ServerProfileStatusText").Text =
+                    "Create a remote Linux or remote Windows target.";
+                Get<ListBox>("ServerDetectedIntegrationsList")
+                    .ItemsSource =
+                    Array.Empty<string>();
+            }
+            else
+            {
+                Get<TextBlock>("ServerEditingIdText").Text =
+                    selected.Id;
+                Get<TextBox>("ServerNameTextBox").Text =
+                    selected.Name;
+                Get<TextBox>("ServerRoleTextBox").Text =
+                    selected.Role;
+                Get<ComboBox>("ServerConnectionTypeComboBox")
+                    .SelectedItem =
+                    selected.Kind.ToString();
+                Get<TextBox>("ServerHostTextBox").Text =
+                    selected.Host;
+                Get<TextBox>("ServerPortTextBox").Text =
+                    selected.Port.ToString(
+                        CultureInfo.InvariantCulture);
+                Get<TextBox>("ServerUsernameTextBox").Text =
+                    selected.Username;
+                var authenticationCombo =
+                    Get<ComboBox>(
+                        "ServerAuthenticationComboBox");
+                authenticationCombo.ItemsSource =
+                    TargetEditorProjectionPolicy
+                        .AuthenticationChoices(
+                            selected.Kind)
+                        .Select(value =>
+                            value.ToString())
+                        .ToArray();
+                authenticationCombo.SelectedItem =
+                    selected.Authentication.ToString();
+                Get<TextBox>("ServerPrivateKeyPathTextBox").Text =
+                    selected.PrivateKeyPath;
+                Get<TextBox>("ServerFingerprintTextBox").Text =
+                    selected.HostKeyFingerprint;
+                Get<TextBox>("ServerOperationTimeoutTextBox").Text =
+                    selected.OperationTimeoutSeconds.ToString(
+                        CultureInfo.InvariantCulture);
+                Get<TextBox>("ServerSecretTextBox").Text =
+                    string.Empty;
+                Get<CheckBox>("ServerSaveSecretCheckBox")
+                    .IsChecked =
+                    false;
+
+                Get<Button>("DeleteServerButton").IsEnabled =
+                    !selected.IsLocal;
+                Get<Button>("SetActiveServerButton").IsEnabled =
+                    !selected.Id.Equals(
+                        _controlPlane.ActiveProfile.Id,
+                        StringComparison.OrdinalIgnoreCase);
+
+                Get<TextBlock>("ServerProfileStatusText").Text =
+                    selected.IsLocalLinux
+                        ? "Local Linux uses the native provider and does not loop back through SSH."
+                        : selected.LastDetectedAt is { } detected
+                            ? $"Last detected {detected.ToLocalTime():g}."
+                            : "The target has not completed provider detection.";
+
+                Get<ListBox>("ServerDetectedIntegrationsList")
+                    .ItemsSource =
+                    selected.Id.Equals(
+                            _controlPlane.ActiveProfile.Id,
+                            StringComparison.OrdinalIgnoreCase) &&
+                        _identityResolution.Records.Count > 0
+                        ? _identityResolution.Records
+                            .Select(IdentityServerSummary)
+                            .ToArray()
+                        : Array.Empty<string>();
+            }
         }
-
-        Get<TextBlock>("ServerEditingIdText").Text =
-            selected.Id;
-        Get<TextBox>("ServerNameTextBox").Text =
-            selected.Name;
-        Get<TextBox>("ServerRoleTextBox").Text =
-            selected.Role;
-        Get<ComboBox>("ServerConnectionTypeComboBox")
-            .SelectedItem =
-            selected.Kind.ToString();
-        Get<TextBox>("ServerHostTextBox").Text =
-            selected.Host;
-        Get<TextBox>("ServerPortTextBox").Text =
-            selected.Port.ToString(
-                CultureInfo.InvariantCulture);
-        Get<TextBox>("ServerUsernameTextBox").Text =
-            selected.Username;
-        Get<ComboBox>("ServerAuthenticationComboBox")
-            .SelectedItem =
-            selected.Authentication.ToString();
-        Get<TextBox>("ServerPrivateKeyPathTextBox").Text =
-            selected.PrivateKeyPath;
-        Get<TextBox>("ServerFingerprintTextBox").Text =
-            selected.HostKeyFingerprint;
-        Get<TextBox>("ServerSecretTextBox").Text =
-            string.Empty;
-        Get<CheckBox>("ServerSaveSecretCheckBox")
-            .IsChecked = false;
-
-        Get<Button>("DeleteServerButton").IsEnabled =
-            !selected.IsLocal;
-        Get<Button>("SetActiveServerButton").IsEnabled =
-            !selected.Id.Equals(
-                _controlPlane.ActiveProfile.Id,
-                StringComparison.OrdinalIgnoreCase);
-
-        Get<TextBlock>("ServerProfileStatusText").Text =
-            selected.IsLocal
-                ? "Local Linux uses the native provider and does not loop back through SSH."
-                : selected.LastDetectedAt is { } detected
-                    ? $"Last detected {detected.ToLocalTime():g}."
-                    : "Remote target has not completed integration detection.";
-
-        Get<ListBox>("ServerDetectedIntegrationsList")
-            .ItemsSource =
-            selected.Id.Equals(
-                    _controlPlane.ActiveProfile.Id,
-                    StringComparison.OrdinalIgnoreCase) &&
-                _identityResolution.Records.Count > 0
-                ? _identityResolution.Records
-                    .Select(IdentityServerSummary)
-                    .ToArray()
-                : Array.Empty<string>();
+        finally
+        {
+            _serverProfileBindingBusy =
+                false;
+        }
 
         UpdateServerFormCapability();
     }
 
     private void ServerConnectionTypeComboBox_OnSelectionChanged(
         object? sender,
-        SelectionChangedEventArgs e) =>
+        SelectionChangedEventArgs e)
+    {
+        if (_serverProfileBindingBusy)
+            return;
+
+        var kind =
+            ParseEnum(
+                Get<ComboBox>(
+                        "ServerConnectionTypeComboBox")
+                    .SelectedItem as string,
+                LinuxHostKind.RemoteLinux);
+
+        var projection =
+            TargetEditorProjectionPolicy.Create(
+                kind,
+                ParseEnum(
+                    Get<ComboBox>(
+                            "ServerAuthenticationComboBox")
+                        .SelectedItem as string,
+                    LinuxHostAuthentication.Agent),
+                _controlPlane.Credentials.IsAvailable);
+
+        if (Get<ListBox>("ServerProfilesList")
+                .SelectedItem is null)
+        {
+            Get<TextBox>("ServerPortTextBox").Text =
+                projection.DefaultPort.ToString(
+                    CultureInfo.InvariantCulture);
+        }
+
         UpdateServerFormCapability();
+    }
 
     private void ServerAuthenticationComboBox_OnSelectionChanged(
         object? sender,
-        SelectionChangedEventArgs e) =>
+        SelectionChangedEventArgs e)
+    {
+        if (_serverProfileBindingBusy)
+            return;
+
         UpdateServerFormCapability();
+    }
 
     private static string IdentityServerSummary(
         ApplicationIdentityRecord item) =>
@@ -654,25 +771,54 @@ public partial class MainWindow
                         "ServerConnectionTypeComboBox")
                     .SelectedItem as string,
                 LinuxHostKind.RemoteLinux);
-        var authentication =
+        var requestedAuthentication =
             ParseEnum(
                 Get<ComboBox>(
                         "ServerAuthenticationComboBox")
                     .SelectedItem as string,
                 LinuxHostAuthentication.Agent);
 
+        var choices =
+            TargetEditorProjectionPolicy
+                .AuthenticationChoices(
+                    kind);
+        var authentication =
+            TargetEditorProjectionPolicy
+                .NormalizeAuthentication(
+                    kind,
+                    requestedAuthentication);
+        var authenticationCombo =
+            Get<ComboBox>(
+                "ServerAuthenticationComboBox");
+
+        _serverProfileBindingBusy =
+            true;
+
+        try
+        {
+            authenticationCombo.ItemsSource =
+                choices
+                    .Select(value =>
+                        value.ToString())
+                    .ToArray();
+            authenticationCombo.SelectedItem =
+                authentication.ToString();
+        }
+        finally
+        {
+            _serverProfileBindingBusy =
+                false;
+        }
+
+        var projection =
+            TargetEditorProjectionPolicy.Create(
+                kind,
+                authentication,
+                _controlPlane.Credentials.IsAvailable);
+
         var localProfile =
-            selected?.IsLocal == true;
-        var remote =
-            kind == LinuxHostKind.RemoteLinux;
-        var privateKey =
-            remote &&
-            authentication ==
-            LinuxHostAuthentication.PrivateKey;
-        var secret =
-            remote &&
-            authentication !=
-            LinuxHostAuthentication.Agent;
+            selected?.IsLocal ==
+            true;
 
         Get<ComboBox>("ServerConnectionTypeComboBox")
             .IsEnabled =
@@ -680,80 +826,90 @@ public partial class MainWindow
 
         Get<Border>("ServerLocalProviderPanel")
             .IsVisible =
-            !remote;
+            projection.IsLocal;
         Get<Border>("ServerRemoteConnectionPanel")
             .IsVisible =
-            remote;
+            projection.ShowRemoteConnection;
         Get<Border>("ServerPrivateKeyPanel")
             .IsVisible =
-            privateKey;
+            projection.ShowPrivateKey;
         Get<Border>("ServerFingerprintPanel")
             .IsVisible =
-            remote;
+            projection.ShowPinnedIdentity;
         Get<Border>("ServerSecretPanel")
             .IsVisible =
-            secret;
+            projection.ShowSecret;
+        Get<Border>("ServerWindowsOptionsPanel")
+            .IsVisible =
+            projection.ShowWindowsOptions;
 
         Get<TextBox>("ServerHostTextBox")
             .IsEnabled =
-            remote;
+            projection.ShowRemoteConnection;
         Get<TextBox>("ServerPortTextBox")
             .IsEnabled =
-            remote;
+            projection.ShowRemoteConnection;
         Get<TextBox>("ServerUsernameTextBox")
             .IsEnabled =
-            remote;
-        Get<ComboBox>("ServerAuthenticationComboBox")
-            .IsEnabled =
-            remote;
+            projection.ShowRemoteConnection;
+        authenticationCombo.IsEnabled =
+            projection.ShowRemoteConnection;
         Get<TextBox>("ServerPrivateKeyPathTextBox")
             .IsEnabled =
-            privateKey;
+            projection.ShowPrivateKey;
         Get<Button>("BrowsePrivateKeyButton")
             .IsEnabled =
-            privateKey;
+            projection.ShowPrivateKey;
         Get<TextBox>("ServerFingerprintTextBox")
             .IsEnabled =
-            remote;
+            projection.ShowPinnedIdentity;
+        Get<Button>("ScanFingerprintButton")
+            .IsVisible =
+            projection.ShowFingerprintScan;
         Get<Button>("ScanFingerprintButton")
             .IsEnabled =
-            remote;
+            projection.ShowFingerprintScan;
         Get<TextBox>("ServerSecretTextBox")
             .IsEnabled =
-            secret;
+            projection.ShowSecret;
         Get<CheckBox>("ServerSaveSecretCheckBox")
             .IsEnabled =
-            secret &&
-            _controlPlane.Credentials.IsAvailable;
+            projection.CanSaveSecret;
+        Get<TextBox>("ServerOperationTimeoutTextBox")
+            .IsEnabled =
+            projection.ShowWindowsOptions;
+
+        Get<TextBlock>("ServerFingerprintLabelText")
+            .Text =
+            projection.PinnedIdentityLabel;
+        Get<TextBlock>("ServerFingerprintHelpText")
+            .Text =
+            projection.PinnedIdentityHelp;
+        Get<TextBlock>("ServerSecretLabelText")
+            .Text =
+            projection.SecretLabel;
+        Get<TextBlock>("ServerProfileModeText")
+            .Text =
+            projection.ModeText;
 
         Get<Button>("ServerSaveButton")
             .IsEnabled =
-            true;
-        Get<Button>("ServerTestButton")
-            .IsVisible =
-            remote;
-        Get<Button>("ServerTestButton")
-            .IsEnabled =
-            remote;
+            kind !=
+            LinuxHostKind.LocalWindows;
+        var testButton =
+            Get<Button>(
+                "ServerTestButton");
+        testButton.IsVisible =
+            projection.ShowRemoteConnection;
+        testButton.IsEnabled =
+            projection.ShowRemoteConnection;
+        testButton.Content =
+            projection.IsRemoteWindows
+                ? "Test WinRM"
+                : "Test SSH";
         Get<Button>("ServerDetectButton")
             .IsEnabled =
             selected is not null;
-
-        Get<TextBlock>("ServerProfileModeText")
-            .Text =
-            remote
-                ? authentication switch
-                {
-                    LinuxHostAuthentication.Agent =>
-                        "Remote Linux over pinned SSH · SSH agent authentication",
-                    LinuxHostAuthentication.PrivateKey =>
-                        "Remote Linux over pinned SSH · private key and optional passphrase",
-                    LinuxHostAuthentication.Password =>
-                        "Remote Linux over pinned SSH · keyring-backed password",
-                    _ =>
-                        "Remote Linux over pinned SSH"
-                }
-                : "Native local provider · no SSH credentials required";
     }
 
     private static T ParseEnum<T>(
@@ -774,8 +930,30 @@ public partial class MainWindow
                 .Text?
                 .Trim();
 
-        if (string.IsNullOrWhiteSpace(id))
-            id = Guid.NewGuid().ToString("N");
+        if (string.IsNullOrWhiteSpace(
+                id))
+        {
+            id =
+                Guid.NewGuid()
+                    .ToString("N");
+        }
+
+        var kind =
+            ParseEnum(
+                Get<ComboBox>(
+                        "ServerConnectionTypeComboBox")
+                    .SelectedItem as string,
+                LinuxHostKind.RemoteLinux);
+
+        var projection =
+            TargetEditorProjectionPolicy.Create(
+                kind,
+                ParseEnum(
+                    Get<ComboBox>(
+                            "ServerAuthenticationComboBox")
+                        .SelectedItem as string,
+                    LinuxHostAuthentication.Agent),
+                _controlPlane.Credentials.IsAvailable);
 
         if (!int.TryParse(
                 Get<TextBox>("ServerPortTextBox")
@@ -784,12 +962,30 @@ public partial class MainWindow
                 CultureInfo.InvariantCulture,
                 out var port))
         {
-            port = 22;
+            port =
+                projection.DefaultPort;
         }
+
+        if (!int.TryParse(
+                Get<TextBox>(
+                        "ServerOperationTimeoutTextBox")
+                    .Text,
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out var operationTimeout))
+        {
+            operationTimeout =
+                60;
+        }
+
+        var existing =
+            _controlPlane.Profiles.Find(
+                id);
 
         return new LinuxHostProfile
         {
-            Id = id,
+            Id =
+                id,
             Name =
                 Get<TextBox>("ServerNameTextBox")
                     .Text?
@@ -801,28 +997,21 @@ public partial class MainWindow
                     .Trim() ??
                 "Server",
             Kind =
-                ParseEnum(
-                    Get<ComboBox>(
-                            "ServerConnectionTypeComboBox")
-                        .SelectedItem as string,
-                    LinuxHostKind.RemoteLinux),
+                kind,
             Host =
                 Get<TextBox>("ServerHostTextBox")
                     .Text?
                     .Trim() ??
                 string.Empty,
-            Port = port,
+            Port =
+                port,
             Username =
                 Get<TextBox>("ServerUsernameTextBox")
                     .Text?
                     .Trim() ??
                 string.Empty,
             Authentication =
-                ParseEnum(
-                    Get<ComboBox>(
-                            "ServerAuthenticationComboBox")
-                        .SelectedItem as string,
-                    LinuxHostAuthentication.Agent),
+                projection.Authentication,
             PrivateKeyPath =
                 Get<TextBox>(
                         "ServerPrivateKeyPathTextBox")
@@ -835,9 +1024,13 @@ public partial class MainWindow
                     .Text?
                     .Trim() ??
                 string.Empty,
+            OperationTimeoutSeconds =
+                operationTimeout,
+            CredentialReference =
+                existing?.CredentialReference ??
+                string.Empty,
             LastDetectedAt =
-                _controlPlane.Profiles.Find(id)?
-                    .LastDetectedAt
+                existing?.LastDetectedAt
         };
     }
 
@@ -859,7 +1052,7 @@ public partial class MainWindow
 
         PopulateServerProfileForm();
         Get<TextBlock>("ServerProfileStatusText").Text =
-            "New remote Linux profile.";
+            "New remote Linux or remote Windows target.";
     }
 
     private async void SaveServerButton_OnClick(
@@ -927,12 +1120,31 @@ public partial class MainWindow
 
         if (!await ConfirmActionAsync(
                 $"Delete {profile.DisplayName}?",
-                "This removes the host profile, its pinned known-host file reference and stored GraveOps credentials. It does not modify the remote server."))
+                "This removes the target profile, its pinned identity reference and stored GraveOps credentials. It does not modify the remote system."))
         {
             return;
         }
 
+        var wasActive =
+            profile.Id.Equals(
+                _controlPlane.ActiveProfile.Id,
+                StringComparison.OrdinalIgnoreCase);
+
+        if (wasActive)
+        {
+            var local =
+                _controlPlane.Profiles.Find(
+                    "local") ??
+                throw new InvalidOperationException(
+                    "The local Linux target is missing.");
+
+            await SwitchActiveTargetAsync(
+                local);
+        }
+
         await _controlPlane.DeleteProfileAsync(
+            profile.Id);
+        ForgetApplicationInventory(
             profile.Id);
 
         _controlPlane.State.RecordActivity(
@@ -958,6 +1170,14 @@ public partial class MainWindow
         {
             var profile =
                 ReadServerProfileForm();
+
+            if (!profile.IsRemoteLinux)
+            {
+                status.Text =
+                    "Automatic scanning is available only for SSH host keys. A Windows certificate pin is optional and entered manually after verifying the server certificate.";
+                return;
+            }
+
             var job =
                 _controlPlane.State.StartJob(
                     "SSH fingerprint scan",
@@ -1091,16 +1311,18 @@ public partial class MainWindow
                 selected.Id,
                 StringComparison.OrdinalIgnoreCase))
         {
-            _controlPlane.SetActive(selected.Id);
-            RefreshHostProfileLists(selected.Id);
+            await SwitchActiveTargetAsync(
+                selected);
         }
-
-        await RefreshAsync();
+        else
+        {
+            await RefreshAsync();
+        }
 
         Get<ListBox>("ServerDetectedIntegrationsList")
             .ItemsSource =
             _identityResolution.Records
-                    .Select(IdentityServerSummary)
+                .Select(IdentityServerSummary)
                 .ToArray();
 
         Get<TextBlock>("ServerProfileStatusText").Text =
@@ -1118,19 +1340,8 @@ public partial class MainWindow
             return;
         }
 
-        _controlPlane.SetActive(profile.Id);
-        _controlPlane.State.RecordActivity(
-            "Target",
-            profile.DisplayName,
-            "Active target changed",
-            profile.ConnectionSummary,
-            "ServersNav");
-
-        RefreshHostProfileLists(profile.Id);
-        _arrTelemetrySnapshot = null;
-        _lastNotificationKey =
-            string.Empty;
-        await RefreshAsync();
+        await SwitchActiveTargetAsync(
+            profile);
     }
 
     private async void BrowsePrivateKeyButton_OnClick(
@@ -1494,6 +1705,29 @@ public partial class MainWindow
                             row.Kind.Equals(
                                 "Failure",
                                 StringComparison.OrdinalIgnoreCase),
+                        "Actionable" =>
+                            row.Kind.Equals(
+                                "Failure",
+                                StringComparison.OrdinalIgnoreCase) ||
+                            row.Kind.Equals(
+                                "Notification",
+                                StringComparison.OrdinalIgnoreCase) ||
+                            (
+                                row.Kind.Equals(
+                                    "Action",
+                                    StringComparison.OrdinalIgnoreCase) &&
+                                (
+                                    row.Title.Contains(
+                                        "failed",
+                                        StringComparison.OrdinalIgnoreCase) ||
+                                    row.Detail.Contains(
+                                        "failed",
+                                        StringComparison.OrdinalIgnoreCase) ||
+                                    row.Detail.Contains(
+                                        "error",
+                                        StringComparison.OrdinalIgnoreCase)
+                                )
+                            ),
                         _ => true
                     })
                 .ToArray();

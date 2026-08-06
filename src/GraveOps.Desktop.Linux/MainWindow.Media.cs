@@ -10,6 +10,8 @@ public sealed class LinuxMediaApplicationRow
     public required OpsIntegration Integration { get; init; }
     public required string IntegrationName { get; init; }
     public required string SourceKey { get; init; }
+    public required string OwnerTargetId { get; init; }
+    public required string OwnerTargetName { get; init; }
     public required string DisplayName { get; init; }
     public required string Category { get; init; }
     public required string RuntimeText { get; init; }
@@ -28,6 +30,8 @@ public sealed class LinuxMediaApplicationRow
     public required OpsSeverity Severity { get; init; }
     public bool IsVerified { get; init; }
     public bool IsVisible { get; init; }
+    public bool IsActiveTarget { get; init; }
+    public bool IsStale { get; init; }
 }
 
 public sealed class LinuxMediaInstanceRow
@@ -45,6 +49,8 @@ public sealed class LinuxMediaInstanceRow
 public sealed class LinuxMediaProductGroup
 {
     public required string ProductName { get; init; }
+    public required string OwnerTargetId { get; init; }
+    public required string OwnerTargetName { get; init; }
     public required string Category { get; init; }
     public required string InstanceCountText { get; init; }
     public required string SummaryText { get; init; }
@@ -107,11 +113,19 @@ public partial class MainWindow
             _selectedIdentitySourceKey;
 
         _mediaRows =
-            _integrations
-                .Select(BuildMediaApplicationRow)
-                .OrderBy(item => item.Category)
-                .ThenBy(item => item.DisplayName)
-                .ThenBy(item => item.SourceKey)
+            OwnedApplicationProjections()
+                .Select(
+                    BuildMediaApplicationRow)
+                .OrderByDescending(item =>
+                    item.IsActiveTarget)
+                .ThenBy(item =>
+                    item.Category)
+                .ThenBy(item =>
+                    item.OwnerTargetName)
+                .ThenBy(item =>
+                    item.DisplayName)
+                .ThenBy(item =>
+                    item.SourceKey)
                 .ToArray();
 
         var filter =
@@ -129,6 +143,7 @@ public partial class MainWindow
                         filter,
                         item.DisplayName,
                         item.IntegrationName,
+                        item.OwnerTargetName,
                         item.Category,
                         item.RuntimeText,
                         item.EndpointText,
@@ -139,19 +154,50 @@ public partial class MainWindow
             BuildMediaCategoryGroups(
                 visibleRows);
 
+        var productGroups =
+            categoryGroups
+                .SelectMany(group =>
+                    group.Products)
+                .OrderBy(group =>
+                    MediaCategoryRank(
+                        group.Category))
+                .ThenByDescending(group =>
+                    group.OwnerTargetId.Equals(
+                        _controlPlane.ActiveProfile.Id,
+                        StringComparison.OrdinalIgnoreCase))
+                .ThenBy(group =>
+                    group.ProductName)
+                .ThenBy(group =>
+                    group.OwnerTargetName)
+                .ToArray();
+
         Get<ItemsControl>(
                 "MediaCategoryGroupsList")
             .ItemsSource =
-            categoryGroups;
+            productGroups;
+
+        var candidateCount =
+            _mediaRows.Count(item =>
+                !item.IsVerified);
+        var staleTargetCount =
+            StaleApplicationInventoryTargetCount();
+        var targetCount =
+            _mediaRows
+                .Select(item =>
+                    item.OwnerTargetId)
+                .Distinct(
+                    StringComparer.OrdinalIgnoreCase)
+                .Count();
 
         Get<TextBlock>(
                 "MediaFleetGroupingSummaryText")
             .Text =
-            $"{categoryGroups.Sum(group => group.Products.Count)} " +
-            $"application group(s) · " +
+            $"{productGroups.Length} " +
+            $"application target group(s) · " +
             $"{visibleRows.Length} visible instance(s) · " +
-            $"{_identityResolution.Records.Count(item => !item.IsVerified)} " +
-            $"candidate(s)";
+            $"{targetCount} target(s) · " +
+            $"{staleTargetCount} stale target(s) · " +
+            $"{candidateCount} candidate(s)";
 
         var cards =
             Get<ListBox>("IntegrationsList");
@@ -164,6 +210,8 @@ public partial class MainWindow
                 item.SourceKey.Equals(
                     selectedSource,
                     StringComparison.OrdinalIgnoreCase)) ??
+            visibleRows.FirstOrDefault(item =>
+                item.IsActiveTarget) ??
             visibleRows.FirstOrDefault();
 
         Get<Border>("MediaHubEmptyState")
@@ -189,47 +237,47 @@ public partial class MainWindow
         Get<TextBlock>(
                 "IdentityRegistrySummaryText")
             .Text =
-            $"{_identityResolution.Records.Count} detected source(s) · " +
-            $"{_integrations.Count(item => item.IsVerified && item.OwnsHealth)} verified health owner(s) · " +
+            $"{_identityResolution.Records.Count} active-target source(s) · " +
+            $"{_integrations.Count(item => item.IsVerified && item.OwnsHealth)} " +
+            $"verified health owner(s) · " +
             $"{_identityResolution.Records.Count(item => !item.IsVerified)} candidate(s)";
 
-        var offline =
-            _integrations.Count(item =>
-                item.OwnsHealth &&
-                item.IsVerified &&
-                (item.Severity >= OpsSeverity.Error ||
-                 item.State.Contains(
-                     "offline",
-                     StringComparison.OrdinalIgnoreCase) ||
-                 item.State.Contains(
-                     "unavailable",
-                     StringComparison.OrdinalIgnoreCase) ||
-                 item.State.Contains(
-                     "not detected",
-                     StringComparison.OrdinalIgnoreCase)));
+        var healthRows =
+            _mediaRows
+                .Where(item =>
+                    !item.IsStale &&
+                    item.Integration.OwnsHealth &&
+                    item.IsVerified)
+                .ToArray();
 
-        var attention =
-            _integrations.Count(item =>
-                item.OwnsHealth &&
-                item.IsVerified &&
-                item.Severity ==
-                    OpsSeverity.Warning &&
-                !item.State.Contains(
+        var offline =
+            healthRows.Count(item =>
+                item.Severity >= OpsSeverity.Error ||
+                item.Integration.State.Contains(
                     "offline",
-                    StringComparison.OrdinalIgnoreCase) &&
-                !item.State.Contains(
+                    StringComparison.OrdinalIgnoreCase) ||
+                item.Integration.State.Contains(
                     "unavailable",
+                    StringComparison.OrdinalIgnoreCase) ||
+                item.Integration.State.Contains(
+                    "not detected",
                     StringComparison.OrdinalIgnoreCase));
 
-        var healthOwners =
-            _integrations.Count(item =>
-                item.OwnsHealth &&
-                item.IsVerified);
+        var attention =
+            healthRows.Count(item =>
+                item.Severity ==
+                    OpsSeverity.Warning &&
+                !item.Integration.State.Contains(
+                    "offline",
+                    StringComparison.OrdinalIgnoreCase) &&
+                !item.Integration.State.Contains(
+                    "unavailable",
+                    StringComparison.OrdinalIgnoreCase));
 
         var healthy =
             Math.Max(
                 0,
-                healthOwners -
+                healthRows.Length -
                 offline -
                 attention);
 
@@ -247,19 +295,27 @@ public partial class MainWindow
 
         Get<TextBlock>("MediaTargetMetricText")
             .Text =
-            _controlPlane.ActiveProfile.DisplayName;
+            targetCount == 1
+                ? _mediaRows.FirstOrDefault()?
+                    .OwnerTargetName ??
+                  _controlPlane.ActiveProfile.DisplayName
+                : $"{targetCount} targets";
 
         Get<TextBlock>("MediaHubSummaryText")
             .Text =
             $"{visibleRows.Length} shown · " +
-            $"{_integrations.Count} application instance(s)";
+            $"{_applicationRegistry.Applications.Count} remembered application source(s)";
+
+        var newestCapture =
+            MostRecentApplicationInventoryCapture();
 
         Get<TextBlock>("MediaHubSampleAgeText")
             .Text =
-            _snapshot is null
+            newestCapture is null
                 ? "Waiting for capture"
-                : $"Captured " +
-                  $"{_snapshot.CapturedAt.ToLocalTime():g}";
+                : $"{staleTargetCount} stale target(s) · " +
+                  $"newest capture " +
+                  $"{newestCapture.Value.ToLocalTime():g}";
 
         Get<Button>("MediaHubShowHiddenButton")
             .Content =
@@ -273,8 +329,19 @@ public partial class MainWindow
 
     private LinuxMediaApplicationRow
         BuildMediaApplicationRow(
-            OpsIntegration integration)
+            OwnedApplicationProjection owned)
     {
+        var integration =
+            owned.Integration;
+        var identity =
+            owned.Identity;
+        var activeTarget =
+            owned.Profile.Id.Equals(
+                _controlPlane.ActiveProfile.Id,
+                StringComparison.OrdinalIgnoreCase);
+        var stale =
+            owned.IsStale;
+
         var displayName =
             string.IsNullOrWhiteSpace(
                 integration.DisplayName)
@@ -292,26 +359,23 @@ public partial class MainWindow
             ResolveIntegrationUrl(
                 integration);
 
-        var identity =
-            _identityResolution.Records
-                .FirstOrDefault(item =>
-                    item.SourceKey.Equals(
-                        integration.InstanceKey,
-                        StringComparison.OrdinalIgnoreCase));
-
-        LinuxPlexSnapshot? plexSnapshot =
+        PlexTelemetrySnapshot? plexSnapshot =
             null;
 
-        if (integration.Name.Equals(
+        if (activeTarget &&
+            SupportsTargetCapability(
+                GraveOps.Core.Targets.CapabilityIds.ApplicationApiTelemetry) &&
+            integration.Name.Equals(
                 "Plex",
                 StringComparison.OrdinalIgnoreCase))
         {
             _plexCache.TryGetValue(
-                _controlPlane.ActiveProfile.Id,
+                owned.Profile.Id,
                 out plexSnapshot);
         }
 
         var liveSeverity =
+            stale ||
             !integration.IsVerified ||
             !integration.OwnsHealth
                 ? OpsSeverity.Info
@@ -321,29 +385,53 @@ public partial class MainWindow
                         plexSnapshot.State);
 
         var runtimeText =
-            plexSnapshot is null
-                ? $"{integration.Kind} · {integration.Role} · " +
-                  $"{(string.IsNullOrWhiteSpace(integration.Protocol) ? "--" : integration.Protocol)}"
-                : $"{plexSnapshot.Service} · " +
-                  $"{plexSnapshot.ActiveSessions} active";
+            stale
+                ? $"Cached inventory · captured " +
+                  $"{owned.CapturedAt.ToLocalTime():g}"
+                : plexSnapshot is null
+                    ? $"{integration.Kind} · {integration.Role} · " +
+                      $"{(string.IsNullOrWhiteSpace(integration.Protocol) ? "--" : integration.Protocol)}"
+                    : $"{plexSnapshot.Service} · " +
+                      $"{plexSnapshot.ActiveSessions} active";
 
         var endpointText =
-            url ??
+            stale
+                ? "Refresh target to resolve endpoint"
+                : url ??
             (string.IsNullOrWhiteSpace(
                 integration.Endpoint)
-                ? "No verified endpoint"
+                ? integration.IsVerified
+                    ? integration.Kind.Contains(
+                        "systemd",
+                        StringComparison.OrdinalIgnoreCase)
+                        ? "System service"
+                        : integration.Kind.Contains(
+                            "docker",
+                            StringComparison.OrdinalIgnoreCase) ||
+                          integration.Evidence.Contains(
+                              "compose",
+                              StringComparison.OrdinalIgnoreCase)
+                            ? "Docker managed"
+                            : "Managed application"
+                    : "Endpoint not confirmed"
                 : integration.IsVerified
                     ? integration.Endpoint
                     : $"Suggested · {integration.Endpoint}");
 
         var evidence =
-            plexSnapshot is null
-                ? $"{(integration.IsVerified ? "Verified" : "Candidate")} · " +
-                  $"{integration.Evidence}"
-                : $"Live Plex · " +
-                  $"{plexSnapshot.ActiveSessions} sessions · " +
-                  $"{plexSnapshot.TotalBandwidth} · " +
-                  $"{plexSnapshot.LibraryCount} libraries";
+            $"Target · {owned.Profile.DisplayName}" +
+            Environment.NewLine +
+            (stale
+                ? $"STALE CACHE · captured " +
+                  $"{owned.CapturedAt.ToLocalTime():g} · " +
+                  "refresh required before use"
+                : plexSnapshot is null
+                    ? $"{(integration.IsVerified ? "Verified" : "Candidate")} · " +
+                      $"{integration.Evidence}"
+                    : $"Live Plex · " +
+                      $"{plexSnapshot.ActiveSessions} sessions · " +
+                      $"{plexSnapshot.TotalBandwidth} · " +
+                      $"{plexSnapshot.LibraryCount} libraries");
 
         return new LinuxMediaApplicationRow
         {
@@ -353,6 +441,10 @@ public partial class MainWindow
                 integration.Name,
             SourceKey =
                 integration.InstanceKey,
+            OwnerTargetId =
+                owned.Profile.Id,
+            OwnerTargetName =
+                owned.Profile.DisplayName,
             DisplayName =
                 displayName,
             Category =
@@ -379,22 +471,27 @@ public partial class MainWindow
             Evidence =
                 evidence,
             OpenLabel =
-                NavigationForIntegration(
-                    integration.Name) is null
-                    ? "Open interface"
-                    : "Open in GraveOps",
+                stale
+                    ? "Refresh & open"
+                    : activeTarget
+                        ? NavigationForIntegration(
+                            integration.Name) is null
+                            ? "Open interface"
+                            : "Open in GraveOps"
+                        : "Switch & open",
             VisibilityText =
-                integration.IsVisible
-                    ? "Visible in Fleet overview"
-                    : "Hidden from Fleet overview",
+                $"{(integration.IsVisible ? "Visible" : "Hidden")} · " +
+                $"{owned.Profile.DisplayName}",
             Url =
                 url ??
                 "No verified URL",
             StateLabel =
-                integration.IsVerified
-                    ? LinuxOpsAnalyzer.SeverityLabel(
-                        liveSeverity)
-                    : "UNVERIFIED",
+                stale
+                    ? "STALE"
+                    : integration.IsVerified
+                        ? LinuxOpsAnalyzer.SeverityLabel(
+                            liveSeverity)
+                        : "UNVERIFIED",
             StateForeground =
                 OpsPalette.Foreground(
                     liveSeverity),
@@ -406,7 +503,11 @@ public partial class MainWindow
             IsVerified =
                 integration.IsVerified,
             IsVisible =
-                integration.IsVisible
+                integration.IsVisible,
+            IsActiveTarget =
+                activeTarget,
+            IsStale =
+                stale
         };
     }
 
@@ -427,15 +528,23 @@ public partial class MainWindow
                 var products =
                     group
                         .GroupBy(
-                            item => item.IntegrationName,
+                            item =>
+                                $"{item.IntegrationName}\u001f{item.OwnerTargetId}",
                             StringComparer.OrdinalIgnoreCase)
-                        .OrderBy(product =>
-                            product.Key)
                         .Select(product =>
-                            BuildMediaProductGroup(
-                                product.Key,
+                        {
+                            var first =
+                                product.First();
+
+                            return BuildMediaProductGroup(
+                                first.IntegrationName,
                                 group.Key,
-                                product.ToArray()))
+                                product.ToArray());
+                        })
+                        .OrderBy(product =>
+                            product.ProductName)
+                        .ThenBy(product =>
+                            product.OwnerTargetName)
                         .ToArray();
 
                 return new LinuxMediaCategoryGroup
@@ -447,7 +556,7 @@ public partial class MainWindow
                             group.Key),
                     ProductCountText =
                         $"{products.Length} " +
-                        $"{(products.Length == 1 ? "application" : "applications")}",
+                        $"{(products.Length == 1 ? "application target" : "application targets")}",
                     Products =
                         products
                 };
@@ -490,20 +599,28 @@ public partial class MainWindow
                     OpsSeverity.Info)
                 .Max();
 
+        var stale =
+            ordered.Any(item =>
+                item.IsStale);
+
         var stateLabel =
-            verified == 0
-                ? "UNVERIFIED"
+            stale
+                ? "STALE"
+                : verified == 0
+                    ? "UNVERIFIED"
                 : verified != ordered.Length
                     ? "MIXED"
                     : LinuxOpsAnalyzer.SeverityLabel(
                         groupSeverity);
 
-        var summary =
-            verified == 0
-                ? $"{ordered.Length} candidate " +
+        var healthSummary =
+            stale
+                ? "Cached inventory · refresh required"
+                : verified == 0
+                    ? $"{ordered.Length} candidate " +
                   $"{(ordered.Length == 1 ? "instance" : "instances")}"
                 : attention == 0
-                    ? $"{verified} verified · all healthy"
+                    ? "Healthy"
                     : $"{healthy} healthy · {attention} attention";
 
         var instances =
@@ -516,10 +633,12 @@ public partial class MainWindow
                         DisplayName =
                             item.CompactDisplayName,
                         MetaText =
-                            item.VersionText == "--"
-                                ? item.RuntimeLabel
-                                : $"v{item.VersionText} · " +
-                                  item.RuntimeLabel,
+                            item.IsStale
+                                ? "Cached inventory"
+                                : item.VersionText == "--"
+                                    ? item.RuntimeLabel
+                                    : $"v{item.VersionText} · " +
+                                      item.RuntimeLabel,
                         EndpointText =
                             item.CompactEndpointText,
                         FullEndpointText =
@@ -538,25 +657,34 @@ public partial class MainWindow
                 .OrderByDescending(item =>
                     item.IsVerified)
                 .ThenByDescending(item =>
-                    item.Severity < OpsSeverity.Warning)
+                    item.Severity <
+                    OpsSeverity.Warning)
                 .First();
 
         return new LinuxMediaProductGroup
         {
             ProductName =
                 productName,
+            OwnerTargetId =
+                primary.OwnerTargetId,
+            OwnerTargetName =
+                primary.OwnerTargetName,
             Category =
                 category,
             InstanceCountText =
                 $"{ordered.Length} " +
                 $"{(ordered.Length == 1 ? "instance" : "instances")}",
             SummaryText =
-                summary,
+                $"{primary.OwnerTargetName} · {healthSummary}",
             OpenLabel =
-                NavigationForIntegration(
-                    productName) is null
-                    ? "Open interface"
-                    : "Open workspace",
+                stale
+                    ? "Refresh & open"
+                    : primary.IsActiveTarget
+                        ? NavigationForIntegration(
+                            productName) is null
+                            ? "Open interface"
+                            : "Open workspace"
+                        : "Switch & open",
             PrimarySourceKey =
                 primary.SourceKey,
             StateLabel =
@@ -625,7 +753,7 @@ public partial class MainWindow
         return displayName.Equals(
                 product,
                 StringComparison.OrdinalIgnoreCase)
-            ? "Default"
+            ? "Local instance"
             : displayName;
     }
 
@@ -700,6 +828,9 @@ public partial class MainWindow
                 "Processing",
             "dumb" =>
                 "Orchestration",
+            "pi-hole" or
+            "pihole" =>
+                "Network",
             _ =>
                 "Supporting service"
         };
@@ -726,21 +857,40 @@ public partial class MainWindow
     private void SelectMediaIntegrationByName(
         string integrationName)
     {
+        var activeTargetId =
+            _controlPlane.ActiveProfile.Id;
+
         var row =
-            _mediaRows.FirstOrDefault(item =>
-                item.IntegrationName.Equals(
-                    integrationName,
-                    StringComparison.OrdinalIgnoreCase));
+            _mediaRows
+                .Where(item =>
+                    item.IntegrationName.Equals(
+                        integrationName,
+                        StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(item =>
+                    item.OwnerTargetId.Equals(
+                        activeTargetId,
+                        StringComparison.OrdinalIgnoreCase))
+                .ThenByDescending(item =>
+                    item.IsVerified)
+                .FirstOrDefault();
 
         if (row is null)
         {
             PopulateMediaHub();
 
             row =
-                _mediaRows.FirstOrDefault(item =>
-                    item.IntegrationName.Equals(
-                        integrationName,
-                        StringComparison.OrdinalIgnoreCase));
+                _mediaRows
+                    .Where(item =>
+                        item.IntegrationName.Equals(
+                            integrationName,
+                            StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(item =>
+                        item.OwnerTargetId.Equals(
+                            activeTargetId,
+                            StringComparison.OrdinalIgnoreCase))
+                    .ThenByDescending(item =>
+                        item.IsVerified)
+                    .FirstOrDefault();
         }
 
         if (row is null)
@@ -758,10 +908,19 @@ public partial class MainWindow
                 row;
         }
 
-        Get<ListBox>(
-                "MediaLauncherSettingsList")
-            .SelectedItem =
-            row;
+        if (row.OwnerTargetId.Equals(
+                activeTargetId,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            Get<ListBox>(
+                    "MediaLauncherSettingsList")
+                .SelectedItem =
+                _identityResolution.Records
+                    .FirstOrDefault(item =>
+                        item.SourceKey.Equals(
+                            row.SourceKey,
+                            StringComparison.OrdinalIgnoreCase));
+        }
 
         PopulateIntegrationWorkspace();
         PopulateMediaLauncherEditor();
@@ -831,9 +990,6 @@ public partial class MainWindow
         button.IsEnabled =
             false;
 
-        button.Content =
-            "Refreshing...";
-
         try
         {
             await RefreshAsync();
@@ -842,9 +998,6 @@ public partial class MainWindow
         {
             button.IsEnabled =
                 true;
-
-            button.Content =
-                "Refresh telemetry";
         }
     }
 
@@ -858,57 +1011,50 @@ public partial class MainWindow
         PopulateMediaHub();
     }
 
-    private void MediaCardOpenButton_OnClick(
+    private async void MediaCardOpenButton_OnClick(
         object? sender,
         RoutedEventArgs e)
     {
         if (sender is not Button button ||
-            button.Tag is not string
-                integrationName)
+            button.Tag is not string sourceKey)
         {
             return;
         }
 
-        var navigationName =
-            NavigationForIntegration(
-                integrationName);
+        var row =
+            FindOwnedMediaRow(
+                sourceKey);
 
-        if (!string.IsNullOrWhiteSpace(
-                navigationName))
-        {
-            Navigate(navigationName);
+        if (row is null)
             return;
-        }
 
-        var integration =
-            _integrations.FirstOrDefault(item =>
-                item.Name.Equals(
-                    integrationName,
-                    StringComparison.OrdinalIgnoreCase));
-
-        if (integration is not null)
-            _ = OpenMediaIntegrationAsync(
-                integration,
-                "IntegrationActionStatusText");
+        await ActivateOwnedApplicationAsync(
+            row,
+            openIdentityEditor: false);
     }
 
-    private void MediaGroupIdentityButton_OnClick(
+    private async void MediaGroupIdentityButton_OnClick(
         object? sender,
         RoutedEventArgs e)
     {
         if (sender is not Button button ||
             button.Tag is not string sourceKey ||
-            string.IsNullOrWhiteSpace(sourceKey))
+            string.IsNullOrWhiteSpace(
+                sourceKey))
         {
             return;
         }
 
-        _selectedIdentitySourceKey =
-            sourceKey;
+        var row =
+            FindOwnedMediaRow(
+                sourceKey);
 
-        ShowMediaLauncherSettings();
-        SelectIdentityRegistrySource(
-            sourceKey);
+        if (row is null)
+            return;
+
+        await ActivateOwnedApplicationAsync(
+            row,
+            openIdentityEditor: true);
     }
 
     private void
