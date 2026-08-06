@@ -2,6 +2,7 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:dashboard="using:GraveOps.Presentation.Avalonia.Dashboard"
+    xmlns:shell="using:GraveOps.Presentation.Avalonia.Shell"
     x:Class="GraveOps.Desktop.Windows.MainWindow"
     x:CompileBindings="False"
     Title="GraveOps"
@@ -24,6 +25,7 @@
 
     <Grid RowDefinitions="38,*">
       <Border
+          x:Name="LegacyTitleBar"
           Grid.Row="0"
           Background="{DynamicResource HeaderBrush}"
           BorderBrush="{DynamicResource BorderBrush}"
@@ -36,6 +38,7 @@
               Margin="14,0,0,0">
 
             <Image
+                x:Name="LegacyBrandImage"
                 Width="24"
                 Height="24"
                 Source="/Assets/graveops-brandmark.png"
@@ -93,7 +96,10 @@
         </Grid>
       </Border>
 
-      <Grid Grid.Row="1" ColumnDefinitions="260,*">
+      <Grid
+          x:Name="LegacyBody"
+          Grid.Row="1"
+          ColumnDefinitions="260,*">
         <Border
             Grid.Column="0"
             Background="{DynamicResource SidebarBrush}"
@@ -550,6 +556,7 @@
         </Border>
 
         <Grid
+            x:Name="LegacyMainShellGrid"
             Grid.Column="1"
             RowDefinitions="72,42,*,26"
             Background="{DynamicResource BackgroundBrush}">
@@ -622,7 +629,10 @@
             </Grid>
           </Border>
 
-          <Grid Grid.Row="2" Margin="24">
+          <Grid
+              x:Name="LegacyPageHost"
+              Grid.Row="2"
+              Margin="24">
             <Grid x:Name="DashboardPage" IsVisible="True">
               <dashboard:UnifiedDashboardView
                   x:Name="SharedDashboardView" />
@@ -3308,6 +3318,11 @@
           </Border>
         </Grid>
       </Grid>
+
+      <shell:UnifiedShellView
+          x:Name="SharedShellView"
+          Grid.RowSpan="2"
+          ZIndex="200" />
     </Grid>
   </Border>
 </Window>

@@ -133,6 +133,7 @@ public partial class MainWindow : Window
         InitializeUiDataPipeline();
         InitializeUnifiedInterface();
         InitializeSharedUnifiedDashboard();
+        InitializeSharedUnifiedShell();
 
         _arrLiveTimer = new DispatcherTimer
         {
@@ -301,6 +302,10 @@ public partial class MainWindow : Window
                 "selected",
                 item.Key == navigationName);
         }
+        Get<GraveOps.Presentation.Avalonia.Shell.UnifiedShellView>(
+                "SharedShellView")
+            .SelectNavigation(
+                navigationName);
 
         Get<TextBlock>("PageTitleText").Text = target.Title;
         Get<TextBlock>("PageSubtitleText").Text = target.Subtitle;

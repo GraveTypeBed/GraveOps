@@ -77,6 +77,7 @@ public partial class MainWindow : Window
         InitializeSABnzbdWorkspace();
         InitializeMediaLifecycleWorkspace();
         InitializeSharedUnifiedDashboard();
+        InitializeSharedUnifiedShell();
 
         Opened += async (_, _) =>
         {
@@ -264,6 +265,10 @@ public partial class MainWindow : Window
                 "selected",
                 item.Key == navigationName);
         }
+        Get<GraveOps.Presentation.Avalonia.Shell.UnifiedShellView>(
+                "SharedShellView")
+            .SelectNavigation(
+                navigationName);
 
         Get<TextBlock>("PageTitleText").Text = target.Title;
         Get<TextBlock>("PageSubtitleText").Text = target.Subtitle;
