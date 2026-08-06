@@ -140,6 +140,7 @@ public partial class MainWindow : Window
         InitializeSharedUnifiedSystemWorkspaces();
         InitializeSharedUnifiedOperationsWorkspaces();
         InitializeSharedUnifiedMediaWorkspaces();
+        InitializeSharedUnifiedSpecializedApplications();
 
         _arrLiveTimer = new DispatcherTimer
         {
@@ -176,6 +177,7 @@ public partial class MainWindow : Window
         DisposeRefreshOrchestration();
         DisposeControlPlaneFoundation();
         DisposeSharedUnifiedMediaWorkspaces();
+        DisposeSharedUnifiedSpecializedApplications();
         DisposeSharedUnifiedOperationsWorkspaces();
         DisposeUnifiedInterface();
         base.OnClosed(e);

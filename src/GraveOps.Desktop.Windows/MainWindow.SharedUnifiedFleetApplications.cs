@@ -186,8 +186,8 @@ public partial class MainWindow
         if (string.IsNullOrWhiteSpace(
                 navigation))
         {
-            _sharedFleetApplicationsView?.SetStatus(
-                "This provider-reported application has no dedicated Windows workspace yet.");
+            ShowSharedWindowsSpecializedApplication(
+                e.ApplicationKey);
 
             return;
         }
@@ -405,8 +405,7 @@ public partial class MainWindow
                         IsStale:
                             false,
                         CanOpen:
-                            !string.IsNullOrWhiteSpace(
-                                navigation),
+                            true,
                         CanEditIdentity:
                             false,
                         navigation);
@@ -440,7 +439,7 @@ public partial class MainWindow
                         IsStale:
                             false,
                         CanOpen:
-                            false,
+                            true,
                         CanEditIdentity:
                             false,
                         NavigationKey:

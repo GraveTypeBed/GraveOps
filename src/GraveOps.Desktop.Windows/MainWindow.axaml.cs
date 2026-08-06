@@ -84,6 +84,7 @@ public partial class MainWindow : Window
         InitializeSharedUnifiedSystemWorkspaces();
         InitializeSharedUnifiedOperationsWorkspaces();
         InitializeSharedUnifiedMediaWorkspaces();
+        InitializeSharedUnifiedSpecializedApplications();
 
         Opened += async (_, _) =>
         {
@@ -104,6 +105,7 @@ public partial class MainWindow : Window
         _refreshCancellation?.Cancel();
         _refreshCancellation?.Dispose();
         DisposeSharedUnifiedMediaWorkspaces();
+        DisposeSharedUnifiedSpecializedApplications();
         base.OnClosed(e);
     }
 
@@ -266,6 +268,13 @@ public partial class MainWindow : Window
         }
 
         Get<Control>(target.PageName).IsVisible = true;
+
+        if (navigationName.Equals(
+                "IntegrationsNav",
+                StringComparison.Ordinal))
+        {
+            ShowSharedWindowsFleetApplications();
+        }
 
         foreach (var item in Navigation)
         {
