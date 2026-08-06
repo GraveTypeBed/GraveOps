@@ -136,6 +136,7 @@ public partial class MainWindow : Window
         InitializeSharedUnifiedShell();
         InitializeSharedUnifiedFindings();
         InitializeSharedUnifiedActivity();
+        InitializeSharedUnifiedFleetApplications();
 
         _arrLiveTimer = new DispatcherTimer
         {

@@ -164,6 +164,7 @@ public partial class MainWindow
         }
 
         RefreshServersPage();
+        UpdateSharedUnifiedFleetHosts();
     }
 
     private TargetProfile ActiveTargetOrThrow() =>

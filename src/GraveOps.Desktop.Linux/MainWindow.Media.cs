@@ -325,6 +325,7 @@ public partial class MainWindow
 
         PopulateIntegrationWorkspace();
         PopulateMediaLauncherEditor();
+        UpdateSharedUnifiedFleetApplications();
     }
 
     private LinuxMediaApplicationRow

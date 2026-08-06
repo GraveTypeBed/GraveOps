@@ -80,6 +80,7 @@ public partial class MainWindow : Window
         InitializeSharedUnifiedShell();
         InitializeSharedUnifiedFindings();
         InitializeSharedUnifiedActivity();
+        InitializeSharedUnifiedFleetApplications();
 
         Opened += async (_, _) =>
         {
@@ -623,6 +624,10 @@ public partial class MainWindow : Window
             snapshot,
             recommendations,
             health);
+
+        UpdateSharedUnifiedFleetHosts();
+        UpdateSharedUnifiedFleetApplications(
+            snapshot);
     }
     private void PopulateMediaWorkspaces(
         IReadOnlyList<IntegrationSnapshot> integrations)
