@@ -40,7 +40,7 @@ public partial class MainWindow : Window
                 "Usenet queue, transfer and recent-history workspace"),
             ["QBittorrentNav"] = new("QBittorrentPage", "qBittorrent",
                 "Transfer queue, categories and history workspace"),
-            ["LogsNav"] = new("WarningsPage", "Logs",
+            ["LogsNav"] = new("LogsPage", "Logs",
                 "Grouped warnings, provider output and crash evidence"),
             ["BackupsNav"] = new("ParityPage", "Backups",
                 "Schedule, artifact and restore-readiness evidence"),
@@ -81,6 +81,7 @@ public partial class MainWindow : Window
         InitializeSharedUnifiedFindings();
         InitializeSharedUnifiedActivity();
         InitializeSharedUnifiedFleetApplications();
+        InitializeSharedUnifiedSystemWorkspaces();
 
         Opened += async (_, _) =>
         {
@@ -627,6 +628,9 @@ public partial class MainWindow : Window
 
         UpdateSharedUnifiedFleetHosts();
         UpdateSharedUnifiedFleetApplications(
+            snapshot);
+
+        UpdateSharedUnifiedSystemWorkspaces(
             snapshot);
     }
     private void PopulateMediaWorkspaces(

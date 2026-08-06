@@ -137,6 +137,7 @@ public partial class MainWindow : Window
         InitializeSharedUnifiedFindings();
         InitializeSharedUnifiedActivity();
         InitializeSharedUnifiedFleetApplications();
+        InitializeSharedUnifiedSystemWorkspaces();
 
         _arrLiveTimer = new DispatcherTimer
         {
@@ -1906,6 +1907,7 @@ public partial class MainWindow : Window
             $"{rows.Length} shown · {_snapshot.FailedUnits.Count} failed";
 
         UpdateServiceDetail();
+        UpdateSharedUnifiedServices();
     }
 
     private void ApplyDockerFilter() =>
@@ -1995,6 +1997,7 @@ public partial class MainWindow : Window
 
         UpdateStoragePolicyButtons();
         PopulateStorageCapacityPolicySettings();
+        UpdateSharedUnifiedStorage();
     }
 
     private StorageVolumeSnapshot? SelectedStorageVolume() =>

@@ -282,6 +282,7 @@ public partial class MainWindow
 
         PopulateReliableLogSelection();
         ApplyDashboardLogContextProjection();
+        UpdateSharedUnifiedLogs();
     }
 
     private void PopulateReliableLogSelection()

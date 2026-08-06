@@ -1062,6 +1062,8 @@
               </Border>
             </Grid>
 
+            <Grid x:Name="LogsPage" IsVisible="False" />
+
 <Grid x:Name="IntegrationsPage" IsVisible="False">
               <Border Classes="card">
                 <Grid RowDefinitions="Auto,Auto,*" RowSpacing="12">
