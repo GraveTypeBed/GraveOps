@@ -9,6 +9,7 @@
     Height="920"
     MinWidth="1180"
     MinHeight="760"
+    CanResize="True"
     WindowStartupLocation="CenterScreen"
     WindowDecorations="None"
     ExtendClientAreaToDecorationsHint="True"
@@ -108,6 +109,7 @@
 
       <Grid
           Grid.Row="1"
+          x:Name="ShellBodyGrid"
           ColumnDefinitions="260,*">
 
         <!-- Navigation rail -->
@@ -963,16 +965,26 @@
         <!-- Main workspace -->
         <Grid
             Grid.Column="1"
-            RowDefinitions="72,42,*,26"
+            x:Name="MainWorkspaceGrid"
+            RowDefinitions="Auto,42,*,26"
             Background="{DynamicResource BackgroundBrush}">
 
           <Border
               Grid.Row="0"
+              MinHeight="72"
               Background="{DynamicResource HeaderBrush}"
               BorderBrush="{DynamicResource BorderBrush}"
               BorderThickness="0,0,0,1">
-            <Grid ColumnDefinitions="*,Auto" Margin="28,0">
-              <StackPanel VerticalAlignment="Center">
+            <Grid
+                x:Name="MainHeaderGrid"
+                ColumnDefinitions="*,Auto"
+                RowDefinitions="Auto"
+                Margin="28,8">
+              <StackPanel
+                  x:Name="MainHeaderTitlePanel"
+                  VerticalAlignment="Center"
+                  ClipToBounds="True"
+                  Margin="0,0,12,0">
                 <TextBlock
                     x:Name="PageTitleText"
                     Text="Dashboard"
@@ -983,22 +995,25 @@
                     Text="Interactive environment health, ownership and active-host operations"
                     Classes="pageSubtitle"
                     FontSize="11"
-                    Margin="0,3,0,0" />
+                    Margin="0,3,0,0"
+                    TextWrapping="NoWrap"
+                    TextTrimming="CharacterEllipsis" />
               </StackPanel>
 
-              <StackPanel
+              <WrapPanel
+                  x:Name="MainHeaderCommandsPanel"
                   Grid.Column="1"
-                  Orientation="Horizontal"
-                  VerticalAlignment="Center"
-                  Spacing="7">
-                <Button x:Name="OverviewButton" Classes="compact headerCommand commandOverview" MinWidth="68" Content="Overview" ToolTip.Tip="Overview · current target and environment" Click="OverviewButton_OnClick" />
-                <Button x:Name="JobsButton" Classes="compact headerCommand commandJobs" MinWidth="52" Content="Jobs" ToolTip.Tip="Jobs · running and completed control-plane work" Click="JobsButton_OnClick" />
-                <Button x:Name="IntelligenceButton" Classes="compact headerCommand commandIntelligence" MinWidth="84" Content="Findings" ToolTip.Tip="Health &amp; Findings · root cause, impact and remediation" Tag="IntelligenceNav" Click="DashboardQuickModuleButton_OnClick" />
-                <Button x:Name="ActivityButton" Classes="compact headerCommand commandActivity" MinWidth="72" Content="Activity" ToolTip.Tip="Activity · actionable notifications and operator history" Click="ActivityButton_OnClick" />
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Center">
+                <Button x:Name="OverviewButton" Classes="compact headerCommand commandOverview" MinWidth="68" Content="Overview" Margin="0,0,7,7" ToolTip.Tip="Overview · current target and environment" Click="OverviewButton_OnClick" />
+                <Button x:Name="JobsButton" Classes="compact headerCommand commandJobs" MinWidth="52" Content="Jobs" Margin="0,0,7,7" ToolTip.Tip="Jobs · running and completed control-plane work" Click="JobsButton_OnClick" />
+                <Button x:Name="IntelligenceButton" Classes="compact headerCommand commandIntelligence" MinWidth="84" Content="Findings" Margin="0,0,7,7" ToolTip.Tip="Health &amp; Findings · root cause, impact and remediation" Tag="IntelligenceNav" Click="DashboardQuickModuleButton_OnClick" />
+                <Button x:Name="ActivityButton" Classes="compact headerCommand commandActivity" MinWidth="72" Content="Activity" Margin="0,0,7,7" ToolTip.Tip="Activity · actionable notifications and operator history" Click="ActivityButton_OnClick" />
                 <Button
                     x:Name="TerminalButton"
                     Classes="compact headerCommand commandTerminal"
                     MinWidth="92"
+                    Margin="0,0,0,7"
                     ToolTip.Tip="Terminal · local and remote Linux handoff"
                     Click="TerminalButton_OnClick">
                   <StackPanel Orientation="Horizontal" Spacing="7">
@@ -1017,7 +1032,7 @@
                         Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
                   </StackPanel>
                 </Button>
-              </StackPanel>
+              </WrapPanel>
             </Grid>
           </Border>
 
@@ -1029,7 +1044,7 @@
             <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" Margin="28,0">
               <TextBlock Text="QUICK" Classes="eyebrow" VerticalAlignment="Center" Margin="0,0,12,0" />
               <Button Grid.Column="1" x:Name="MaintenanceButton" Classes="ghost" Content="Maintenance" Padding="10,6" Click="MaintenanceButton_OnClick" />
-              <TextBlock Grid.Column="3" Text="Ctrl+K search" Classes="dim" FontSize="10" VerticalAlignment="Center" Margin="0,0,8,0" />
+              <TextBlock Grid.Column="3" x:Name="QuickSearchHintText" Text="Ctrl+K search" Classes="dim" FontSize="10" VerticalAlignment="Center" Margin="0,0,8,0" />
               <Button Grid.Column="4" x:Name="CommandPaletteButton" Classes="ghost" Content="Search" Padding="8,4" Click="CommandPaletteButton_OnClick" />
               <Button Grid.Column="5" Classes="ghost" Content="Customize" Tag="SettingsNav" Padding="8,4" Click="DashboardQuickModuleButton_OnClick" />
             </Grid>
@@ -1037,6 +1052,7 @@
 
           <Grid
               Grid.Row="2"
+              x:Name="PageContentHost"
               Margin="24">
             <!-- Dashboard -->
             <Grid
@@ -5790,128 +5806,168 @@
             <!-- Lifecycle -->
             <Grid
                 x:Name="LifecyclePage"
-                IsVisible="False"
-                RowDefinitions="Auto,Auto,*,Auto"
-                RowSpacing="8">
+                IsVisible="False">
 
-              <Grid Grid.Row="0" ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
-                <Border Classes="metric"><StackPanel><TextBlock Text="ACTIVE ITEMS" Classes="eyebrow" /><TextBlock x:Name="LifecycleActiveMetricText" Text="0" Classes="metricValue" /></StackPanel></Border>
-                <Border Grid.Column="1" Classes="metric"><StackPanel><TextBlock Text="NEEDS ATTENTION" Classes="eyebrow" /><TextBlock x:Name="LifecycleAttentionMetricText" Text="0" Classes="metricValue" /></StackPanel></Border>
-                <Border Grid.Column="2" Classes="metric"><StackPanel><TextBlock Text="DOWNLOADING" Classes="eyebrow" /><TextBlock x:Name="LifecycleDownloadingMetricText" Text="0" Classes="metricValue" /></StackPanel></Border>
-                <Border Grid.Column="3" Classes="metric"><StackPanel><TextBlock Text="IMPORT / RECONCILE" Classes="eyebrow" /><TextBlock x:Name="LifecycleImportMetricText" Text="0" Classes="metricValue" /></StackPanel></Border>
-              </Grid>
+              <ScrollViewer
+                  x:Name="LifecyclePageScrollViewer"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
 
-              <Border Grid.Row="1" Classes="module adaptive" MinHeight="112">
-                <Grid RowDefinitions="Auto,*" RowSpacing="6">
-                  <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel>
-                      <TextBlock Text="Workflow" Classes="sectionTitle" />
-                      <TextBlock Text="Request → Discovery → Arr → Download → Import → Processing → Library" Classes="pageSubtitle" />
-                    </StackPanel>
-                    <TextBlock Grid.Column="1" x:Name="LifecycleSummaryText" Text="Waiting for capture" Classes="dim" VerticalAlignment="Center" />
+                <StackPanel
+                    x:Name="LifecycleContentPanel"
+                    Spacing="8"
+                    Margin="0,0,4,4">
+
+                  <Grid
+                      x:Name="LifecycleMetricsGrid"
+                      ColumnDefinitions="*,*,*,*"
+                      ColumnSpacing="8">
+                    <Border Classes="metric"><StackPanel><TextBlock Text="ACTIVE ITEMS" Classes="eyebrow" /><TextBlock x:Name="LifecycleActiveMetricText" Text="0" Classes="metricValue" /></StackPanel></Border>
+                    <Border Grid.Column="1" Classes="metric"><StackPanel><TextBlock Text="NEEDS ATTENTION" Classes="eyebrow" /><TextBlock x:Name="LifecycleAttentionMetricText" Text="0" Classes="metricValue" /></StackPanel></Border>
+                    <Border Grid.Column="2" Classes="metric"><StackPanel><TextBlock Text="DOWNLOADING" Classes="eyebrow" /><TextBlock x:Name="LifecycleDownloadingMetricText" Text="0" Classes="metricValue" /></StackPanel></Border>
+                    <Border Grid.Column="3" Classes="metric"><StackPanel><TextBlock Text="IMPORT / RECONCILE" Classes="eyebrow" /><TextBlock x:Name="LifecycleImportMetricText" Text="0" Classes="metricValue" /></StackPanel></Border>
                   </Grid>
-                  <ListBox
-                      Grid.Row="1"
-                      x:Name="LifecycleStagesList"
-                      Background="Transparent"
-                      BorderThickness="0"
-                      Padding="0">
-                    <ListBox.ItemsPanel>
-                      <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
-                    </ListBox.ItemsPanel>
-                    <ListBox.ItemTemplate>
-                      <DataTemplate x:CompileBindings="False">
-                        <Border Classes="inset" Width="155" Height="60" Margin="0,0,5,0">
-                          <StackPanel Spacing="3">
-                            <TextBlock Text="{ReflectionBinding Stage}" Classes="eyebrow" />
-                            <TextBlock Text="{ReflectionBinding State}" FontWeight="SemiBold" />
-                            <TextBlock Text="{ReflectionBinding Evidence}" Classes="dim" FontSize="8" TextTrimming="CharacterEllipsis" />
-                          </StackPanel>
-                        </Border>
-                      </DataTemplate>
-                    </ListBox.ItemTemplate>
-                  </ListBox>
-                </Grid>
-              </Border>
 
-              <Grid Grid.Row="2" ColumnDefinitions="1.25*,0.75*" ColumnSpacing="8" MinHeight="220">
-                <Border Classes="module">
-                  <Grid RowDefinitions="Auto,*" RowSpacing="5">
-                    <StackPanel>
-                      <TextBlock Text="Active lifecycle items" Classes="sectionTitle" />
-                      <TextBlock Text="Correlated Arr and downloader work. Select an item to open its owner." Classes="pageSubtitle" />
-                    </StackPanel>
-                    <ListBox
-                        Grid.Row="1"
-                        x:Name="LifecycleItemsList"
-                        Classes="dataList"
-                        ScrollViewer.VerticalScrollBarVisibility="Visible"
-                        ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                        SelectionChanged="LifecycleItemsList_OnSelectionChanged">
-                      <ListBox.ItemTemplate>
-                        <DataTemplate x:CompileBindings="False">
-                          <Grid ColumnDefinitions="1.2*,110,90,100,80,80" ColumnSpacing="6">
-                            <TextBlock Text="{ReflectionBinding Item}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Grid.Column="1" Text="{ReflectionBinding Owner}" />
-                            <TextBlock Grid.Column="2" Text="{ReflectionBinding Stage}" />
-                            <TextBlock Grid.Column="3" Text="{ReflectionBinding State}" Foreground="{DynamicResource AccentBrush}" />
-                            <TextBlock Grid.Column="4" Text="{ReflectionBinding Progress}" />
-                            <TextBlock Grid.Column="5" Text="{ReflectionBinding Remaining}" />
-                          </Grid>
-                        </DataTemplate>
-                      </ListBox.ItemTemplate>
-                    </ListBox>
+                  <Border
+                      Classes="module adaptive"
+                      MinHeight="112"
+                      MaxHeight="175">
+                    <Grid RowDefinitions="Auto,*" RowSpacing="6">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock Text="Workflow" Classes="sectionTitle" />
+                          <TextBlock Text="Request → Discovery → Arr → Download → Import → Processing → Library" Classes="pageSubtitle" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" x:Name="LifecycleSummaryText" Text="Waiting for capture" Classes="dim" VerticalAlignment="Center" />
+                      </Grid>
+                      <ListBox
+                          Grid.Row="1"
+                          x:Name="LifecycleStagesList"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          Padding="0"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemsPanel>
+                          <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemTemplate>
+                          <DataTemplate x:CompileBindings="False">
+                            <Border Classes="inset" Width="155" Height="60" Margin="0,0,5,5">
+                              <StackPanel Spacing="3">
+                                <TextBlock Text="{ReflectionBinding Stage}" Classes="eyebrow" />
+                                <TextBlock Text="{ReflectionBinding State}" FontWeight="SemiBold" />
+                                <TextBlock Text="{ReflectionBinding Evidence}" Classes="dim" FontSize="8" TextTrimming="CharacterEllipsis" />
+                              </StackPanel>
+                            </Border>
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+                    </Grid>
+                  </Border>
+
+                  <Grid
+                      x:Name="LifecycleWorkspaceGrid"
+                      ColumnDefinitions="1.25*,0.75*"
+                      RowDefinitions="*"
+                      ColumnSpacing="8"
+                      RowSpacing="8"
+                      Height="260">
+
+                    <Border
+                        x:Name="LifecycleItemsModule"
+                        Classes="module">
+                      <Grid RowDefinitions="Auto,*" RowSpacing="5">
+                        <StackPanel>
+                          <TextBlock Text="Active lifecycle items" Classes="sectionTitle" />
+                          <TextBlock Text="Correlated Arr and downloader work. Select an item to open its owner." Classes="pageSubtitle" />
+                        </StackPanel>
+                        <ListBox
+                            Grid.Row="1"
+                            x:Name="LifecycleItemsList"
+                            Classes="dataList"
+                            ScrollViewer.VerticalScrollBarVisibility="Visible"
+                            ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                            SelectionChanged="LifecycleItemsList_OnSelectionChanged">
+                          <ListBox.ItemTemplate>
+                            <DataTemplate x:CompileBindings="False">
+                              <Grid ColumnDefinitions="1.2*,110,90,100,80,80" ColumnSpacing="6">
+                                <TextBlock Text="{ReflectionBinding Item}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Column="1" Text="{ReflectionBinding Owner}" />
+                                <TextBlock Grid.Column="2" Text="{ReflectionBinding Stage}" />
+                                <TextBlock Grid.Column="3" Text="{ReflectionBinding State}" Foreground="{DynamicResource AccentBrush}" />
+                                <TextBlock Grid.Column="4" Text="{ReflectionBinding Progress}" />
+                                <TextBlock Grid.Column="5" Text="{ReflectionBinding Remaining}" />
+                              </Grid>
+                            </DataTemplate>
+                          </ListBox.ItemTemplate>
+                        </ListBox>
+                      </Grid>
+                    </Border>
+
+                    <Border
+                        x:Name="LifecycleRemediationModule"
+                        Grid.Column="1"
+                        Classes="module">
+                      <Grid RowDefinitions="Auto,*,Auto" RowSpacing="5">
+                        <StackPanel>
+                          <TextBlock Text="Guided remediation" Classes="sectionTitle" />
+                          <TextBlock Text="Upstream-first next steps. GraveOps avoids downstream restarts when an earlier dependency explains the symptom." Classes="pageSubtitle" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <ListBox
+                            Grid.Row="1"
+                            x:Name="LifecycleRemediationList"
+                            Classes="dataList"
+                            ScrollViewer.VerticalScrollBarVisibility="Visible"
+                            ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                            SelectionChanged="LifecycleRemediationList_OnSelectionChanged">
+                          <ListBox.ItemTemplate>
+                            <DataTemplate x:CompileBindings="False">
+                              <StackPanel Spacing="3">
+                                <Grid ColumnDefinitions="32,*,Auto">
+                                  <TextBlock Text="{ReflectionBinding Step}" />
+                                  <TextBlock Grid.Column="1" Text="{ReflectionBinding Component}" FontWeight="SemiBold" />
+                                  <TextBlock Grid.Column="2" Text="{ReflectionBinding SeverityLabel}" Foreground="{DynamicResource AccentBrush}" />
+                                </Grid>
+                                <TextBlock Text="{ReflectionBinding Why}" TextWrapping="Wrap" />
+                                <TextBlock Text="{ReflectionBinding NextStep}" Classes="dim" TextWrapping="Wrap" />
+                              </StackPanel>
+                            </DataTemplate>
+                          </ListBox.ItemTemplate>
+                        </ListBox>
+                        <Button Grid.Row="2" x:Name="LifecycleOpenOwnerButton" Content="Open selected step" IsEnabled="False" Click="LifecycleOpenOwnerButton_OnClick" />
+                      </Grid>
+                    </Border>
                   </Grid>
-                </Border>
 
-                <Border Grid.Column="1" Classes="module">
-                  <Grid RowDefinitions="Auto,*,Auto" RowSpacing="5">
-                    <StackPanel>
-                      <TextBlock Text="Guided remediation" Classes="sectionTitle" />
-                      <TextBlock Text="Upstream-first next steps. GraveOps avoids downstream restarts when an earlier dependency explains the symptom." Classes="pageSubtitle" TextWrapping="Wrap" />
-                    </StackPanel>
-                    <ListBox
-                        Grid.Row="1"
-                        x:Name="LifecycleRemediationList"
-                        Classes="dataList"
-                        ScrollViewer.VerticalScrollBarVisibility="Visible"
-                        ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                        SelectionChanged="LifecycleRemediationList_OnSelectionChanged">
-                      <ListBox.ItemTemplate>
-                        <DataTemplate x:CompileBindings="False">
-                          <StackPanel Spacing="3">
-                            <Grid ColumnDefinitions="32,*,Auto">
-                              <TextBlock Text="{ReflectionBinding Step}" />
-                              <TextBlock Grid.Column="1" Text="{ReflectionBinding Component}" FontWeight="SemiBold" />
-                              <TextBlock Grid.Column="2" Text="{ReflectionBinding SeverityLabel}" Foreground="{DynamicResource AccentBrush}" />
-                            </Grid>
-                            <TextBlock Text="{ReflectionBinding Why}" TextWrapping="Wrap" />
-                            <TextBlock Text="{ReflectionBinding NextStep}" Classes="dim" TextWrapping="Wrap" />
-                          </StackPanel>
-                        </DataTemplate>
-                      </ListBox.ItemTemplate>
-                    </ListBox>
-                    <Button Grid.Row="2" x:Name="LifecycleOpenOwnerButton" Content="Open selected step" IsEnabled="False" Click="LifecycleOpenOwnerButton_OnClick" />
-                  </Grid>
-                </Border>
-              </Grid>
-
-              <Border Grid.Row="3" Classes="module adaptive" MinHeight="88">
-                <Grid ColumnDefinitions="220,*,Auto" ColumnSpacing="12">
-                  <StackPanel ClipToBounds="True" Margin="0,0,8,0">
-                    <TextBlock
-                        x:Name="LifecycleSelectedTitleText"
-                        Text="No lifecycle item selected"
-                        FontWeight="SemiBold"
-                        TextWrapping="NoWrap"
-                        TextTrimming="CharacterEllipsis"
-                        ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
-                    <TextBlock Text="Selected item" Classes="dim" />
-                  </StackPanel>
-                  <TextBox Grid.Column="1" x:Name="LifecycleSelectedDetailText" Classes="console workspaceOutput" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" ScrollViewer.VerticalScrollBarVisibility="Auto" />
-                  <Button Grid.Column="2" Content="Intelligence" Click="LifecycleOpenIntelligenceButton_OnClick" />
-                </Grid>
-              </Border>
+                  <Border
+                      x:Name="LifecycleSelectedModule"
+                      Classes="module adaptive"
+                      Height="132">
+                    <Grid ColumnDefinitions="220,*,Auto" ColumnSpacing="12">
+                      <StackPanel ClipToBounds="True" Margin="0,0,8,0">
+                        <TextBlock
+                            x:Name="LifecycleSelectedTitleText"
+                            Text="No lifecycle item selected"
+                            FontWeight="SemiBold"
+                            TextWrapping="NoWrap"
+                            TextTrimming="CharacterEllipsis"
+                            ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                        <TextBlock Text="Selected item" Classes="dim" />
+                      </StackPanel>
+                      <TextBox
+                          Grid.Column="1"
+                          x:Name="LifecycleSelectedDetailText"
+                          Classes="console workspaceOutput"
+                          IsReadOnly="True"
+                          AcceptsReturn="True"
+                          TextWrapping="Wrap"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                      <Button Grid.Column="2" Content="Intelligence" Click="LifecycleOpenIntelligenceButton_OnClick" />
+                    </Grid>
+                  </Border>
+                </StackPanel>
+              </ScrollViewer>
             </Grid>
             <!-- History -->
             <Grid
@@ -6281,169 +6337,377 @@
             <!-- Settings -->
             <Grid
                 x:Name="SettingsPage"
-                IsVisible="False"
-                ColumnDefinitions="1.05*,0.95*"
-                RowDefinitions="Auto,Auto,*"
-                ColumnSpacing="8"
-                RowSpacing="8">
+                IsVisible="False">
 
-              <StackPanel Grid.ColumnSpan="2">
-                <TextBlock Text="Settings" Classes="sectionTitle" FontSize="18" />
-                <TextBlock Text="Linux paths, operator defaults, policies and version state in the shared GraveOps visual system." Classes="pageSubtitle" />
-              </StackPanel>
+              <ScrollViewer
+                  x:Name="SettingsPageScrollViewer"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
 
-              <Border
-                  Grid.Row="1"
-                  Grid.ColumnSpan="2"
-                  Classes="module">
-                <Grid ColumnDefinitions="1.15*,0.85*" ColumnSpacing="14">
-                  <StackPanel Spacing="8">
-                    <StackPanel>
-                      <TextBlock Text="Interface &amp; setup" Classes="sectionTitle" />
-                      <TextBlock
-                          Text="Complete themes, density, session restoration, silent refresh and first-run setup."
-                          Classes="pageSubtitle"
-                          Margin="0,3,0,0"
-                          TextWrapping="Wrap" />
-                    </StackPanel>
+                <StackPanel
+                    x:Name="SettingsContentPanel"
+                    Spacing="8"
+                    Margin="0,0,4,4">
 
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                      <StackPanel>
-                        <TextBlock Text="Theme" Classes="eyebrow" Margin="0,0,0,4" />
-                        <ComboBox
-                            x:Name="InterfaceThemeComboBox"
-                            SelectionChanged="InterfaceThemeComboBox_OnSelectionChanged" />
+                  <Border Classes="module">
+                    <Grid
+                        x:Name="SettingsInterfaceGrid"
+                        ColumnDefinitions="1.15*,0.85*"
+                        RowDefinitions="*"
+                        ColumnSpacing="14"
+                        RowSpacing="8">
+
+                      <StackPanel Spacing="8">
+                        <StackPanel>
+                          <TextBlock Text="Interface &amp; setup" Classes="sectionTitle" />
+                          <TextBlock
+                              Text="Complete themes, density, session restoration, silent refresh and first-run setup."
+                              Classes="pageSubtitle"
+                              Margin="0,3,0,0"
+                              TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                          <StackPanel>
+                            <TextBlock Text="Theme" Classes="eyebrow" Margin="0,0,0,4" />
+                            <ComboBox
+                                x:Name="InterfaceThemeComboBox"
+                                SelectionChanged="InterfaceThemeComboBox_OnSelectionChanged" />
+                          </StackPanel>
+                          <StackPanel Grid.Column="1">
+                            <TextBlock Text="Density" Classes="eyebrow" Margin="0,0,0,4" />
+                            <ComboBox
+                                x:Name="InterfaceDensityComboBox"
+                                SelectionChanged="InterfaceDensityComboBox_OnSelectionChanged" />
+                          </StackPanel>
+                        </Grid>
+
+                        <WrapPanel>
+                          <CheckBox
+                              x:Name="InterfaceRestoreSessionCheckBox"
+                              Content="Restore the last active page"
+                              Margin="0,0,18,7" />
+                          <CheckBox
+                              x:Name="InterfaceSilentRefreshCheckBox"
+                              Content="Keep background refresh silent"
+                              Margin="0,0,18,7" />
+                          <CheckBox
+                              x:Name="InterfaceFreshnessCheckBox"
+                              Content="Show quiet freshness labels"
+                              Margin="0,0,18,7" />
+                        </WrapPanel>
                       </StackPanel>
-                      <StackPanel Grid.Column="1">
-                        <TextBlock Text="Density" Classes="eyebrow" Margin="0,0,0,4" />
-                        <ComboBox
-                            x:Name="InterfaceDensityComboBox"
-                            SelectionChanged="InterfaceDensityComboBox_OnSelectionChanged" />
+
+                      <StackPanel
+                          x:Name="SettingsInterfaceActionsPanel"
+                          Grid.Column="1"
+                          Spacing="8">
+                        <WrapPanel>
+                          <Button Classes="primary compact" Content="Save interface" Margin="0,0,8,8" Click="SaveInterfaceSettingsButton_OnClick" />
+                          <Button Classes="compact" Content="Express Setup" Margin="0,0,8,8" Click="OpenExpressSetupButton_OnClick" />
+                          <Button Classes="compact" Content="Reset Dashboard" Margin="0,0,8,8" Click="ResetDashboardLayoutButton_OnClick" />
+                          <Button Classes="compact" Content="Export redacted profile" Margin="0,0,0,8" Click="ExportProfileButton_OnClick" />
+                        </WrapPanel>
+
+                        <Border Classes="inset">
+                          <TextBlock
+                              x:Name="InterfaceSettingsStatusText"
+                              Text="Interface settings are loading."
+                              Classes="muted"
+                              TextWrapping="Wrap" />
+                        </Border>
                       </StackPanel>
                     </Grid>
+                  </Border>
 
-                    <WrapPanel>
-                      <CheckBox
-                          x:Name="InterfaceRestoreSessionCheckBox"
-                          Content="Restore the last active page"
-                          Margin="0,0,18,7" />
-                      <CheckBox
-                          x:Name="InterfaceSilentRefreshCheckBox"
-                          Content="Keep background refresh silent"
-                          Margin="0,0,18,7" />
-                      <CheckBox
-                          x:Name="InterfaceFreshnessCheckBox"
-                          Content="Show quiet freshness labels"
-                          Margin="0,0,18,7" />
-                    </WrapPanel>
-                  </StackPanel>
+                  <Grid
+                      x:Name="SettingsBodyGrid"
+                      ColumnDefinitions="1.05*,0.95*"
+                      RowDefinitions="Auto,Auto,Auto"
+                      ColumnSpacing="8"
+                      RowSpacing="8">
 
-                  <StackPanel Grid.Column="1" Spacing="8">
-                    <WrapPanel>
-                      <Button
-                          Classes="primary compact"
-                          Content="Save interface"
-                          Margin="0,0,8,8"
-                          Click="SaveInterfaceSettingsButton_OnClick" />
-                      <Button
-                          Classes="compact"
-                          Content="Express Setup"
-                          Margin="0,0,8,8"
-                          Click="OpenExpressSetupButton_OnClick" />
-                      <Button
-                          Classes="compact"
-                          Content="Reset Dashboard"
-                          Margin="0,0,8,8"
-                          Click="ResetDashboardLayoutButton_OnClick" />
-                      <Button
-                          Classes="compact"
-                          Content="Export redacted profile"
-                          Margin="0,0,0,8"
-                          Click="ExportProfileButton_OnClick" />
-                    </WrapPanel>
-
-                    <Border Classes="inset">
-                      <TextBlock
-                          x:Name="InterfaceSettingsStatusText"
-                          Text="Interface settings are loading."
-                          Classes="muted"
-                          TextWrapping="Wrap" />
+                    <Border
+                        x:Name="SettingsOperatorDefaultsModule"
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        Classes="module">
+                      <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="7">
+                        <StackPanel>
+                          <TextBlock Text="Operator defaults" Classes="sectionTitle" />
+                          <TextBlock Text="Stored in operator-settings.json and applied when GraveOps starts." Classes="pageSubtitle" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <CheckBox Grid.Row="1" x:Name="SettingsSafeModeCheckBox" Content="Start in Safe Mode" />
+                        <CheckBox Grid.Row="2" x:Name="SettingsInformationalLogsCheckBox" Content="Show informational log observations by default" />
+                        <CheckBox Grid.Row="3" x:Name="SettingsInformationalContainersCheckBox" Content="Show informational exited containers by default" />
+                        <CheckBox Grid.Row="4" x:Name="SettingsOpenOverviewCheckBox" Content="Open Overview after startup" />
+                        <CheckBox Grid.Row="5" x:Name="SettingsDesktopNotificationsCheckBox" Content="Show desktop notifications for new error-level incidents" />
+                        <Grid Grid.Row="6" ColumnDefinitions="220,100,*" ColumnSpacing="6">
+                          <TextBlock Text="Background refresh seconds" VerticalAlignment="Center" />
+                          <TextBox Grid.Column="1" x:Name="SettingsBackgroundRefreshSecondsTextBox" />
+                          <WrapPanel Grid.Column="2">
+                            <Button Content="Save settings" Classes="primary" Margin="0,0,5,5" Click="SaveOperatorSettingsButton_OnClick" />
+                            <Button Content="Restore defaults" Margin="0,0,0,5" Click="ResetOperatorSettingsButton_OnClick" />
+                          </WrapPanel>
+                        </Grid>
+                        <TextBlock Grid.Row="7" x:Name="SettingsSaveStatusText" Text="Settings loaded." Classes="dim" TextWrapping="Wrap" />
+                      </Grid>
                     </Border>
-                  </StackPanel>
-                </Grid>
-              </Border>
 
-              <Border Grid.Row="2" Classes="module">
-                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="7">
-                  <StackPanel>
-                    <TextBlock Text="Operator defaults" Classes="sectionTitle" />
-                    <TextBlock Text="Stored in operator-settings.json and applied when GraveOps starts." Classes="pageSubtitle" />
-                  </StackPanel>
-                  <CheckBox Grid.Row="1" x:Name="SettingsSafeModeCheckBox" Content="Start in Safe Mode" />
-                  <CheckBox Grid.Row="2" x:Name="SettingsInformationalLogsCheckBox" Content="Show informational log observations by default" />
-                  <CheckBox Grid.Row="3" x:Name="SettingsInformationalContainersCheckBox" Content="Show informational exited containers by default" />
-                  <CheckBox Grid.Row="4" x:Name="SettingsOpenOverviewCheckBox" Content="Open Overview after startup" />
-                  <CheckBox Grid.Row="5" x:Name="SettingsDesktopNotificationsCheckBox" Content="Show desktop notifications for new error-level incidents" />
-                  <Grid Grid.Row="6" ColumnDefinitions="220,100,*" ColumnSpacing="6">
-                    <TextBlock Text="Background refresh seconds" VerticalAlignment="Center" />
-                    <TextBox Grid.Column="1" x:Name="SettingsBackgroundRefreshSecondsTextBox" />
-                    <WrapPanel Grid.Column="2">
-                      <Button Content="Save settings" Classes="primary" Margin="0,0,5,0" Click="SaveOperatorSettingsButton_OnClick" />
-                      <Button Content="Restore defaults" Click="ResetOperatorSettingsButton_OnClick" />
-                    </WrapPanel>
+                    <Border
+                        x:Name="SettingsPolicyModule"
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        Classes="module">
+                      <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
+
+                        <Grid
+                            x:Name="SettingsPolicyHeaderGrid"
+                            ColumnDefinitions="*,Auto"
+                            ColumnSpacing="8">
+                          <StackPanel Spacing="2">
+                            <TextBlock Text="Policy management" Classes="sectionTitle" />
+                            <TextBlock
+                                x:Name="SettingsPolicySummaryText"
+                                Text="0 active policies"
+                                FontWeight="SemiBold"
+                                TextWrapping="Wrap"
+                                ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                          </StackPanel>
+                          <Button
+                              Grid.Column="1"
+                              Content="Dashboard policies"
+                              Tag="DashboardNav"
+                              VerticalAlignment="Center"
+                              Click="SettingsNavigateButton_OnClick" />
+                        </Grid>
+
+                        <StackPanel
+                            Grid.Row="1"
+                            x:Name="SettingsPolicyRowsPanel"
+                            Spacing="6">
+
+                          <Border
+                              x:Name="SettingsCapacityPolicyRow"
+                              Classes="inset">
+                            <Grid ColumnDefinitions="130,*,Auto" ColumnSpacing="8">
+                              <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="CAPACITY" Classes="eyebrow" />
+                                <TextBlock Text="Capacity alerts" FontWeight="SemiBold" />
+                              </StackPanel>
+                              <TextBlock
+                                  Grid.Column="1"
+                                  x:Name="SettingsCapacityPolicySummaryText"
+                                  Text="Capacity alerts are loading."
+                                  Classes="muted"
+                                  TextWrapping="Wrap"
+                                  VerticalAlignment="Center"
+                                  ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                              <WrapPanel
+                                  Grid.Column="2"
+                                  HorizontalAlignment="Right"
+                                  VerticalAlignment="Center">
+                                <Button
+                                    x:Name="SettingsCapacityAlertsButton"
+                                    Content="Capacity alerts"
+                                    Margin="0,0,5,5"
+                                    Click="StorageCapacityPolicyButton_OnClick" />
+                                <Button
+                                    Content="Storage thresholds"
+                                    Tag="StorageNav"
+                                    Margin="0,0,0,5"
+                                    Click="SettingsNavigateButton_OnClick" />
+                              </WrapPanel>
+                            </Grid>
+                          </Border>
+
+                          <Border
+                              x:Name="SettingsSignalQualityRow"
+                              Classes="inset">
+                            <Grid ColumnDefinitions="130,*,Auto" ColumnSpacing="8">
+                              <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="SIGNAL" Classes="eyebrow" />
+                                <TextBlock Text="Signal quality" FontWeight="SemiBold" />
+                              </StackPanel>
+                              <TextBlock
+                                  Grid.Column="1"
+                                  x:Name="SettingsSignalQualitySummaryText"
+                                  Text="Signal quality is loading."
+                                  Classes="muted"
+                                  TextWrapping="Wrap"
+                                  VerticalAlignment="Center"
+                                  ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                              <Button
+                                  Grid.Column="2"
+                                  x:Name="SettingsSignalQualityButton"
+                                  Content="Signal quality"
+                                  VerticalAlignment="Center"
+                                  Click="SignalQualityPolicyButton_OnClick" />
+                            </Grid>
+                          </Border>
+
+                          <Border
+                              x:Name="SettingsRemediationPolicyRow"
+                              Classes="inset">
+                            <Grid ColumnDefinitions="130,*,Auto" ColumnSpacing="8">
+                              <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="SAFETY &amp; PARITY" Classes="eyebrow" />
+                                <TextBlock Text="Remediation" FontWeight="SemiBold" />
+                              </StackPanel>
+                              <TextBlock
+                                  Grid.Column="1"
+                                  x:Name="SettingsVerifiedRemediationSummaryText"
+                                  Text="Verified remediation is loading."
+                                  Classes="muted"
+                                  TextWrapping="Wrap"
+                                  VerticalAlignment="Center"
+                                  ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                              <Button
+                                  Grid.Column="2"
+                                  x:Name="SettingsVerifiedRemediationButton"
+                                  Content="Remediation safety"
+                                  VerticalAlignment="Center"
+                                  Click="VerifiedRemediationPolicyButton_OnClick" />
+                            </Grid>
+                          </Border>
+
+                          <Border
+                              x:Name="SettingsUiPerformanceRow"
+                              Classes="inset">
+                            <Grid ColumnDefinitions="130,*,Auto" ColumnSpacing="8">
+                              <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="INTERFACE" Classes="eyebrow" />
+                                <TextBlock Text="UI performance" FontWeight="SemiBold" />
+                              </StackPanel>
+                              <TextBlock
+                                  Grid.Column="1"
+                                  x:Name="SettingsUiPerformanceSummaryText"
+                                  Text="UI performance is loading."
+                                  Classes="muted"
+                                  TextWrapping="Wrap"
+                                  VerticalAlignment="Center"
+                                  ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                              <Button
+                                  Grid.Column="2"
+                                  x:Name="SettingsUiPerformanceButton"
+                                  Content="UI performance"
+                                  VerticalAlignment="Center"
+                                  Click="UiPerformancePolicyButton_OnClick" />
+                            </Grid>
+                          </Border>
+                        </StackPanel>
+
+                        <Grid
+                            Grid.Row="2"
+                            x:Name="SettingsPolicyFileRow"
+                            ColumnDefinitions="80,*"
+                            ColumnSpacing="8"
+                            Margin="2,0">
+                          <TextBlock
+                              Text="POLICY FILE"
+                              Classes="eyebrow"
+                              VerticalAlignment="Center" />
+                          <TextBlock
+                              Grid.Column="1"
+                              x:Name="SettingsPolicyPathText"
+                              Text="--"
+                              Classes="dim"
+                              TextTrimming="CharacterEllipsis"
+                              VerticalAlignment="Center"
+                              ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                        </Grid>
+                      </Grid>
+                    </Border>
+
+                    <Border
+                        x:Name="SettingsPathsModule"
+                        Grid.Row="1"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Classes="module">
+                      <StackPanel Spacing="5">
+                        <TextBlock Text="Application paths" Classes="sectionTitle" />
+
+                          <Grid ColumnDefinitions="100,*,Auto" ColumnSpacing="6">
+                            <TextBlock Text="Config" Classes="eyebrow" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" x:Name="SettingsConfigPathText" Text="--" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                            <WrapPanel Grid.Column="2">
+                              <Button Content="Open" Tag="config" Margin="0,0,5,0" Click="OpenOperatorPathButton_OnClick" />
+                              <Button Content="Terminal" Tag="config" Click="OpenOperatorTerminalButton_OnClick" />
+                            </WrapPanel>
+                          </Grid>
+
+                          <Grid ColumnDefinitions="100,*,Auto" ColumnSpacing="6">
+                            <TextBlock Text="Data" Classes="eyebrow" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" x:Name="SettingsDataPathText" Text="--" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                            <WrapPanel Grid.Column="2">
+                              <Button Content="Open" Tag="data" Margin="0,0,5,0" Click="OpenOperatorPathButton_OnClick" />
+                              <Button Content="Terminal" Tag="data" Click="OpenOperatorTerminalButton_OnClick" />
+                            </WrapPanel>
+                          </Grid>
+
+                          <Grid ColumnDefinitions="100,*,Auto" ColumnSpacing="6">
+                            <TextBlock Text="Repository" Classes="eyebrow" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" x:Name="SettingsRepositoryPathText" Text="--" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                            <WrapPanel Grid.Column="2">
+                              <Button Content="Open" Tag="repository" Margin="0,0,5,0" Click="OpenOperatorPathButton_OnClick" />
+                              <Button Content="Terminal" Tag="repository" Click="OpenOperatorTerminalButton_OnClick" />
+                            </WrapPanel>
+                          </Grid>
+
+                          <Grid ColumnDefinitions="100,*,Auto" ColumnSpacing="6">
+                            <TextBlock Text="Diagnostics" Classes="eyebrow" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" x:Name="SettingsDiagnosticsPathText" Text="--" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                            <WrapPanel Grid.Column="2">
+                              <Button Content="Open" Tag="diagnostics" Margin="0,0,5,0" Click="OpenOperatorPathButton_OnClick" />
+                              <Button Content="Terminal" Tag="diagnostics" Click="OpenOperatorTerminalButton_OnClick" />
+                            </WrapPanel>
+                          </Grid>
+
+                          <TextBlock x:Name="SettingsPathStatusText" Text="No path action run." Classes="dim" TextWrapping="Wrap" />
+                          <TextBlock x:Name="SettingsPolicyFileText" IsVisible="False" />
+                          <TextBlock x:Name="SettingsHistoryFileText" IsVisible="False" />
+                      </StackPanel>
+                    </Border>
+
+                    <Border
+                        x:Name="SettingsVersionModule"
+                        Grid.Row="2"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Classes="module">
+                      <StackPanel Spacing="5">
+                        <WrapPanel>
+                          <TextBlock Text="Version and update state" Classes="sectionTitle" Margin="0,0,8,5" />
+                            <Button Content="Refresh version info" Margin="0,0,0,5" Click="RefreshVersionInfoButton_OnClick" />
+                          </WrapPanel>
+
+                          <Grid ColumnDefinitions="100,*">
+                            <TextBlock Text="Branch" Classes="eyebrow" />
+                            <TextBlock Grid.Column="1" x:Name="SettingsBranchText" Text="--" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                          </Grid>
+                          <Grid ColumnDefinitions="100,*">
+                            <TextBlock Text="Commit" Classes="eyebrow" />
+                            <TextBlock Grid.Column="1" x:Name="SettingsCommitText" Text="--" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                          </Grid>
+                          <Grid ColumnDefinitions="100,*">
+                            <TextBlock Text="Worktree" Classes="eyebrow" />
+                            <TextBlock Grid.Column="1" x:Name="SettingsWorktreeText" Text="--" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                          </Grid>
+                          <Grid ColumnDefinitions="100,*">
+                            <TextBlock Text="Origin" Classes="eyebrow" />
+                            <TextBlock Grid.Column="1" x:Name="SettingsOriginText" Text="--" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                          </Grid>
+                          <Grid ColumnDefinitions="100,*">
+                            <TextBlock Text=".NET SDK" Classes="eyebrow" />
+                            <TextBlock Grid.Column="1" x:Name="SettingsDotnetText" Text="--" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                          </Grid>
+                      </StackPanel>
+                    </Border>
                   </Grid>
-                  <TextBlock Grid.Row="7" x:Name="SettingsSaveStatusText" Text="Settings loaded." Classes="dim" />
-                </Grid>
-              </Border>
-
-              <Grid Grid.Row="2" Grid.Column="1" RowDefinitions="Auto,Auto,*" RowSpacing="8">
-                <Border Classes="module">
-                  <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="5">
-                    <TextBlock Text="Policy management" Classes="sectionTitle" />
-                    <TextBlock Grid.Row="1" x:Name="SettingsPolicySummaryText" Text="0 active policies" FontWeight="SemiBold" />
-                    <TextBlock Grid.Row="2" x:Name="SettingsCapacityPolicySummaryText" Text="Capacity alerts are loading." Classes="muted" TextWrapping="Wrap" />
-                    <TextBlock Grid.Row="3" x:Name="SettingsSignalQualitySummaryText" Text="Signal quality is loading." Classes="muted" TextWrapping="Wrap" />
-                    <TextBlock Grid.Row="4" x:Name="SettingsVerifiedRemediationSummaryText" Text="Verified remediation is loading." Classes="muted" TextWrapping="Wrap" />
-                    <TextBlock Grid.Row="5" x:Name="SettingsUiPerformanceSummaryText" Text="UI performance is loading." Classes="muted" TextWrapping="Wrap" />
-                    <Grid Grid.Row="6" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="5">
-                      <TextBlock x:Name="SettingsPolicyPathText" Text="--" Classes="dim" TextTrimming="CharacterEllipsis" />
-                      <Button Grid.Column="1" Content="Dashboard policies" Tag="DashboardNav" Click="SettingsNavigateButton_OnClick" />
-                      <Button Grid.Column="2" x:Name="SettingsCapacityAlertsButton" Content="Capacity alerts" Click="StorageCapacityPolicyButton_OnClick" />
-                      <Button Grid.Column="3" x:Name="SettingsSignalQualityButton" Content="Signal quality" Click="SignalQualityPolicyButton_OnClick" />
-                    </Grid>
-                    <StackPanel Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="5">
-                      <Button x:Name="SettingsVerifiedRemediationButton" Content="Remediation safety" Click="VerifiedRemediationPolicyButton_OnClick" />
-                      <Button x:Name="SettingsUiPerformanceButton" Content="UI performance" Click="UiPerformancePolicyButton_OnClick" />
-                      <Button Content="Storage thresholds" Tag="StorageNav" Click="SettingsNavigateButton_OnClick" />
-                    </StackPanel>
-                  </Grid>                </Border>
-
-                <Border Grid.Row="1" Classes="module">
-                  <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
-                    <TextBlock Text="Application paths" Classes="sectionTitle" />
-                    <Grid Grid.Row="1" ColumnDefinitions="115,*,Auto,Auto" ColumnSpacing="5"><TextBlock Text="Config" Classes="eyebrow" /><TextBlock Grid.Column="1" x:Name="SettingsConfigPathText" Text="--" TextTrimming="CharacterEllipsis" /><Button Grid.Column="2" Content="Open" Tag="config" Click="OpenOperatorPathButton_OnClick" /><Button Grid.Column="3" Content="Terminal" Tag="config" Click="OpenOperatorTerminalButton_OnClick" /></Grid>
-                    <Grid Grid.Row="2" ColumnDefinitions="115,*,Auto,Auto" ColumnSpacing="5"><TextBlock Text="Data" Classes="eyebrow" /><TextBlock Grid.Column="1" x:Name="SettingsDataPathText" Text="--" TextTrimming="CharacterEllipsis" /><Button Grid.Column="2" Content="Open" Tag="data" Click="OpenOperatorPathButton_OnClick" /><Button Grid.Column="3" Content="Terminal" Tag="data" Click="OpenOperatorTerminalButton_OnClick" /></Grid>
-                    <Grid Grid.Row="3" ColumnDefinitions="115,*,Auto,Auto" ColumnSpacing="5"><TextBlock Text="Repository" Classes="eyebrow" /><TextBlock Grid.Column="1" x:Name="SettingsRepositoryPathText" Text="--" TextTrimming="CharacterEllipsis" /><Button Grid.Column="2" Content="Open" Tag="repository" Click="OpenOperatorPathButton_OnClick" /><Button Grid.Column="3" Content="Terminal" Tag="repository" Click="OpenOperatorTerminalButton_OnClick" /></Grid>
-                    <Grid Grid.Row="4" ColumnDefinitions="115,*,Auto,Auto" ColumnSpacing="5"><TextBlock Text="Diagnostics" Classes="eyebrow" /><TextBlock Grid.Column="1" x:Name="SettingsDiagnosticsPathText" Text="--" TextTrimming="CharacterEllipsis" /><Button Grid.Column="2" Content="Open" Tag="diagnostics" Click="OpenOperatorPathButton_OnClick" /><Button Grid.Column="3" Content="Terminal" Tag="diagnostics" Click="OpenOperatorTerminalButton_OnClick" /></Grid>
-                    <TextBlock Grid.Row="5" x:Name="SettingsPathStatusText" Text="No path action run." Classes="dim" />
-                    <TextBlock x:Name="SettingsPolicyFileText" IsVisible="False" />
-                    <TextBlock x:Name="SettingsHistoryFileText" IsVisible="False" />
-                  </Grid>
-                </Border>
-
-                <Border Grid.Row="2" Classes="module">
-                  <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
-                    <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Version and update state" Classes="sectionTitle" /><Button Grid.Column="1" Content="Refresh version info" Click="RefreshVersionInfoButton_OnClick" /></Grid>
-                    <Grid Grid.Row="1" ColumnDefinitions="120,*"><TextBlock Text="Branch" Classes="eyebrow" /><TextBlock Grid.Column="1" x:Name="SettingsBranchText" Text="--" /></Grid>
-                    <Grid Grid.Row="2" ColumnDefinitions="120,*"><TextBlock Text="Commit" Classes="eyebrow" /><TextBlock Grid.Column="1" x:Name="SettingsCommitText" Text="--" /></Grid>
-                    <Grid Grid.Row="3" ColumnDefinitions="120,*"><TextBlock Text="Worktree" Classes="eyebrow" /><TextBlock Grid.Column="1" x:Name="SettingsWorktreeText" Text="--" /></Grid>
-                    <Grid Grid.Row="4" ColumnDefinitions="120,*"><TextBlock Text="Origin" Classes="eyebrow" /><TextBlock Grid.Column="1" x:Name="SettingsOriginText" Text="--" /></Grid>
-                    <Grid Grid.Row="5" ColumnDefinitions="120,*"><TextBlock Text=".NET SDK" Classes="eyebrow" /><TextBlock Grid.Column="1" x:Name="SettingsDotnetText" Text="--" /></Grid>
-                  </Grid>
-                </Border>
-              </Grid>
+                </StackPanel>
+              </ScrollViewer>
             </Grid>
-
             <!-- Unified Linux-native Operator workspace -->
             <Grid
                 x:Name="ToolsPage"
@@ -7510,6 +7774,85 @@
           </Grid>
         </Grid>
       </Grid>
+
+      <!-- Borderless-window resize grips. Corners are layered after edges. -->
+      <Border
+          Grid.RowSpan="2"
+          ZIndex="200"
+          Height="6"
+          Margin="12,0,12,0"
+          VerticalAlignment="Top"
+          Background="Transparent"
+          Cursor="SizeNorthSouth"
+          PointerPressed="ResizeNorth_OnPointerPressed" />
+      <Border
+          Grid.RowSpan="2"
+          ZIndex="200"
+          Height="6"
+          Margin="12,0,12,0"
+          VerticalAlignment="Bottom"
+          Background="Transparent"
+          Cursor="SizeNorthSouth"
+          PointerPressed="ResizeSouth_OnPointerPressed" />
+      <Border
+          Grid.RowSpan="2"
+          ZIndex="200"
+          Width="6"
+          Margin="0,12,0,12"
+          HorizontalAlignment="Left"
+          Background="Transparent"
+          Cursor="SizeWestEast"
+          PointerPressed="ResizeWest_OnPointerPressed" />
+      <Border
+          Grid.RowSpan="2"
+          ZIndex="200"
+          Width="6"
+          Margin="0,12,0,12"
+          HorizontalAlignment="Right"
+          Background="Transparent"
+          Cursor="SizeWestEast"
+          PointerPressed="ResizeEast_OnPointerPressed" />
+
+      <Border
+          Grid.RowSpan="2"
+          ZIndex="201"
+          Width="12"
+          Height="12"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Top"
+          Background="Transparent"
+          Cursor="TopLeftCorner"
+          PointerPressed="ResizeNorthWest_OnPointerPressed" />
+      <Border
+          Grid.RowSpan="2"
+          ZIndex="201"
+          Width="12"
+          Height="12"
+          HorizontalAlignment="Right"
+          VerticalAlignment="Top"
+          Background="Transparent"
+          Cursor="TopRightCorner"
+          PointerPressed="ResizeNorthEast_OnPointerPressed" />
+      <Border
+          Grid.RowSpan="2"
+          ZIndex="201"
+          Width="12"
+          Height="12"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Bottom"
+          Background="Transparent"
+          Cursor="BottomLeftCorner"
+          PointerPressed="ResizeSouthWest_OnPointerPressed" />
+      <Border
+          Grid.RowSpan="2"
+          ZIndex="201"
+          Width="12"
+          Height="12"
+          HorizontalAlignment="Right"
+          VerticalAlignment="Bottom"
+          Background="Transparent"
+          Cursor="BottomRightCorner"
+          PointerPressed="ResizeSouthEast_OnPointerPressed" />
     </Grid>
   </Border>
 </Window>

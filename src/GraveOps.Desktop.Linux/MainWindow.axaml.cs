@@ -121,6 +121,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        InitializeResponsiveLayout();
         _operatorSettings = _operatorSettingsStore.Load();
         ApplyOperatorSettingsToUi();
         InitializeControlPlaneFoundation();
@@ -180,6 +181,80 @@ public partial class MainWindow : Window
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             BeginMoveDrag(e);
     }
+
+    private void BeginWindowResize(
+        WindowEdge edge,
+        PointerPressedEventArgs e)
+    {
+        if (WindowState !=
+                WindowState.Normal ||
+            !e.GetCurrentPoint(this)
+                .Properties
+                .IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        BeginResizeDrag(
+            edge,
+            e);
+    }
+
+    private void ResizeNorth_OnPointerPressed(
+        object? sender,
+        PointerPressedEventArgs e) =>
+        BeginWindowResize(
+            WindowEdge.North,
+            e);
+
+    private void ResizeSouth_OnPointerPressed(
+        object? sender,
+        PointerPressedEventArgs e) =>
+        BeginWindowResize(
+            WindowEdge.South,
+            e);
+
+    private void ResizeWest_OnPointerPressed(
+        object? sender,
+        PointerPressedEventArgs e) =>
+        BeginWindowResize(
+            WindowEdge.West,
+            e);
+
+    private void ResizeEast_OnPointerPressed(
+        object? sender,
+        PointerPressedEventArgs e) =>
+        BeginWindowResize(
+            WindowEdge.East,
+            e);
+
+    private void ResizeNorthWest_OnPointerPressed(
+        object? sender,
+        PointerPressedEventArgs e) =>
+        BeginWindowResize(
+            WindowEdge.NorthWest,
+            e);
+
+    private void ResizeNorthEast_OnPointerPressed(
+        object? sender,
+        PointerPressedEventArgs e) =>
+        BeginWindowResize(
+            WindowEdge.NorthEast,
+            e);
+
+    private void ResizeSouthWest_OnPointerPressed(
+        object? sender,
+        PointerPressedEventArgs e) =>
+        BeginWindowResize(
+            WindowEdge.SouthWest,
+            e);
+
+    private void ResizeSouthEast_OnPointerPressed(
+        object? sender,
+        PointerPressedEventArgs e) =>
+        BeginWindowResize(
+            WindowEdge.SouthEast,
+            e);
 
     private void TitleDragRegion_OnDoubleTapped(object? sender, TappedEventArgs e) => ToggleMaximized();
     private void Minimize_Click(object? sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;

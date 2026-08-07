@@ -38,7 +38,16 @@ var tests =
             UnsafeWindowsProfilesFailClosedAsync),
         (
             "Lifecycle layout constrains lists and contains selected titles",
-            LifecycleLayoutConstrainsListsAsync)
+            LifecycleLayoutConstrainsListsAsync),
+        (
+            "borderless Linux window exposes all resize directions",
+            BorderlessWindowExposesResizeDirectionsAsync),
+        (
+            "responsive shell keeps Lifecycle and Settings reachable",
+            ResponsiveShellKeepsLifecycleAndSettingsReachableAsync),
+        (
+            "Policy management uses structured status rows",
+            PolicyManagementUsesStructuredStatusRowsAsync)
     };
 
 var failures =
@@ -646,15 +655,33 @@ static Task LifecycleLayoutConstrainsListsAsync()
 
     True(
         lifecycleMarkup.Contains(
-            "x:Name=\"LifecyclePage\"\n                IsVisible=\"False\"\n                RowDefinitions=\"Auto,Auto,*,Auto\"",
+            "x:Name=\"LifecyclePageScrollViewer\"",
             StringComparison.Ordinal),
-        "Lifecycle owns remaining vertical height");
+        "Lifecycle owns a page-level scroll path");
 
     True(
         lifecycleMarkup.Contains(
-            "Grid.Row=\"2\" ColumnDefinitions=\"1.25*,0.75*\" ColumnSpacing=\"8\" MinHeight=\"220\"",
+            "x:Name=\"LifecycleContentPanel\"",
             StringComparison.Ordinal),
-        "Lifecycle workspace minimum height");
+        "Lifecycle content remains one reachable vertical sequence");
+
+    True(
+        lifecycleMarkup.Contains(
+            "x:Name=\"LifecycleWorkspaceGrid\"",
+            StringComparison.Ordinal) &&
+        lifecycleMarkup.Contains(
+            "Height=\"260\"",
+            StringComparison.Ordinal),
+        "Lifecycle workspace remains bounded at normal width");
+
+    True(
+        lifecycleMarkup.Contains(
+            "x:Name=\"LifecycleSelectedModule\"",
+            StringComparison.Ordinal) &&
+        lifecycleMarkup.Contains(
+            "Height=\"132\"",
+            StringComparison.Ordinal),
+        "selected Lifecycle module remains bounded");
 
     True(
         CountOccurrences(
@@ -670,15 +697,440 @@ static Task LifecycleLayoutConstrainsListsAsync()
 
     True(
         lifecycleMarkup.Contains(
-            "x:Name=\"LifecycleSelectedTitleText\"\n                        Text=\"No lifecycle item selected\"\n                        FontWeight=\"SemiBold\"\n                        TextWrapping=\"NoWrap\"\n                        TextTrimming=\"CharacterEllipsis\"",
+            "x:Name=\"LifecycleSelectedTitleText\"\n                            Text=\"No lifecycle item selected\"\n                            FontWeight=\"SemiBold\"\n                            TextWrapping=\"NoWrap\"\n                            TextTrimming=\"CharacterEllipsis\"",
             StringComparison.Ordinal),
         "selected Lifecycle title containment");
 
     True(
         !lifecycleMarkup.Contains(
+            "RowDefinitions=\"Auto,Auto,*,Auto\"",
+            StringComparison.Ordinal) &&
+        !lifecycleMarkup.Contains(
             "RowDefinitions=\"Auto,Auto,Auto,Auto\"",
             StringComparison.Ordinal),
-        "obsolete unconstrained Lifecycle rows removed");
+        "obsolete viewport-bound Lifecycle rows removed");
+
+    return Task.CompletedTask;
+}
+
+static Task BorderlessWindowExposesResizeDirectionsAsync()
+{
+    var markup =
+        File.ReadAllText(
+            FindRepositoryFile(
+                "src/GraveOps.Desktop.Linux/MainWindow.axaml"));
+    var codeBehind =
+        File.ReadAllText(
+            FindRepositoryFile(
+                "src/GraveOps.Desktop.Linux/MainWindow.axaml.cs"));
+
+    True(
+        markup.Contains(
+            "CanResize=\"True\"",
+            StringComparison.Ordinal),
+        "Linux window remains resizable");
+
+    var handlers =
+        new[]
+        {
+            "ResizeNorth_OnPointerPressed",
+            "ResizeSouth_OnPointerPressed",
+            "ResizeWest_OnPointerPressed",
+            "ResizeEast_OnPointerPressed",
+            "ResizeNorthWest_OnPointerPressed",
+            "ResizeNorthEast_OnPointerPressed",
+            "ResizeSouthWest_OnPointerPressed",
+            "ResizeSouthEast_OnPointerPressed"
+        };
+
+    foreach (var handler in handlers)
+    {
+        Equal(
+            2,
+            CountOccurrences(
+                markup +
+                codeBehind,
+                handler),
+            $"{handler} declaration and binding");
+    }
+
+    var edges =
+        new[]
+        {
+            "WindowEdge.North",
+            "WindowEdge.South",
+            "WindowEdge.West",
+            "WindowEdge.East",
+            "WindowEdge.NorthWest",
+            "WindowEdge.NorthEast",
+            "WindowEdge.SouthWest",
+            "WindowEdge.SouthEast"
+        };
+
+    foreach (var edge in edges)
+    {
+        True(
+            codeBehind.Contains(
+                edge,
+                StringComparison.Ordinal),
+            $"{edge} resize direction");
+    }
+
+    foreach (var cursor in new[]
+             {
+                 "SizeNorthSouth",
+                 "SizeWestEast",
+                 "TopLeftCorner",
+                 "TopRightCorner",
+                 "BottomLeftCorner",
+                 "BottomRightCorner"
+             })
+    {
+        True(
+            markup.Contains(
+                $"Cursor=\"{cursor}\"",
+                StringComparison.Ordinal),
+            $"{cursor} resize cursor");
+    }
+
+    True(
+        codeBehind.Contains(
+            "WindowState.Normal",
+            StringComparison.Ordinal),
+        "resize is limited to the restored state");
+
+    True(
+        codeBehind.Contains(
+            "BeginResizeDrag(",
+            StringComparison.Ordinal),
+        "native Avalonia resize drag");
+
+    True(
+        CountOccurrences(
+            markup,
+            "Grid.RowSpan=\"2\"") >=
+        8,
+        "resize grips span the complete custom shell");
+
+    return Task.CompletedTask;
+}
+
+static Task ResponsiveShellKeepsLifecycleAndSettingsReachableAsync()
+{
+    var markup =
+        File.ReadAllText(
+            FindRepositoryFile(
+                "src/GraveOps.Desktop.Linux/MainWindow.axaml"));
+    var responsiveCode =
+        File.ReadAllText(
+            FindRepositoryFile(
+                "src/GraveOps.Desktop.Linux/MainWindow.ResponsiveLayout.cs"));
+    var mainCode =
+        File.ReadAllText(
+            FindRepositoryFile(
+                "src/GraveOps.Desktop.Linux/MainWindow.axaml.cs"));
+
+    foreach (var marker in new[]
+             {
+                 "x:Name=\"ShellBodyGrid\"",
+                 "x:Name=\"MainWorkspaceGrid\"",
+                 "RowDefinitions=\"Auto,42,*,26\"",
+                 "x:Name=\"MainHeaderGrid\"",
+                 "x:Name=\"MainHeaderTitlePanel\"",
+                 "x:Name=\"MainHeaderCommandsPanel\"",
+                 "x:Name=\"QuickSearchHintText\"",
+                 "x:Name=\"PageContentHost\"",
+                 "x:Name=\"LifecyclePageScrollViewer\"",
+                 "x:Name=\"LifecycleWorkspaceGrid\"",
+                 "x:Name=\"LifecycleRemediationModule\"",
+                 "x:Name=\"LifecycleSelectedModule\"",
+                 "Height=\"132\"",
+                 "x:Name=\"SettingsPageScrollViewer\"",
+                 "x:Name=\"SettingsInterfaceGrid\"",
+                 "x:Name=\"SettingsInterfaceActionsPanel\"",
+                 "x:Name=\"SettingsBodyGrid\"",
+                 "x:Name=\"SettingsOperatorDefaultsModule\"",
+                 "x:Name=\"SettingsPolicyModule\"",
+                 "x:Name=\"SettingsPathsModule\"",
+                 "x:Name=\"SettingsVersionModule\""
+             })
+    {
+        True(
+            markup.Contains(
+                marker,
+                StringComparison.Ordinal),
+            $"responsive markup marker {marker}");
+    }
+
+    var lifecycleStart =
+        markup.IndexOf(
+            "<!-- Lifecycle -->",
+            StringComparison.Ordinal);
+    var lifecycleEnd =
+        markup.IndexOf(
+            "<!-- History -->",
+            lifecycleStart,
+            StringComparison.Ordinal);
+    var settingsStart =
+        markup.IndexOf(
+            "<!-- Settings -->",
+            StringComparison.Ordinal);
+    var settingsEnd =
+        markup.IndexOf(
+            "<!-- Unified Linux-native Operator workspace -->",
+            settingsStart,
+            StringComparison.Ordinal);
+
+    True(
+        lifecycleStart >=
+        0 &&
+        lifecycleEnd >
+        lifecycleStart,
+        "responsive Lifecycle boundaries");
+    True(
+        settingsStart >=
+        0 &&
+        settingsEnd >
+        settingsStart,
+        "responsive Settings boundaries");
+
+    var lifecycleMarkup =
+        markup[
+            lifecycleStart..
+            lifecycleEnd];
+    var settingsMarkup =
+        markup[
+            settingsStart..
+            settingsEnd];
+
+    True(
+        lifecycleMarkup.Contains(
+            "VerticalScrollBarVisibility=\"Auto\"",
+            StringComparison.Ordinal),
+        "Lifecycle page-level scroll owner");
+    True(
+        settingsMarkup.Contains(
+            "VerticalScrollBarVisibility=\"Auto\"",
+            StringComparison.Ordinal),
+        "Settings page-level scroll owner");
+    True(
+        !settingsMarkup.Contains(
+            "RowDefinitions=\"Auto,Auto,*\"",
+            StringComparison.Ordinal),
+        "obsolete Settings viewport-bound rows removed");
+    True(
+        !settingsMarkup.Contains(
+            "Text=\"Settings\" Classes=\"sectionTitle\"",
+            StringComparison.Ordinal),
+        "duplicate in-page Settings heading removed");
+    True(
+        !settingsMarkup.Contains(
+            "x:Name=\"SettingsRightPanel\"",
+            StringComparison.Ordinal),
+        "unbalanced Settings right-column stack removed");
+    True(
+        settingsMarkup.Contains(
+            "x:Name=\"SettingsPolicyModule\"",
+            StringComparison.Ordinal) &&
+        settingsMarkup.Contains(
+            "x:Name=\"SettingsPathsModule\"",
+            StringComparison.Ordinal) &&
+        settingsMarkup.Contains(
+            "x:Name=\"SettingsVersionModule\"",
+            StringComparison.Ordinal),
+        "balanced Settings modules remain named");
+    True(
+        CountOccurrences(
+            settingsMarkup,
+            "Grid.ColumnSpan=\"2\"") >=
+        2,
+        "wide Settings lower modules span both columns");
+    True(
+        CountOccurrences(
+            settingsMarkup,
+            "ToolTip.Tip=\"{Binding Text, RelativeSource={RelativeSource Self}}\"") >=
+        10,
+        "Settings long values expose full tooltips");
+
+    foreach (var marker in new[]
+             {
+                 "CompactWindowWidth",
+                 "1320",
+                 "OnSizeChanged(",
+                 "new ColumnDefinitions(",
+                 "new RowDefinitions(",
+                 "\"230,*\"",
+                 "\"260,*\"",
+                 "\"1.25*,0.75*\"",
+                 "\"1.05*,0.95*\"",
+                 "\"Auto,Auto,Auto,Auto\"",
+                 "SettingsPolicyModule",
+                 "SettingsPathsModule",
+                 "SettingsVersionModule",
+                 "lifecycleWorkspace.Height",
+                 "448",
+                 "260"
+             })
+    {
+        True(
+            responsiveCode.Contains(
+                marker,
+                StringComparison.Ordinal),
+            $"responsive code marker {marker}");
+    }
+
+    True(
+        mainCode.Contains(
+            "InitializeResponsiveLayout();",
+            StringComparison.Ordinal),
+        "responsive layout initializes after XAML");
+
+    return Task.CompletedTask;
+}
+
+static Task PolicyManagementUsesStructuredStatusRowsAsync()
+{
+    var markup =
+        File.ReadAllText(
+            FindRepositoryFile(
+                "src/GraveOps.Desktop.Linux/MainWindow.axaml"));
+
+    var settingsStart =
+        markup.IndexOf(
+            "<!-- Settings -->",
+            StringComparison.Ordinal);
+    var settingsEnd =
+        markup.IndexOf(
+            "<!-- Unified Linux-native Operator workspace -->",
+            settingsStart,
+            StringComparison.Ordinal);
+
+    True(
+        settingsStart >=
+        0 &&
+        settingsEnd >
+        settingsStart,
+        "Policy management Settings boundaries");
+
+    var settingsMarkup =
+        markup[
+            settingsStart..
+            settingsEnd];
+
+    var policyStart =
+        settingsMarkup.IndexOf(
+            "x:Name=\"SettingsPolicyModule\"",
+            StringComparison.Ordinal);
+    var policyEnd =
+        settingsMarkup.IndexOf(
+            "x:Name=\"SettingsPathsModule\"",
+            policyStart,
+            StringComparison.Ordinal);
+
+    True(
+        policyStart >=
+        0 &&
+        policyEnd >
+        policyStart,
+        "Policy management module boundaries");
+
+    var policyMarkup =
+        settingsMarkup[
+            policyStart..
+            policyEnd];
+
+    foreach (var marker in new[]
+             {
+                 "x:Name=\"SettingsPolicyHeaderGrid\"",
+                 "x:Name=\"SettingsPolicyRowsPanel\"",
+                 "x:Name=\"SettingsCapacityPolicyRow\"",
+                 "x:Name=\"SettingsSignalQualityRow\"",
+                 "x:Name=\"SettingsRemediationPolicyRow\"",
+                 "x:Name=\"SettingsUiPerformanceRow\"",
+                 "x:Name=\"SettingsPolicyFileRow\"",
+                 "x:Name=\"SettingsPolicySummaryText\"",
+                 "x:Name=\"SettingsCapacityPolicySummaryText\"",
+                 "x:Name=\"SettingsSignalQualitySummaryText\"",
+                 "x:Name=\"SettingsVerifiedRemediationSummaryText\"",
+                 "x:Name=\"SettingsUiPerformanceSummaryText\"",
+                 "x:Name=\"SettingsPolicyPathText\""
+             })
+    {
+        True(
+            policyMarkup.Contains(
+                marker,
+                StringComparison.Ordinal),
+            $"structured Policy management marker {marker}");
+    }
+
+    Equal(
+        4,
+        CountOccurrences(
+            policyMarkup,
+            "ColumnDefinitions=\"130,*,Auto\""),
+        "four structured Policy management rows");
+
+    True(
+        CountOccurrences(
+            policyMarkup,
+            "Classes=\"inset\"") >=
+        4,
+        "Policy status rows use inset grouping");
+
+    foreach (var action in new[]
+             {
+                 "Dashboard policies",
+                 "Capacity alerts",
+                 "Storage thresholds",
+                 "Signal quality",
+                 "Remediation safety",
+                 "UI performance"
+             })
+    {
+        True(
+            policyMarkup.Contains(
+                $"Content=\"{action}\"",
+                StringComparison.Ordinal),
+            $"Policy management action {action}");
+    }
+
+    var capacityStart =
+        policyMarkup.IndexOf(
+            "x:Name=\"SettingsCapacityPolicyRow\"",
+            StringComparison.Ordinal);
+    var signalStart =
+        policyMarkup.IndexOf(
+            "x:Name=\"SettingsSignalQualityRow\"",
+            capacityStart,
+            StringComparison.Ordinal);
+    var capacityMarkup =
+        policyMarkup[
+            capacityStart..
+            signalStart];
+
+    True(
+        capacityMarkup.Contains(
+            "SettingsCapacityAlertsButton",
+            StringComparison.Ordinal) &&
+        capacityMarkup.Contains(
+            "Storage thresholds",
+            StringComparison.Ordinal),
+        "capacity actions stay with the capacity status");
+
+    True(
+        policyMarkup.IndexOf(
+            "x:Name=\"SettingsPolicyFileRow\"",
+            StringComparison.Ordinal) >
+        policyMarkup.IndexOf(
+            "x:Name=\"SettingsUiPerformanceRow\"",
+            StringComparison.Ordinal),
+        "Policy file remains a subdued footer");
+
+    True(
+        !policyMarkup.Contains(
+            "<WrapPanel>\n                            <Button Content=\"Dashboard policies\"",
+            StringComparison.Ordinal),
+        "obsolete undifferentiated Policy action toolbar removed");
 
     return Task.CompletedTask;
 }
