@@ -5791,7 +5791,7 @@
             <Grid
                 x:Name="LifecyclePage"
                 IsVisible="False"
-                RowDefinitions="Auto,Auto,Auto,Auto"
+                RowDefinitions="Auto,Auto,*,Auto"
                 RowSpacing="8">
 
               <Grid Grid.Row="0" ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
@@ -5834,14 +5834,20 @@
                 </Grid>
               </Border>
 
-              <Grid Grid.Row="2" ColumnDefinitions="1.25*,0.75*" ColumnSpacing="8" MinHeight="290">
+              <Grid Grid.Row="2" ColumnDefinitions="1.25*,0.75*" ColumnSpacing="8" MinHeight="220">
                 <Border Classes="module">
                   <Grid RowDefinitions="Auto,*" RowSpacing="5">
                     <StackPanel>
                       <TextBlock Text="Active lifecycle items" Classes="sectionTitle" />
                       <TextBlock Text="Correlated Arr and downloader work. Select an item to open its owner." Classes="pageSubtitle" />
                     </StackPanel>
-                    <ListBox Grid.Row="1" x:Name="LifecycleItemsList" Classes="dataList" SelectionChanged="LifecycleItemsList_OnSelectionChanged">
+                    <ListBox
+                        Grid.Row="1"
+                        x:Name="LifecycleItemsList"
+                        Classes="dataList"
+                        ScrollViewer.VerticalScrollBarVisibility="Visible"
+                        ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                        SelectionChanged="LifecycleItemsList_OnSelectionChanged">
                       <ListBox.ItemTemplate>
                         <DataTemplate x:CompileBindings="False">
                           <Grid ColumnDefinitions="1.2*,110,90,100,80,80" ColumnSpacing="6">
@@ -5864,7 +5870,13 @@
                       <TextBlock Text="Guided remediation" Classes="sectionTitle" />
                       <TextBlock Text="Upstream-first next steps. GraveOps avoids downstream restarts when an earlier dependency explains the symptom." Classes="pageSubtitle" TextWrapping="Wrap" />
                     </StackPanel>
-                    <ListBox Grid.Row="1" x:Name="LifecycleRemediationList" Classes="dataList" SelectionChanged="LifecycleRemediationList_OnSelectionChanged">
+                    <ListBox
+                        Grid.Row="1"
+                        x:Name="LifecycleRemediationList"
+                        Classes="dataList"
+                        ScrollViewer.VerticalScrollBarVisibility="Visible"
+                        ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                        SelectionChanged="LifecycleRemediationList_OnSelectionChanged">
                       <ListBox.ItemTemplate>
                         <DataTemplate x:CompileBindings="False">
                           <StackPanel Spacing="3">
@@ -5885,9 +5897,15 @@
               </Grid>
 
               <Border Grid.Row="3" Classes="module adaptive" MinHeight="88">
-                <Grid ColumnDefinitions="180,*,Auto" ColumnSpacing="8">
-                  <StackPanel>
-                    <TextBlock x:Name="LifecycleSelectedTitleText" Text="No lifecycle item selected" FontWeight="SemiBold" />
+                <Grid ColumnDefinitions="220,*,Auto" ColumnSpacing="12">
+                  <StackPanel ClipToBounds="True" Margin="0,0,8,0">
+                    <TextBlock
+                        x:Name="LifecycleSelectedTitleText"
+                        Text="No lifecycle item selected"
+                        FontWeight="SemiBold"
+                        TextWrapping="NoWrap"
+                        TextTrimming="CharacterEllipsis"
+                        ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
                     <TextBlock Text="Selected item" Classes="dim" />
                   </StackPanel>
                   <TextBox Grid.Column="1" x:Name="LifecycleSelectedDetailText" Classes="console workspaceOutput" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" ScrollViewer.VerticalScrollBarVisibility="Auto" />

@@ -35,7 +35,10 @@ var tests =
             DeleteActiveTargetFallsBackAsync),
         (
             "unsafe Windows profiles fail closed",
-            UnsafeWindowsProfilesFailClosedAsync)
+            UnsafeWindowsProfilesFailClosedAsync),
+        (
+            "Lifecycle layout constrains lists and contains selected titles",
+            LifecycleLayoutConstrainsListsAsync)
     };
 
 var failures =
@@ -610,6 +613,138 @@ static Task UnsafeWindowsProfilesFailClosedAsync()
         "local Windows from Linux client");
 
     return Task.CompletedTask;
+}
+
+static Task LifecycleLayoutConstrainsListsAsync()
+{
+    var markup =
+        File.ReadAllText(
+            FindRepositoryFile(
+                "src/GraveOps.Desktop.Linux/MainWindow.axaml"));
+
+    var lifecycleStart =
+        markup.IndexOf(
+            "<!-- Lifecycle -->",
+            StringComparison.Ordinal);
+    var lifecycleEnd =
+        markup.IndexOf(
+            "<!-- History -->",
+            lifecycleStart,
+            StringComparison.Ordinal);
+
+    True(
+        lifecycleStart >=
+        0 &&
+        lifecycleEnd >
+        lifecycleStart,
+        "Lifecycle markup boundaries");
+
+    var lifecycleMarkup =
+        markup[
+            lifecycleStart..
+            lifecycleEnd];
+
+    True(
+        lifecycleMarkup.Contains(
+            "x:Name=\"LifecyclePage\"\n                IsVisible=\"False\"\n                RowDefinitions=\"Auto,Auto,*,Auto\"",
+            StringComparison.Ordinal),
+        "Lifecycle owns remaining vertical height");
+
+    True(
+        lifecycleMarkup.Contains(
+            "Grid.Row=\"2\" ColumnDefinitions=\"1.25*,0.75*\" ColumnSpacing=\"8\" MinHeight=\"220\"",
+            StringComparison.Ordinal),
+        "Lifecycle workspace minimum height");
+
+    True(
+        CountOccurrences(
+            lifecycleMarkup,
+            "ScrollViewer.VerticalScrollBarVisibility=\"Visible\"") >= 2,
+        "Lifecycle list scrollbars remain visible");
+
+    True(
+        lifecycleMarkup.Contains(
+            "ColumnDefinitions=\"220,*,Auto\" ColumnSpacing=\"12\"",
+            StringComparison.Ordinal),
+        "selected Lifecycle panel columns");
+
+    True(
+        lifecycleMarkup.Contains(
+            "x:Name=\"LifecycleSelectedTitleText\"\n                        Text=\"No lifecycle item selected\"\n                        FontWeight=\"SemiBold\"\n                        TextWrapping=\"NoWrap\"\n                        TextTrimming=\"CharacterEllipsis\"",
+            StringComparison.Ordinal),
+        "selected Lifecycle title containment");
+
+    True(
+        !lifecycleMarkup.Contains(
+            "RowDefinitions=\"Auto,Auto,Auto,Auto\"",
+            StringComparison.Ordinal),
+        "obsolete unconstrained Lifecycle rows removed");
+
+    return Task.CompletedTask;
+}
+
+static string FindRepositoryFile(
+    string relativePath)
+{
+    var normalized =
+        relativePath.Replace(
+            '/',
+            Path.DirectorySeparatorChar);
+
+    foreach (var start in new[]
+             {
+                 Directory.GetCurrentDirectory(),
+                 AppContext.BaseDirectory
+             })
+    {
+        var current =
+            new DirectoryInfo(
+                start);
+
+        while (current is not null)
+        {
+            var candidate =
+                Path.Combine(
+                    current.FullName,
+                    normalized);
+
+            if (File.Exists(
+                    candidate))
+            {
+                return candidate;
+            }
+
+            current =
+                current.Parent;
+        }
+    }
+
+    throw new FileNotFoundException(
+        $"Could not locate repository file: {relativePath}");
+}
+
+static int CountOccurrences(
+    string value,
+    string fragment)
+{
+    var count =
+        0;
+    var offset =
+        0;
+
+    while ((offset =
+                value.IndexOf(
+                    fragment,
+                    offset,
+                    StringComparison.Ordinal)) >=
+           0)
+    {
+        count++;
+        offset +=
+            fragment.Length;
+    }
+
+    return count;
 }
 
 static LinuxHostProfile WindowsProfile() =>
